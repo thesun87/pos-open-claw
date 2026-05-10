@@ -7,4 +7,9 @@ export const PROBLEM_TYPES = {
   conflict: 'https://pos.example/errors/conflict',
   internal: 'https://pos.example/errors/internal',
   missingTenantContext: 'https://pos.example/errors/missing-tenant-context',
+  invalidCredentials: 'https://pos.example/errors/invalid-credentials',
+  csrfFailed: 'https://pos.example/errors/csrf-failed',
+  sessionRevoked: 'https://pos.example/errors/session-revoked',
+  sessionExpired: 'https://pos.example/errors/session-expired',
+  rateLimited: 'https://pos.example/errors/rate-limited',
 } as const;

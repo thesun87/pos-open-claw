@@ -18,10 +18,21 @@ const TITLES: Record<number, string> = {
   403: 'Forbidden',
   404: 'Not Found',
   409: 'Conflict',
+  429: 'Too Many Requests',
   500: 'Internal Server Error',
 };
 
+function customProblem(
+  exception: unknown,
+): { type?: string; title?: string; detail?: string } | undefined {
+  if (!(exception instanceof HttpException)) return undefined;
+  const response = exception.getResponse();
+  return response && typeof response === 'object' ? response : undefined;
+}
+
 function typeFor(status: number, exception: unknown): string {
+  const explicitType = customProblem(exception)?.type;
+  if (explicitType) return explicitType;
   if (exception instanceof MissingTenantContextError)
     return PROBLEM_TYPES.missingTenantContext;
   if (status === 400) return PROBLEM_TYPES.validation;
@@ -29,6 +40,7 @@ function typeFor(status: number, exception: unknown): string {
   if (status === 403) return PROBLEM_TYPES.forbidden;
   if (status === 404) return PROBLEM_TYPES.notFound;
   if (status === 409) return PROBLEM_TYPES.conflict;
+  if (status === 429) return PROBLEM_TYPES.rateLimited;
   if (status >= 500) return PROBLEM_TYPES.internal;
   return PROBLEM_TYPES.aboutBlank;
 }
@@ -81,10 +93,15 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       generateTraceId();
     const exceptionResponse =
       exception instanceof HttpException ? exception.getResponse() : undefined;
+    const explicitProblem = customProblem(exception);
     const detail =
       status >= 500
         ? 'Internal server error'
-        : sanitizeDetail(exceptionResponse, TITLES[status] ?? 'Request failed');
+        : (explicitProblem?.detail ??
+          sanitizeDetail(
+            exceptionResponse,
+            TITLES[status] ?? 'Request failed',
+          ));
     if (status >= 500 || exception instanceof Error)
       this.logger.error({ err: exception, traceId }, 'request failed');
     this.adapterHost.httpAdapter.setHeader(response, TRACE_ID_HEADER, traceId);
@@ -97,7 +114,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       response,
       {
         type: typeFor(status, exception),
-        title: TITLES[status] ?? 'Error',
+        title: explicitProblem?.title ?? TITLES[status] ?? 'Error',
         status,
         detail,
         instance: request.url,

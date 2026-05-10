@@ -22,7 +22,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-05-10T15:11:57+07:00"
-last_updated: "2026-05-10T18:06:00+07:00"
+last_updated: "2026-05-10T19:52:00+07:00"
 project: pos-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -33,8 +33,8 @@ development_status:
   1-1-khoi-tao-2-repo-pos-web-pwa-pos-api-nestjs-voi-baseline-tooling: done
   1-2-ha-tang-postgresql-prisma-foundation-schema-first-migration: done
   1-3-common-infrastructure-multi-tenant-extends-problemdetailsfilter-pino-bootstrap-hardening-health: done
-  1-4-seed-demo-data-tenant-users-categories-products-option-groups-sample-synced-orders: backlog
-  1-5-auth-backend-endpoints-login-refresh-logout: backlog
+  1-4-seed-demo-data-tenant-users-categories-products-option-groups-sample-synced-orders: done
+  1-5-auth-backend-endpoints-login-refresh-logout: done
   1-6-admin-session-revocation-endpoint: backlog
   1-7-frontend-shell-pwa-design-tokens-tailwind-shadcn-react-router-v7: backlog
   1-8-frontend-auth-flow-login-page-token-storage-indexeddb-axios-interceptor: backlog

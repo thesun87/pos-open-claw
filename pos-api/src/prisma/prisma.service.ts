@@ -1,5 +1,6 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { createPrismaClientOptions } from './prisma-client-options';
 import { tenantScopeExtension } from './tenant-scope.extension';
 
 @Injectable()
@@ -10,7 +11,7 @@ export class PrismaService
   private readonly tenantScopedClient: ReturnType<PrismaClient['$extends']>;
 
   constructor() {
-    super();
+    super(createPrismaClientOptions());
     this.tenantScopedClient = this.$extends(tenantScopeExtension);
 
     return new Proxy(this, {

@@ -1,6 +1,9 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
+import { AuthModule } from './auth/auth.module';
 import { AppService } from './app.service';
 import { TenantScopeMiddleware } from './common/middleware/tenant-scope.middleware';
 import { generateTraceId, TRACE_ID_HEADER } from './common/utils/trace-id';
@@ -23,11 +26,13 @@ import { PrismaModule } from './prisma/prisma.module';
         customProps: (req) => ({ traceId: req.id }),
       },
     }),
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     PrismaModule,
     HealthModule,
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
