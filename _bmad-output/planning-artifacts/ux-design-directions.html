@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Café POS MVP — UX Design Directions</title>
+  <style>
+    :root {
+      --bg: #f8f3ea;
+      --surface: #ffffff;
+      --muted: #efe4d3;
+      --text: #241a14;
+      --subtle: #6f5a4a;
+      --primary: #6f3e1f;
+      --primary-dark: #5a321a;
+      --accent: #c47a2c;
+      --success: #2f7d4e;
+      --warning: #b7791f;
+      --danger: #b42318;
+      --border: #d8c7b6;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+    header { position: sticky; top: 0; z-index: 10; padding: 18px 28px; background: rgba(248, 243, 234, 0.92); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); }
+    h1 { margin: 0 0 6px; font-size: 28px; }
+    p { margin: 0; color: var(--subtle); line-height: 1.5; }
+    nav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    nav a { color: var(--primary); border: 1px solid var(--border); background: var(--surface); padding: 8px 12px; border-radius: 999px; text-decoration: none; font-weight: 700; font-size: 13px; }
+    main { display: grid; gap: 28px; padding: 28px; }
+    section { border: 1px solid var(--border); background: rgba(255, 255, 255, 0.72); border-radius: 28px; overflow: hidden; box-shadow: 0 18px 60px rgba(74, 47, 28, 0.08); }
+    .section-head { padding: 24px 28px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 20px; align-items: start; }
+    .section-head h2 { margin: 0 0 8px; font-size: 22px; }
+    .tag { display: inline-flex; align-items: center; padding: 7px 10px; border-radius: 999px; background: var(--muted); color: var(--primary); font-size: 12px; font-weight: 800; white-space: nowrap; }
+    .mockup { min-height: 680px; padding: 20px; }
+    .pos-shell { height: 640px; border-radius: 22px; overflow: hidden; border: 1px solid var(--border); background: var(--surface); display: grid; grid-template-rows: 64px 1fr; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid var(--border); background: #fffaf2; }
+    .brand { font-weight: 900; letter-spacing: -0.02em; }
+    .status { display: flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 700; }
+    .pill { padding: 8px 11px; border-radius: 999px; background: var(--muted); color: var(--subtle); }
+    .green { background: #e8f4ed; color: var(--success); }
+    .amber { background: #fff3d8; color: var(--warning); }
+    .red { background: #fee8e5; color: var(--danger); }
+    .content { display: grid; min-height: 0; }
+    .products { padding: 18px; overflow: hidden; }
+    .cart { border-left: 1px solid var(--border); background: #fffdf9; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab { padding: 10px 14px; border-radius: 999px; background: var(--muted); color: var(--subtle); font-weight: 800; font-size: 13px; }
+    .tab.active { background: var(--primary); color: white; }
+    .grid { display: grid; gap: 12px; }
+    .tile { border: 1px solid var(--border); border-radius: 18px; padding: 16px; background: white; min-height: 90px; display: flex; flex-direction: column; justify-content: space-between; }
+    .tile strong { font-size: 16px; }
+    .price { color: var(--primary); font-weight: 900; }
+    .cart-line { border: 1px solid var(--border); border-radius: 16px; padding: 13px; background: white; }
+    .cart-line strong { display: block; margin-bottom: 4px; }
+    .small { font-size: 12px; color: var(--subtle); }
+    .total { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border); }
+    .total-number { font-size: 32px; font-weight: 950; letter-spacing: -0.04em; }
+    .cta { border: 0; background: var(--primary); color: white; border-radius: 16px; padding: 16px; font-size: 17px; font-weight: 900; width: 100%; }
+    .modal { margin: 20px auto 0; max-width: 720px; border-radius: 24px; background: white; border: 1px solid var(--border); box-shadow: 0 28px 80px rgba(36,26,20,.18); overflow: hidden; }
+    .modal-head { padding: 20px 22px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+    .modal-body { padding: 22px; display: grid; gap: 18px; }
+    .option-group h4 { margin: 0 0 10px; }
+    .chips { display: flex; gap: 10px; flex-wrap: wrap; }
+    .chip { border: 1px solid var(--border); border-radius: 14px; padding: 12px 16px; background: #fffaf2; font-weight: 800; }
+    .chip.selected { background: var(--primary); color: white; border-color: var(--primary); }
+    .dir-1 .content { grid-template-columns: 1fr 360px; }
+    .dir-1 .grid { grid-template-columns: repeat(3, 1fr); }
+    .dir-2 { --bg2: #f4eee5; }
+    .dir-2 .content { grid-template-columns: 96px 1fr 360px; }
+    .dir-2 .rail { padding: 14px; background: var(--primary); color: white; display: grid; gap: 10px; align-content: start; }
+    .dir-2 .rail div { padding: 12px 8px; border-radius: 14px; background: rgba(255,255,255,.14); text-align: center; font-weight: 800; font-size: 12px; }
+    .dir-2 .grid { grid-template-columns: repeat(4, 1fr); }
+    .dir-3 .content { grid-template-columns: 1fr 410px; background: #241a14; }
+    .dir-3 .products { color: white; }
+    .dir-3 .topbar { background: #2e2118; color: white; border-color: #4e382b; }
+    .dir-3 .tile { background: #35261c; border-color: #5e4435; color: white; }
+    .dir-3 .tab { background: #493527; color: #efd8c4; }
+    .dir-3 .tab.active { background: var(--accent); color: #241a14; }
+    .dir-3 .grid { grid-template-columns: repeat(3, 1fr); }
+    .dir-4 .content { grid-template-columns: 1fr 380px; }
+    .dir-4 .grid { grid-template-columns: repeat(2, 1fr); }
+    .dir-4 .tile { min-height: 122px; border-radius: 28px; background: linear-gradient(145deg, #fff, #fff5e8); }
+    .dir-5 .content { grid-template-columns: 1fr 340px; }
+    .dir-5 .grid { grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .dir-5 .tile { min-height: 74px; padding: 12px; border-radius: 12px; }
+    .dir-5 .tile strong { font-size: 14px; }
+    .dir-6 .content { grid-template-columns: 1fr 380px; }
+    .dir-6 .products { display: grid; grid-template-rows: auto 1fr auto; }
+    .dir-6 .grid { grid-template-columns: repeat(3, 1fr); }
+    .dir-6 .composer { border-top: 1px solid var(--border); padding-top: 14px; display: grid; gap: 10px; }
+    .dir-7 .content { grid-template-columns: 1fr 380px; }
+    .dir-7 .grid { grid-template-columns: repeat(3, 1fr); }
+    .dir-7 .topbar { background: linear-gradient(90deg, var(--primary), #9a5a2b); color: white; }
+    .dir-7 .tile { box-shadow: inset 0 0 0 2px rgba(196,122,44,.12); }
+    .notes { padding: 0 28px 26px; color: var(--subtle); line-height: 1.6; }
+    @media (max-width: 960px) { .mockup { overflow-x: auto; } .pos-shell { min-width: 980px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Café POS MVP — Design Direction Showcase</h1>
+    <p>7 hướng thiết kế cho POS café offline-first. Đánh giá theo tốc độ chọn tùy chọn đồ uống, độ tin cậy offline/sync, và độ rõ của cart/checkout.</p>
+    <nav>
+      <a href="#dir1">1 Classic POS</a><a href="#dir2">2 Category Rail</a><a href="#dir3">3 Dark Counter</a><a href="#dir4">4 Touch Bento</a><a href="#dir5">5 Dense Rush</a><a href="#dir6">6 Modifier First</a><a href="#dir7">7 Warm Premium</a>
+    </nav>
+  </header>
+  <main>
+    <section id="dir1" class="dir-1">
+      <div class="section-head"><div><h2>1. Classic Two-Pane POS</h2><p>Hướng an toàn nhất: product grid lớn, cart cố định, checkout rõ.</p></div><span class="tag">Recommended baseline</span></div>
+      <div class="mockup"><div class="pos-shell"><div class="topbar"><div class="brand">Café POS</div><div class="status"><span class="pill green">Online</span><span class="pill">0 đơn chờ</span><span>Thu ngân Linh</span></div></div><div class="content"><div class="products"><div class="tabs"><span class="tab active">Cà phê</span><span class="tab">Trà</span><span class="tab">Đá xay</span><span class="tab">Topping</span></div><div class="grid"><div class="tile"><strong>Bạc Xỉu</strong><span class="price">35.000 ₫</span></div><div class="tile"><strong>Cà phê sữa</strong><span class="price">32.000 ₫</span></div><div class="tile"><strong>Latte</strong><span class="price">45.000 ₫</span></div><div class="tile"><strong>Trà đào</strong><span class="price">42.000 ₫</span></div><div class="tile"><strong>Matcha Latte</strong><span class="price">48.000 ₫</span></div><div class="tile"><strong>Americano</strong><span class="price">38.000 ₫</span></div></div><div class="modal"><div class="modal-head"><strong>Bạc Xỉu</strong><span class="price">40.000 ₫</span></div><div class="modal-body"><div class="option-group"><h4>Size bắt buộc</h4><div class="chips"><span class="chip">M</span><span class="chip selected">L +5.000</span></div></div><div class="option-group"><h4>Đường</h4><div class="chips"><span class="chip">30%</span><span class="chip selected">50%</span><span class="chip">100%</span></div></div></div></div></div><div class="cart"><h3>Giỏ hàng</h3><div class="cart-line"><strong>Bạc Xỉu</strong><span class="small">Size L · 50% đường · Ít đá</span><div class="price">40.000 ₫</div></div><div class="total"><p>Tổng thanh toán</p><div class="total-number">40.000 ₫</div></div><button class="cta">Hoàn tất đơn</button></div></div></div></div>
+      <div class="notes">Phù hợp nhất để triển khai MVP vì cân bằng tốc độ, rõ ràng và ít rủi ro học lại.</div>
+    </section>
+
+    <section id="dir2" class="dir-2">
+      <div class="section-head"><div><h2>2. Category Rail POS</h2><p>Category rail dọc giúp chuyển nhóm sản phẩm nhanh trên tablet.</p></div><span class="tag">Fast category switching</span></div>
+      <div class="mockup"><div class="pos-shell"><div class="topbar"><div class="brand">Café POS</div><div class="status"><span class="pill amber">Offline</span><span class="pill amber">3 đơn chờ</span></div></div><div class="content"><div class="rail"><div>Cà phê</div><div>Trà</div><div>Đá xay</div><div>Bánh</div></div><div class="products"><div class="grid"><div class="tile"><strong>Bạc Xỉu</strong><span class="price">35.000 ₫</span></div><div class="tile"><strong>Espresso</strong><span class="price">30.000 ₫</span></div><div class="tile"><strong>Latte</strong><span class="price">45.000 ₫</span></div><div class="tile"><strong>Mocha</strong><span class="price">49.000 ₫</span></div><div class="tile"><strong>Trà sen</strong><span class="price">42.000 ₫</span></div><div class="tile"><strong>Trà đào</strong><span class="price">42.000 ₫</span></div><div class="tile"><strong>Matcha</strong><span class="price">48.000 ₫</span></div><div class="tile"><strong>Cookie</strong><span class="price">25.000 ₫</span></div></div></div><div class="cart"><h3>Offline vẫn bán được</h3><p class="small">Đơn sẽ tự đồng bộ khi có mạng.</p><div class="cart-line"><strong>Trà đào</strong><span class="small">Size M · 30% đường</span><div class="price">42.000 ₫</div></div><div class="total"><p>Tổng</p><div class="total-number">42.000 ₫</div></div><button class="cta">Lưu & in hóa đơn</button></div></div></div></div>
+      <div class="notes">Mạnh cho quán có nhiều danh mục; cần đảm bảo rail không chiếm quá nhiều diện tích trên laptop nhỏ.</div>
+    </section>
+
+    <section id="dir3" class="dir-3">
+      <div class="section-head"><div><h2>3. Dark Counter Mode</h2><p>Nền tối, độ tương phản cao, hợp quầy ít sáng hoặc cảm giác premium.</p></div><span class="tag">High contrast</span></div>
+      <div class="mockup"><div class="pos-shell"><div class="topbar"><div class="brand">Café POS</div><div class="status"><span class="pill green">Đã đồng bộ</span><span>POS01</span></div></div><div class="content"><div class="products"><div class="tabs"><span class="tab active">Bán chạy</span><span class="tab">Cà phê</span><span class="tab">Trà</span></div><div class="grid"><div class="tile"><strong>Bạc Xỉu</strong><span class="price">35.000 ₫</span></div><div class="tile"><strong>Cold Brew</strong><span class="price">50.000 ₫</span></div><div class="tile"><strong>Latte</strong><span class="price">45.000 ₫</span></div><div class="tile"><strong>Trà đào</strong><span class="price">42.000 ₫</span></div><div class="tile"><strong>Matcha</strong><span class="price">48.000 ₫</span></div><div class="tile"><strong>Mocha</strong><span class="price">49.000 ₫</span></div></div></div><div class="cart"><h3>Checkout</h3><div class="cart-line"><strong>Cold Brew</strong><span class="small">Size L · Không đường</span><div class="price">55.000 ₫</div></div><div class="total"><p>Tổng</p><div class="total-number">55.000 ₫</div></div><button class="cta">Hoàn tất</button></div></div></div></div>
+      <div class="notes">Nổi bật và khác biệt, nhưng cần kiểm tra đọc lâu và in/receipt để tránh cảm giác quá “bar app”.</div>
+    </section>
+
+    <section id="dir4" class="dir-4">
+      <div class="section-head"><div><h2>4. Touch Bento</h2><p>Card lớn, spacing rộng, ưu tiên iPad/tablet touch.</p></div><span class="tag">Best for touch</span></div>
+      <div class="mockup"><div class="pos-shell"><div class="topbar"><div class="brand">Café POS</div><div class="status"><span class="pill green">Online</span><span class="pill amber">Menu đã cập nhật</span></div></div><div class="content"><div class="products"><div class="tabs"><span class="tab active">Phổ biến</span><span class="tab">Cà phê</span><span class="tab">Trà</span></div><div class="grid"><div class="tile"><strong>Bạc Xỉu</strong><span class="small">Chạm để chọn size/đá/đường</span><span class="price">35.000 ₫</span></div><div class="tile"><strong>Trà đào cam sả</strong><span class="small">Topping tùy chọn</span><span class="price">45.000 ₫</span></div><div class="tile"><strong>Latte</strong><span class="small">Size M/L</span><span class="price">45.000 ₫</span></div><div class="tile"><strong>Matcha đá xay</strong><span class="small">Kem + topping</span><span class="price">55.000 ₫</span></div></div></div><div class="cart"><h3>Đơn hiện tại</h3><div class="cart-line"><strong>Trống</strong><span class="small">Chọn món để bắt đầu</span></div><div class="total"><p>Tổng</p><div class="total-number">0 ₫</div></div><button class="cta">Chọn món trước</button></div></div></div></div>
+      <div class="notes">Rất dễ dùng cho touch nhưng có thể hiển thị ít sản phẩm hơn; hợp nếu menu không quá lớn.</div>
+    </section>
+
+    <section id="dir5" class="dir-5">
+      <div class="section-head"><div><h2>5. Dense Rush Mode</h2><p>Mật độ cao cho giờ cao điểm, hiển thị nhiều sản phẩm cùng lúc.</p></div><span class="tag">High throughput</span></div>
+      <div class="mockup"><div class="pos-shell"><div class="topbar"><div class="brand">Café POS</div><div class="status"><span class="pill green">Online</span><span class="pill">12:42</span></div></div><div class="content"><div class="products"><div class="tabs"><span class="tab active">Tất cả</span><span class="tab">Search: bạc</span></div><div class="grid"><div class="tile"><strong>Bạc Xỉu</strong><span class="price">35k</span></div><div class="tile"><strong>Sữa đá</strong><span class="price">32k</span></div><div class="tile"><strong>Đen đá</strong><span class="price">28k</span></div><div class="tile"><strong>Latte</strong><span class="price">45k</span></div><div class="tile"><strong>Mocha</strong><span class="price">49k</span></div><div class="tile"><strong>Trà đào</strong><span class="price">42k</span></div><div class="tile"><strong>Trà sen</strong><span class="price">42k</span></div><div class="tile"><strong>Matcha</strong><span class="price">48k</span></div><div class="tile"><strong>Cookie</strong><span class="price">25k</span></div><div class="tile"><strong>Croissant</strong><span class="price">35k</span></div></div></div><div class="cart"><h3>Giỏ</h3><div class="cart-line"><strong>2 món</strong><span class="small">Bạc Xỉu L, Cookie</span></div><div class="total"><p>Tổng</p><div class="total-number">75.000 ₫</div></div><button class="cta">Thanh toán</button></div></div></div></div>
+      <div class="notes">Tốt cho tốc độ nhưng có nguy cơ nhỏ quá cho touch; nên dùng như chế độ compact tùy chọn, không phải mặc định.</div>
+    </section>
+
+    <section id="dir6" class="dir-6">
+      <div class="section-head"><div><h2>6. Modifier-First Composer</h2><p>Đưa option composer thành vùng chính, tối ưu defining interaction.</p></div><span class="tag">Best for core interaction</span></div>
+      <div class="mockup"><div class="pos-shell"><div class="topbar"><div class="brand">Café POS</div><div class="status"><span class="pill green">Online</span><span class="pill">Menu v12</span></div></div><div class="content"><div class="products"><div><div class="tabs"><span class="tab active">Bạc Xỉu</span><span class="tab">Latte</span><span class="tab">Trà đào</span></div><div class="grid"><div class="tile"><strong>Bạc Xỉu</strong><span class="price">35.000 ₫</span></div><div class="tile"><strong>Cà phê sữa</strong><span class="price">32.000 ₫</span></div><div class="tile"><strong>Latte</strong><span class="price">45.000 ₫</span></div></div></div><div class="composer"><strong>Chọn tùy chọn cho Bạc Xỉu</strong><div class="chips"><span class="chip">M</span><span class="chip selected">L +5.000</span><span class="chip">Ít đá</span><span class="chip selected">50% đường</span><span class="chip">Trân châu +8.000</span></div></div></div><div class="cart"><h3>Preview item</h3><div class="cart-line"><strong>Bạc Xỉu</strong><span class="small">Size L · 50% đường</span><div class="price">40.000 ₫</div></div><button class="cta">Thêm vào giỏ</button><div class="total"><p>Tổng đơn</p><div class="total-number">40.000 ₫</div></div></div></div></div></div>
+      <div class="notes">Tối ưu nhất cho “chọn tùy chọn đồ uống”; có thể kết hợp với Classic Two-Pane để không quá khác lạ.</div>
+    </section>
+
+    <section id="dir7" class="dir-7">
+      <div class="section-head"><div><h2>7. Warm Premium Café</h2><p>Ấm, có chiều sâu, visual mạnh hơn nhưng vẫn thực dụng.</p></div><span class="tag">Brand-forward</span></div>
+      <div class="mockup"><div class="pos-shell"><div class="topbar"><div class="brand">Café POS</div><div class="status"><span class="pill green">Online</span><span class="pill">Không có đơn chờ</span></div></div><div class="content"><div class="products"><div class="tabs"><span class="tab active">Signature</span><span class="tab">Coffee</span><span class="tab">Tea</span></div><div class="grid"><div class="tile"><strong>Bạc Xỉu Nhà Làm</strong><span class="small">Best seller</span><span class="price">35.000 ₫</span></div><div class="tile"><strong>Caramel Latte</strong><span class="small">Signature</span><span class="price">52.000 ₫</span></div><div class="tile"><strong>Trà Đào Cam Sả</strong><span class="small">Fresh tea</span><span class="price">45.000 ₫</span></div><div class="tile"><strong>Matcha Cloud</strong><span class="small">Cream top</span><span class="price">55.000 ₫</span></div><div class="tile"><strong>Cold Brew</strong><span class="small">Slow brew</span><span class="price">50.000 ₫</span></div><div class="tile"><strong>Cookie</strong><span class="small">Bakery</span><span class="price">25.000 ₫</span></div></div></div><div class="cart"><h3>Đơn #POS01-0042</h3><div class="cart-line"><strong>Caramel Latte</strong><span class="small">Size L · Ít đá · 50% đường</span><div class="price">57.000 ₫</div></div><div class="total"><p>Tổng thanh toán</p><div class="total-number">57.000 ₫</div></div><button class="cta">Hoàn tất đơn</button></div></div></div></div>
+      <div class="notes">Đẹp và khác biệt hơn, phù hợp demo sản phẩm; cần giữ không quá trang trí làm giảm tốc độ POS.</div>
+    </section>
+  </main>
+</body>
+</html>
