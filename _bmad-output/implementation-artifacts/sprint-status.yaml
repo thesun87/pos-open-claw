@@ -22,7 +22,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-05-10T15:11:57+07:00"
-last_updated: "2026-05-10T21:38:00+07:00"
+last_updated: "2026-05-10T22:41:00+07:00"
 project: pos-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -36,7 +36,7 @@ development_status:
   1-4-seed-demo-data-tenant-users-categories-products-option-groups-sample-synced-orders: done
   1-5-auth-backend-endpoints-login-refresh-logout: done
   1-6-admin-session-revocation-endpoint: done
-  1-7-frontend-shell-pwa-design-tokens-tailwind-shadcn-react-router-v7: backlog
+  1-7-frontend-shell-pwa-design-tokens-tailwind-shadcn-react-router-v7: done
   1-8-frontend-auth-flow-login-page-token-storage-indexeddb-axios-interceptor: backlog
   1-9-frontend-session-lifecycle-role-routing-reload-boot-offline-7-day-behavior: backlog
   1-10-ci-pipeline-pre-commit-hooks-lint-format-type-test-coverage-gates: backlog

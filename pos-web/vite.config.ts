@@ -14,14 +14,14 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'pwa-192x192.svg', 'pwa-512x512.svg'],
       manifest: {
-        name: 'pos-web',
-        short_name: 'pos-web',
+        name: 'Café POS',
+        short_name: 'POS',
         description: 'Café POS PWA',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
+        theme_color: '#6F3E1F',
+        background_color: '#F8F3EA',
         display: 'standalone',
         start_url: '/',
         icons: [
@@ -29,11 +29,13 @@ export default defineConfig({
             src: '/pwa-192x192.svg',
             sizes: '192x192',
             type: 'image/svg+xml',
+            purpose: 'any maskable',
           },
           {
             src: '/pwa-512x512.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
+            purpose: 'any maskable',
           },
         ],
       },
