@@ -1,5 +1,5 @@
 # generated: 2026-05-10T15:13:01+07:00
-# last_updated: 2026-05-10T16:05:50+07:00
+# last_updated: 2026-05-10T17:17:00+07:00
 # project: pos-bmad
 # project_key: NOKEY
 # tracking_system: file-system
@@ -22,7 +22,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-05-10T15:11:57+07:00"
-last_updated: "2026-05-10T16:05:50+07:00"
+last_updated: "2026-05-10T17:39:00+07:00"
 project: pos-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -31,7 +31,7 @@ story_location: /home/tuannguyen/.openclaw/workspace/bmad-master/_bmad-output/im
 development_status:
   epic-1: in-progress
   1-1-khoi-tao-2-repo-pos-web-pwa-pos-api-nestjs-voi-baseline-tooling: done
-  1-2-ha-tang-postgresql-prisma-foundation-schema-first-migration: backlog
+  1-2-ha-tang-postgresql-prisma-foundation-schema-first-migration: done
   1-3-common-infrastructure-multi-tenant-extends-problemdetailsfilter-pino-bootstrap-hardening-health: backlog
   1-4-seed-demo-data-tenant-users-categories-products-option-groups-sample-synced-orders: backlog
   1-5-auth-backend-endpoints-login-refresh-logout: backlog

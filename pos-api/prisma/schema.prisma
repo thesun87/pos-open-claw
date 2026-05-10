@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  Admin
+  Cashier
+}
+
+model Tenant {
+  id           String        @id @db.Uuid
+  name         String
+  stores       Store[]
+  users        User[]
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  categories   Category[]
+  products     Product[]
+  optionGroups OptionGroup[]
+  options      Option[]
+  menuVersions MenuVersion[]
+
+  @@map("tenants")
+}
+
+model Store {
+  id           String        @id @db.Uuid
+  tenantId     String        @map("tenant_id") @db.Uuid
+  name         String
+  code         String
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  users        User[]
+  categories   Category[]
+  products     Product[]
+  optionGroups OptionGroup[]
+  options      Option[]
+  menuVersions MenuVersion[]
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, code], map: "uq_stores_tenant_code")
+  @@index([tenantId], map: "idx_stores_tenant_id")
+  @@map("stores")
+}
+
+model User {
+  id            String         @id @db.Uuid
+  tenantId      String         @map("tenant_id") @db.Uuid
+  storeId       String         @map("store_id") @db.Uuid
+  email         String
+  passwordHash  String         @map("password_hash")
+  role          Role
+  isRevoked     Boolean        @default(false) @map("is_revoked")
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  store         Store          @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  refreshTokens RefreshToken[]
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, storeId, email], map: "uq_users_tenant_store_email")
+  @@index([tenantId], map: "idx_users_tenant_id")
+  @@index([storeId], map: "idx_users_store_id")
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId], map: "idx_refresh_tokens_user_id")
+  @@map("refresh_tokens")
+}
+
+model Category {
+  id        String    @id @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  storeId   String    @map("store_id") @db.Uuid
+  name      String
+  sortOrder Int       @default(0) @map("sort_order")
+  isActive  Boolean   @default(true) @map("is_active")
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  store     Store     @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  products  Product[]
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, storeId, name], map: "uq_categories_tenant_store_name")
+  @@index([tenantId, storeId], map: "idx_categories_tenant_store")
+  @@map("categories")
+}
+
+model Product {
+  id                  String               @id @db.Uuid
+  tenantId            String               @map("tenant_id") @db.Uuid
+  storeId             String               @map("store_id") @db.Uuid
+  categoryId          String               @map("category_id") @db.Uuid
+  name                String
+  description         String?
+  priceVnd            Int                  @map("price_vnd")
+  imageUrl            String?              @map("image_url")
+  sortOrder           Int                  @default(0) @map("sort_order")
+  isActive            Boolean              @default(true) @map("is_active")
+  tenant              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  store               Store                @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  category            Category             @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  productOptionGroups ProductOptionGroup[]
+  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([categoryId], map: "idx_products_category_id")
+  @@index([isActive], map: "idx_products_is_active")
+  @@index([tenantId, storeId], map: "idx_products_tenant_store")
+  @@map("products")
+}
+
+model OptionGroup {
+  id                  String               @id @db.Uuid
+  tenantId            String               @map("tenant_id") @db.Uuid
+  storeId             String               @map("store_id") @db.Uuid
+  name                String
+  isRequired          Boolean              @default(false) @map("is_required")
+  minSelect           Int                  @default(0) @map("min_select")
+  maxSelect           Int                  @default(1) @map("max_select")
+  sortOrder           Int                  @default(0) @map("sort_order")
+  tenant              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  store               Store                @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  options             Option[]
+  productOptionGroups ProductOptionGroup[]
+  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([tenantId, storeId], map: "idx_option_groups_tenant_store")
+  @@map("option_groups")
+}
+
+model Option {
+  id            String      @id @db.Uuid
+  tenantId      String      @map("tenant_id") @db.Uuid
+  storeId       String      @map("store_id") @db.Uuid
+  optionGroupId String      @map("option_group_id") @db.Uuid
+  name          String
+  priceDeltaVnd Int         @default(0) @map("price_delta_vnd")
+  isDefault     Boolean     @default(false) @map("is_default")
+  isActive      Boolean     @default(true) @map("is_active")
+  sortOrder     Int         @default(0) @map("sort_order")
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  store         Store       @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  optionGroup   OptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([optionGroupId], map: "idx_options_option_group_id")
+  @@index([tenantId, storeId], map: "idx_options_tenant_store")
+  @@map("options")
+}
+
+model ProductOptionGroup {
+  productId     String      @map("product_id") @db.Uuid
+  optionGroupId String      @map("option_group_id") @db.Uuid
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  optionGroup   OptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sortOrder     Int         @default(0) @map("sort_order")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@id([productId, optionGroupId])
+  @@index([optionGroupId], map: "idx_product_option_groups_option_group_id")
+  @@map("product_option_groups")
+}
+
+model MenuVersion {
+  id       String   @id @db.Uuid
+  tenantId String   @map("tenant_id") @db.Uuid
+  storeId  String   @map("store_id") @db.Uuid
+  version  Int      @default(1)
+  bumpedAt DateTime @default(now()) @map("bumped_at") @db.Timestamptz(6)
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  store    Store    @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([tenantId, storeId], map: "uq_menu_versions_tenant_store")
+  @@map("menu_versions")
+}
