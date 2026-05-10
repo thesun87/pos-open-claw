@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Headers,
   HttpCode,
+  Param,
   Post,
   Req,
   Res,
@@ -10,7 +12,14 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
+import {
+  TenantContext,
+  TenantContext as TenantContextDecorator,
+} from '../common/decorators/tenant-context.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { UsersService } from '../users/users.service';
 import { AuthService, AuthCookies } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 
@@ -57,7 +66,10 @@ function clearAuthCookies(res: Response): void {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly users: UsersService,
+  ) {}
 
   @Post('login')
   @HttpCode(200)
@@ -93,6 +105,19 @@ export class AuthController {
         clearAuthCookies(res);
       throw error;
     }
+  }
+
+  @Post('sessions/:userId/revoke')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @HttpCode(204)
+  async revokeSession(
+    @Param('userId') userId: string,
+    @TenantContextDecorator() context: TenantContext | undefined,
+  ): Promise<void> {
+    if (!context?.tenantId || !context.storeId)
+      throw new ForbiddenException('Missing tenant context');
+    await this.users.revokeUserSession(userId, context);
   }
 
   @Post('logout')

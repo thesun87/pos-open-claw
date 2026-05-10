@@ -131,3 +131,18 @@ select count(*) from menu_versions;
 ```
 
 Expected tối thiểu sau seed: `tenants=1`, `stores=1`, `users=2`, `categories=5`, `products=22`, `option_groups=4`, `menu_versions=1` cho dataset demo cố định.
+
+### Admin revoke user sessions
+
+Admins can force logout a user in the same tenant/store:
+
+```http
+POST /api/v1/auth/sessions/{userId}/revoke
+Authorization: Bearer <admin access token>
+```
+
+Successful revocation returns `204 No Content` with no response body. The API sets the target `users.is_revoked=true` and stamps `revoked_at` on all active refresh tokens for that user. Repeating the same revoke is idempotent and still returns `204`.
+
+Non-admin callers receive `403`, missing/invalid bearer tokens receive `401`, and missing or cross-tenant targets receive `404`; all errors use RFC 7807 `application/problem+json`.
+
+Architecture trade-off: this endpoint revokes server-side refresh/session state immediately, but it does not blacklist already-issued 7-day access tokens. Offline/local usage can continue until JWT expiry or until the client comes online and hits refresh/API behavior that observes the revoked session.
