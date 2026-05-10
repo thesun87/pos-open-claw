@@ -1,0 +1,75 @@
+# generated: 2026-05-10T15:13:01+07:00
+# last_updated: 2026-05-10T16:05:50+07:00
+# project: pos-bmad
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: /home/tuannguyen/.openclaw/workspace/bmad-master/_bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in implementation artifacts
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+generated: "2026-05-10T15:11:57+07:00"
+last_updated: "2026-05-10T16:05:50+07:00"
+project: pos-bmad
+project_key: NOKEY
+tracking_system: file-system
+story_location: /home/tuannguyen/.openclaw/workspace/bmad-master/_bmad-output/implementation-artifacts
+
+development_status:
+  epic-1: in-progress
+  1-1-khoi-tao-2-repo-pos-web-pwa-pos-api-nestjs-voi-baseline-tooling: done
+  1-2-ha-tang-postgresql-prisma-foundation-schema-first-migration: backlog
+  1-3-common-infrastructure-multi-tenant-extends-problemdetailsfilter-pino-bootstrap-hardening-health: backlog
+  1-4-seed-demo-data-tenant-users-categories-products-option-groups-sample-synced-orders: backlog
+  1-5-auth-backend-endpoints-login-refresh-logout: backlog
+  1-6-admin-session-revocation-endpoint: backlog
+  1-7-frontend-shell-pwa-design-tokens-tailwind-shadcn-react-router-v7: backlog
+  1-8-frontend-auth-flow-login-page-token-storage-indexeddb-axios-interceptor: backlog
+  1-9-frontend-session-lifecycle-role-routing-reload-boot-offline-7-day-behavior: backlog
+  1-10-ci-pipeline-pre-commit-hooks-lint-format-type-test-coverage-gates: backlog
+  epic-1-retrospective: optional
+  epic-2: backlog
+  2-1-menu-read-api-frontend-menu-cache-dexie-uselivequery: backlog
+  2-2-pos-product-grid-category-navigation-search: backlog
+  2-3-option-modal-option-chips-add-to-cart: backlog
+  2-4-cart-panel-line-items-discount-item-note: backlog
+  2-5-checkout-summary-payment-method-order-build-snapshot-code: backlog
+  2-6-backend-orders-schema-migration-idempotent-sync-endpoint: backlog
+  2-7-frontend-finalize-order-flow-dexie-write-sync-kick: backlog
+  2-8-receipt-modal-print: backlog
+  2-9-sync-engine-fsm-triggers-exponential-backoff: backlog
+  2-10-connectivity-indicator-pending-counter: backlog
+  2-11-manual-sync-trigger-sync-retry-panel-error-mapping: backlog
+  2-12-cancel-pending-order-cart-level-void-before-sync: backlog
+  2-13-backend-void-endpoint-frontend-void-synced-order-flow: backlog
+  epic-2-retrospective: optional
+  epic-3: backlog
+  3-1-admin-layout-sectioned-navigation-admindatatable-statusbadge-foundation: backlog
+  3-2-be-categories-crud-menu-version-service-ts-bumping-pattern: backlog
+  3-3-fe-categories-admin-page-crud-sort-order-active-toggle: backlog
+  3-4-be-option-groups-options-crud-endpoints: backlog
+  3-5-fe-option-groups-admin-page-crud-inline-options-min-max: backlog
+  3-6-be-products-crud-option-groups-assignment: backlog
+  3-7-fe-products-admin-page-crud-category-optiongroups-active-sort: backlog
+  3-8-be-versioned-menu-sync-endpoint-get-api-v1-menu-since-version-n: backlog
+  3-9-fe-menu-auto-sync-engine-menuupdatedtoast-snapshot-preserved: backlog
+  epic-3-retrospective: optional
+  epic-4: backlog
+  4-1-be-reports-endpoint-voi-4-metric-aggregations-tz-asia-ho-chi-minh-void-exclusion: backlog
+  4-2-fe-reports-page-layout-daterangereportfilter-component: backlog
+  4-3-fe-revenue-by-day-chart-total-orders-summary-card: backlog
+  4-4-fe-revenue-by-payment-method-top-products-display: backlog
+  epic-4-retrospective: optional
