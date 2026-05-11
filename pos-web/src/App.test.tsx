@@ -49,7 +49,7 @@ describe('frontend shell routes', () => {
   it('renders POS two-pane semantics and unsupported mobile copy', async () => {
     await seedSession('cashier')
     renderAt('/pos')
-    expect(await screen.findByText('Khu vực menu / sản phẩm')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Menu sản phẩm' })).toBeInTheDocument()
     expect(screen.getByLabelText('Giỏ hàng và thanh toán')).toBeInTheDocument()
     expect(screen.getByText('POS hoạt động tốt nhất ở màn hình ngang hoặc laptop/tablet')).toBeInTheDocument()
   })

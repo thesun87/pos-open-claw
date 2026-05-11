@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../db/dexie'
 import type { MenuCategoryRecord, MenuProductRecord } from '../../db/schemas/menu'
@@ -8,6 +9,17 @@ function bySortOrderThenName<T extends { sortOrder: number; name: string }>(a: T
 
 function normalizeSearch(value: string): string {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('vi')
+}
+
+export function useDebouncedValue(value: string, delayMs: number): string {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setDebouncedValue(value), delayMs)
+    return () => window.clearTimeout(timeoutId)
+  }, [delayMs, value])
+
+  return debouncedValue
 }
 
 export function useCategories(): MenuCategoryRecord[] | undefined {

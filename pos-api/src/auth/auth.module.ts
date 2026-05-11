@@ -17,6 +17,6 @@ import { UsersModule } from '../users/users.module';
   ],
   controllers: [AuthController],
   providers: [AuthService, RefreshTokenRepository, JwtAuthGuard, RolesGuard],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}
