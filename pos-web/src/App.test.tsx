@@ -19,9 +19,9 @@ function renderAt(path: string) {
 }
 
 describe('frontend shell routes', () => {
-  it('renders login route placeholder', () => {
+  it('renders login route', () => {
     renderAt('/login')
-    expect(screen.getByRole('heading', { name: 'Đăng nhập POS' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Đăng nhập' })).toBeInTheDocument()
     expect(screen.getByText('Online')).toBeInTheDocument()
     expect(screen.getByText('0 đơn chờ')).toBeInTheDocument()
   })

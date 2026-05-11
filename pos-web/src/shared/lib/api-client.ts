@@ -8,11 +8,6 @@ export const apiClient = axios.create({
   headers: { Accept: 'application/json' },
 })
 
-apiClient.interceptors.request.use((config) => {
-  // Story 1.8 wires IndexedDB-backed auth tokens here. Do not read localStorage/sessionStorage.
-  return config
-})
-
 apiClient.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
