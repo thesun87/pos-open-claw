@@ -36,7 +36,10 @@ export async function bootstrap() {
     }),
   );
   app.useGlobalFilters(
-    new ProblemDetailsFilter(app.get(HttpAdapterHost), app.get(PinoLogger)),
+    new ProblemDetailsFilter(
+      app.get(HttpAdapterHost),
+      await app.resolve(PinoLogger),
+    ),
   );
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
