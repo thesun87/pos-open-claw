@@ -24,6 +24,7 @@ export interface MenuOptionRecord {
   priceDeltaVnd: number
   isDefault: boolean
   sortOrder: number
+  isActive?: boolean
 }
 
 export interface MenuOptionGroupRecord {
@@ -34,6 +35,7 @@ export interface MenuOptionGroupRecord {
   maxSelect: number
   sortOrder: number
   optionIds: string[]
+  isActive?: boolean
 }
 
 export interface MenuMetaRecord {

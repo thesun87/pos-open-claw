@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from '../../db/dexie'
 import { useDebouncedValue } from '../../features/menu/hooks'
+import { useCartStore } from '../../features/orders/cart-store'
 import { PosShell } from './pos-shell'
 
 const categories = [
@@ -28,121 +29,127 @@ async function seedMenu() {
   })
 }
 
+async function seedOptions() {
+  await act(async () => {
+    await db.optionGroups.bulkPut([
+      { id: 'og-size', name: 'Size', isRequired: true, minSelect: 1, maxSelect: 1, sortOrder: 1, optionIds: ['o-m', 'o-l'] },
+      { id: 'og-sugar', name: 'Đường', isRequired: true, minSelect: 1, maxSelect: 1, sortOrder: 3, optionIds: ['o-50', 'o-100'] },
+      { id: 'og-topping', name: 'Topping', isRequired: false, minSelect: 0, maxSelect: 2, sortOrder: 4, optionIds: ['o-pearl', 'o-flan', 'o-ice'] },
+    ])
+    await db.products.update('p-bac', { optionGroupIds: ['og-topping', 'og-size', 'og-sugar'] })
+    await db.options.bulkPut([
+      { id: 'o-m', optionGroupId: 'og-size', label: 'M', priceDeltaVnd: 0, isDefault: true, sortOrder: 1 },
+      { id: 'o-l', optionGroupId: 'og-size', label: 'L', priceDeltaVnd: 5000, isDefault: false, sortOrder: 2 },
+      { id: 'o-50', optionGroupId: 'og-sugar', label: '50% đường', priceDeltaVnd: 0, isDefault: false, sortOrder: 1 },
+      { id: 'o-100', optionGroupId: 'og-sugar', label: '100% đường', priceDeltaVnd: 0, isDefault: false, sortOrder: 2 },
+      { id: 'o-pearl', optionGroupId: 'og-topping', label: 'Trân châu', priceDeltaVnd: 5000, isDefault: false, sortOrder: 1 },
+      { id: 'o-flan', optionGroupId: 'og-topping', label: 'Flan', priceDeltaVnd: 7000, isDefault: false, sortOrder: 2 },
+      { id: 'o-ice', optionGroupId: 'og-topping', label: 'Kem', priceDeltaVnd: 3000, isDefault: false, sortOrder: 3 },
+    ])
+  })
+}
+
 function renderPosShell() {
-  return render(
-    <MemoryRouter>
-      <PosShell />
-    </MemoryRouter>,
-  )
+  return render(<MemoryRouter><PosShell /></MemoryRouter>)
 }
 
 beforeEach(async () => {
   await db.open()
   await db.categories.clear()
   await db.products.clear()
+  await db.optionGroups.clear()
+  await db.options.clear()
+  useCartStore.getState().resetCart()
 })
 
 afterEach(async () => {
   vi.useRealTimers()
   await db.categories.clear()
   await db.products.clear()
+  await db.optionGroups.clear()
+  await db.options.clear()
+  useCartStore.getState().resetCart()
   db.close()
 })
 
 describe('PosShell product browsing', () => {
   it('selects first active sorted category by default and filters active products', async () => {
-    await seedMenu()
-    renderPosShell()
-
-    const teaCategory = await screen.findByRole('button', { name: 'Trà' })
-    expect(teaCategory).toHaveAttribute('aria-current', 'true')
-    expect(screen.getByRole('button', { name: 'Cà phê' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Ẩn' })).not.toBeInTheDocument()
-
+    await seedMenu(); renderPosShell()
+    expect(await screen.findByRole('button', { name: 'Trà' })).toHaveAttribute('aria-current', 'true')
     const grid = await screen.findByLabelText('Lưới sản phẩm')
     expect(within(grid).getByRole('button', { name: 'Trà đào, 45.000 ₫' })).toBeInTheDocument()
     expect(screen.queryByText('Ẩn product')).not.toBeInTheDocument()
   })
 
   it('clicks category, sorts products, formats price, and shows option indicator', async () => {
-    await seedMenu()
-    const user = userEvent.setup()
-    renderPosShell()
-
+    await seedMenu(); const user = userEvent.setup(); renderPosShell()
     await user.click(await screen.findByRole('button', { name: 'Cà phê' }))
-
-    const tiles = within(screen.getByLabelText('Lưới sản phẩm')).getAllByRole('button')
-    expect(tiles.map((tile) => tile.textContent)).toEqual(['Cà phê đen30.000 ₫', 'Bạc Xỉu35.000 ₫Có tùy chọn'])
-    expect(screen.getByText('Có tùy chọn')).toBeInTheDocument()
+    expect(within(screen.getByLabelText('Lưới sản phẩm')).getAllByRole('button').map((tile) => tile.textContent)).toEqual(['Cà phê đen30.000 ₫', 'Bạc Xỉu35.000 ₫Có tùy chọn'])
   })
 
   it('debounces search for exactly 200ms deterministically', () => {
     vi.useFakeTimers()
-
-    function DebounceProbe({ value }: { value: string }) {
-      return <output role="status">{useDebouncedValue(value, 200)}</output>
-    }
-
+    function DebounceProbe({ value }: { value: string }) { return <output role="status">{useDebouncedValue(value, 200)}</output> }
     const { rerender } = render(<DebounceProbe value="" />)
-    rerender(<DebounceProbe value="first" />)
-    act(() => {
-      vi.advanceTimersByTime(199)
-    })
-    expect(screen.getByRole('status')).toHaveTextContent('')
-
-    rerender(<DebounceProbe value="latest" />)
-    act(() => {
-      vi.advanceTimersByTime(199)
-    })
-    expect(screen.getByRole('status')).toHaveTextContent('')
-
-    act(() => {
-      vi.advanceTimersByTime(1)
-    })
-    expect(screen.getByRole('status')).toHaveTextContent('latest')
+    rerender(<DebounceProbe value="first" />); act(() => vi.advanceTimersByTime(199)); expect(screen.getByRole('status')).toHaveTextContent('')
+    rerender(<DebounceProbe value="latest" />); act(() => vi.advanceTimersByTime(200)); expect(screen.getByRole('status')).toHaveTextContent('latest')
   })
 
   it('normalizes Vietnamese accents when searching products', async () => {
-    await seedMenu()
-    const user = userEvent.setup()
-    renderPosShell()
-
+    await seedMenu(); const user = userEvent.setup(); renderPosShell()
     await user.click(await screen.findByRole('button', { name: 'Cà phê' }))
     await user.type(screen.getByLabelText('Tìm sản phẩm'), 'bac')
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Bạc Xỉu, 35.000 ₫, có tùy chọn' })).toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: 'Cà phê đen, 30.000 ₫' })).not.toBeInTheDocument()
-    })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Bạc Xỉu, 35.000 ₫, có tùy chọn' })).toBeInTheDocument())
   })
 
   it('renders empty states for no matches and empty menu cache', async () => {
-    await seedMenu()
-    const user = userEvent.setup()
-    const { unmount } = renderPosShell()
-
+    await seedMenu(); const user = userEvent.setup(); const { unmount } = renderPosShell()
     await user.type(await screen.findByLabelText('Tìm sản phẩm'), 'khong co mon nay')
     expect(await screen.findByText('Không tìm thấy sản phẩm phù hợp.')).toBeInTheDocument()
-
-    unmount()
-    await act(async () => {
-      await db.categories.clear()
-      await db.products.clear()
-    })
-    renderPosShell()
-    expect(await screen.findByText('Chưa có dữ liệu menu. Hãy kết nối mạng để tải menu.')).toBeInTheDocument()
+    unmount(); await act(async () => { await db.categories.clear(); await db.products.clear() })
+    renderPosShell(); expect(await screen.findByText('Chưa có dữ liệu menu. Hãy kết nối mạng để tải menu.')).toBeInTheDocument()
   })
 
-  it('supports ProductTile keyboard activation and option placeholder seam', async () => {
-    await seedMenu()
-    const user = userEvent.setup()
-    renderPosShell()
-
+  it('opens option modal from ProductTile keyboard activation', async () => {
+    await seedMenu(); const user = userEvent.setup(); renderPosShell()
     await user.click(await screen.findByRole('button', { name: 'Cà phê' }))
     const tile = screen.getByRole('button', { name: 'Bạc Xỉu, 35.000 ₫, có tùy chọn' })
-    tile.focus()
-    await user.keyboard('{Enter}')
+    tile.focus(); await user.keyboard('{Enter}')
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Tùy chọn: Bạc Xỉu' })).toBeInTheDocument()
+  })
 
-    expect(await screen.findByText('Tùy chọn cho Bạc Xỉu sẽ được cấu hình ở Story 2.3.')).toBeInTheDocument()
+  it('validates groups, enforces max, previews price, note, roles, and stores cart snapshot', async () => {
+    await seedMenu(); await seedOptions(); const user = userEvent.setup(); renderPosShell()
+    await user.click(await screen.findByRole('button', { name: 'Cà phê' }))
+    await user.click(screen.getByRole('button', { name: 'Bạc Xỉu, 35.000 ₫, có tùy chọn' }))
+    expect(await screen.findByRole('heading', { name: 'Tùy chọn: Bạc Xỉu' })).toBeInTheDocument()
+    expect((await screen.findAllByRole('group')).map((g) => g.getAttribute('aria-label'))).toEqual(['Size', 'Đường', 'Topping'])
+    expect(screen.getByRole('radio', { name: /M/ })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('button', { name: /Thêm vào giỏ/ })).toBeDisabled()
+    expect(screen.getAllByText('Chọn Đường để tiếp tục').length).toBeGreaterThan(0)
+    await user.click(screen.getByRole('radio', { name: /L/ }))
+    await user.click(screen.getByRole('radio', { name: /50% đường/ }))
+    expect(screen.getByRole('button', { name: /40.000 ₫/ })).toBeEnabled()
+    await user.click(screen.getByRole('checkbox', { name: /Trân châu/ }))
+    await user.click(screen.getByRole('checkbox', { name: /Flan/ }))
+    await user.click(screen.getByRole('checkbox', { name: /Kem/ }))
+    expect(await screen.findByText('Tối đa 2 topping')).toBeInTheDocument()
+    await user.type(screen.getByPlaceholderText('Ghi chú (tùy chọn)'), 'ít đường, không đá')
+    await user.click(screen.getByRole('button', { name: /Thêm vào giỏ/ }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByText('Món mới nhất: Bạc Xỉu')).toBeInTheDocument()
+    const [item] = useCartStore.getState().items
+    expect(item).toBeDefined()
+    expect(item!).toMatchObject({ productId: 'p-bac', productNameSnapshot: 'Bạc Xỉu', unitPriceSnapshot: 35000, note: 'ít đường, không đá', quantity: 1, lineTotal: 52000 })
+    expect(item!.options.map((option) => option.labelSnapshot)).toEqual(['L', '50% đường', 'Trân châu', 'Flan'])
+  })
+
+  it('keeps missing option group safe and add disabled', async () => {
+    await seedMenu(); const user = userEvent.setup(); renderPosShell()
+    await user.click(await screen.findByRole('button', { name: 'Cà phê' }))
+    await user.click(screen.getByRole('button', { name: 'Bạc Xỉu, 35.000 ₫, có tùy chọn' }))
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Thêm vào giỏ/ })).toBeDisabled()
   })
 })

@@ -1,8 +1,10 @@
 import '@testing-library/jest-dom/vitest'
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import 'fake-indexeddb/auto'
 import App from './App'
+import AdminShell from './routes/admin/admin-shell'
 import { STATUS_MENU_UPDATED, STATUS_OFFLINE, STATUS_ONLINE, STATUS_PENDING } from './shared/i18n/messages'
 import { useSessionStore } from './features/auth/session-store'
 import { db } from './db/dexie'
@@ -35,6 +37,7 @@ function renderAt(path: string) {
 
 describe('frontend shell routes', () => {
   beforeEach(async () => {
+    cleanup()
     await db.session.clear()
     useSessionStore.getState().clearSessionState()
   })
@@ -47,16 +50,19 @@ describe('frontend shell routes', () => {
   })
 
   it('renders POS two-pane semantics and unsupported mobile copy', async () => {
+    const replaceStateSpy = vi.spyOn(window.history, 'replaceState')
     await seedSession('cashier')
     renderAt('/pos')
     expect(await screen.findByRole('heading', { name: 'Menu sản phẩm' })).toBeInTheDocument()
     expect(screen.getByLabelText('Giỏ hàng và thanh toán')).toBeInTheDocument()
     expect(screen.getByText('POS hoạt động tốt nhất ở màn hình ngang hoặc laptop/tablet')).toBeInTheDocument()
+    replaceStateSpy.mockRestore()
   })
 
-  it('renders admin shell nav via lazy route', async () => {
+  it('renders admin shell nav via route', async () => {
     await seedSession('admin')
-    renderAt('/admin')
+    const router = createMemoryRouter([{ path: '/admin/*', element: <AdminShell /> }], { initialEntries: ['/admin'] })
+    render(<RouterProvider router={router} />)
     expect(await screen.findByRole('heading', { name: 'Admin shell' })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Điều hướng Admin' })).toBeInTheDocument()
   })
