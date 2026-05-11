@@ -1,6 +1,12 @@
+import { useLocation } from 'react-router-dom'
+
 export function PosShell() {
+  const location = useLocation()
+  const routeMessage = (location.state as { message?: string } | null)?.message
+
   return (
     <section className="p-6">
+      {routeMessage ? <p role="alert" className="mb-4 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">{routeMessage}</p> : null}
       <div className="rounded-lg border border-warning bg-surface-muted p-4 text-text-primary md:hidden">POS hoạt động tốt nhất ở màn hình ngang hoặc laptop/tablet</div>
       <div className="hidden grid-cols-[1fr_360px] gap-6 md:grid lg:grid-cols-[1fr_400px]" aria-label="Bố cục POS hai cột">
         <section className="min-h-[70vh] rounded-lg border border-border bg-surface p-6"><h1 className="text-2xl font-semibold">Khu vực menu / sản phẩm</h1><p className="mt-2 text-text-secondary">Placeholder danh mục và lưới sản phẩm cho story POS tiếp theo.</p></section>

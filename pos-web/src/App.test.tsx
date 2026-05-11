@@ -1,8 +1,11 @@
 import '@testing-library/jest-dom/vitest'
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import 'fake-indexeddb/auto'
 import App from './App'
 import { STATUS_MENU_UPDATED, STATUS_OFFLINE, STATUS_ONLINE, STATUS_PENDING } from './shared/i18n/messages'
+import { useSessionStore } from './features/auth/session-store'
+import { db } from './db/dexie'
 import { mapProblemDetails } from './shared/lib/error-mapper'
 
 vi.mock('virtual:pwa-register/react', () => ({
@@ -13,12 +16,29 @@ vi.mock('virtual:pwa-register/react', () => ({
   }),
 }))
 
+async function seedSession(role: 'admin' | 'cashier' = 'cashier') {
+  const session = {
+    id: 'current' as const,
+    accessToken: 'token',
+    expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    lastLoginAt: Date.now(),
+    userInfo: { id: 'u1', email: 'u@example.com', role, tenantId: 't1', storeId: 's1' },
+  }
+  await db.session.put(session)
+  useSessionStore.getState().setSessionFromRecord(session)
+}
+
 function renderAt(path: string) {
   window.history.pushState({}, '', path)
   return render(<App />)
 }
 
 describe('frontend shell routes', () => {
+  beforeEach(async () => {
+    await db.session.clear()
+    useSessionStore.getState().clearSessionState()
+  })
+
   it('renders login route', () => {
     renderAt('/login')
     expect(screen.getByRole('heading', { name: 'Đăng nhập' })).toBeInTheDocument()
@@ -26,14 +46,16 @@ describe('frontend shell routes', () => {
     expect(screen.getByText('0 đơn chờ')).toBeInTheDocument()
   })
 
-  it('renders POS two-pane semantics and unsupported mobile copy', () => {
+  it('renders POS two-pane semantics and unsupported mobile copy', async () => {
+    await seedSession('cashier')
     renderAt('/pos')
-    expect(screen.getByText('Khu vực menu / sản phẩm')).toBeInTheDocument()
+    expect(await screen.findByText('Khu vực menu / sản phẩm')).toBeInTheDocument()
     expect(screen.getByLabelText('Giỏ hàng và thanh toán')).toBeInTheDocument()
     expect(screen.getByText('POS hoạt động tốt nhất ở màn hình ngang hoặc laptop/tablet')).toBeInTheDocument()
   })
 
   it('renders admin shell nav via lazy route', async () => {
+    await seedSession('admin')
     renderAt('/admin')
     expect(await screen.findByRole('heading', { name: 'Admin shell' })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Điều hướng Admin' })).toBeInTheDocument()
