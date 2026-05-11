@@ -22,7 +22,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-05-10T15:11:57+07:00"
-last_updated: "2026-05-11T11:56:00+07:00"
+last_updated: "2026-05-11T16:43:00+07:00"
 project: pos-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -41,8 +41,8 @@ development_status:
   1-9-frontend-session-lifecycle-role-routing-reload-boot-offline-7-day-behavior: done
   1-10-ci-pipeline-pre-commit-hooks-lint-format-type-test-coverage-gates: backlog
   epic-1-retrospective: optional
-  epic-2: backlog
-  2-1-menu-read-api-frontend-menu-cache-dexie-uselivequery: backlog
+  epic-2: in-progress
+  2-1-menu-read-api-frontend-menu-cache-dexie-uselivequery: done
   2-2-pos-product-grid-category-navigation-search: backlog
   2-3-option-modal-option-chips-add-to-cart: backlog
   2-4-cart-panel-line-items-discount-item-note: backlog

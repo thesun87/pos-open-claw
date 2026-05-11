@@ -6,6 +6,7 @@ import { useSessionStore } from './session-store'
 import { clearSession, getCurrentSession, saveRefreshedAccessToken } from './token-store'
 import { refresh } from './api'
 import { expireSession, getRoleRoute, restoreSessionOnBoot, shouldRefreshSoon } from './session-lifecycle'
+import { installMenuOnlineRecovery, triggerMenuPull } from '../menu/sync'
 
 
 let refreshInFlight: Promise<void> | null = null
@@ -48,6 +49,9 @@ export function SessionBootProvider({ children }: { children: React.ReactNode })
         if (location.pathname === '/' || location.pathname === '/login') {
           navigate(result.route, { replace: true })
         }
+        void triggerMenuPull({ isAuthenticated: () => true })?.catch(() => {
+          // Best-effort cache refresh: cached/offline POS shell must still boot.
+        })
         if (result.shouldRefresh) void refreshBestEffort(setSessionFromRecord)
       } else if (result.status === 'expired') {
         await expireSession({ clearSession, clearSessionState, message: result.message })
@@ -81,6 +85,11 @@ export function SessionBootProvider({ children }: { children: React.ReactNode })
     window.addEventListener('auth.expired', onExpired)
     return () => window.removeEventListener('auth.expired', onExpired)
   }, [clearSessionState, location.pathname, navigate])
+
+  React.useEffect(() => {
+    if (bootStatus !== 'ready' || !currentUser) return
+    return installMenuOnlineRecovery({ isAuthenticated: () => true })
+  }, [bootStatus, currentUser])
 
   React.useEffect(() => {
     if (bootStatus !== 'ready' || location.pathname !== '/' || !currentUser) return
