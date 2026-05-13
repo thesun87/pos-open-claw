@@ -7,12 +7,11 @@ import type {
   MenuOptionRecord,
   MenuProductRecord,
 } from './schemas/menu'
-
-export type PendingOrderPlaceholder = { id: string; createdAt: number; deviceId?: string; soldAt?: string }
+import { ORDERS_SCHEMA, type LocalOrderRecord } from './schemas/orders'
 
 export class PosDexie extends Dexie {
   session!: Table<SessionRecord, string>
-  orders!: Table<PendingOrderPlaceholder, string>
+  orders!: Table<LocalOrderRecord, string>
   categories!: Table<MenuCategoryRecord, string>
   products!: Table<MenuProductRecord, string>
   optionGroups!: Table<MenuOptionGroupRecord, string>
@@ -30,6 +29,15 @@ export class PosDexie extends Dexie {
       session: 'id, expiresAt, lastLoginAt',
       orders: 'id, createdAt',
       menu: null,
+      categories: 'id, isActive, sortOrder',
+      products: 'id, categoryId, isActive, sortOrder',
+      optionGroups: 'id, sortOrder',
+      options: 'id, optionGroupId, sortOrder',
+      menuMeta: 'id, menuVersion, lastPulledAt',
+    })
+    this.version(3).stores({
+      session: 'id, expiresAt, lastLoginAt',
+      orders: ORDERS_SCHEMA,
       categories: 'id, isActive, sortOrder',
       products: 'id, categoryId, isActive, sortOrder',
       optionGroups: 'id, sortOrder',

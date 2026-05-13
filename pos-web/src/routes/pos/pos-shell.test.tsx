@@ -8,7 +8,10 @@ import { db } from '../../db/dexie'
 import { useDebouncedValue } from '../../features/menu/hooks'
 import { useCartStore } from '../../features/orders/cart-store'
 import { useCheckoutStore } from '../../features/orders/checkout-store'
+import { syncEngine } from '../../features/sync/engine'
 import { PosShell } from './pos-shell'
+
+vi.mock('../../features/sync/engine', () => ({ syncEngine: { kick: vi.fn() } }))
 
 const categories = [
   { id: 'cat-coffee', name: 'Cà phê', sortOrder: 2, isActive: true },
@@ -60,8 +63,11 @@ beforeEach(async () => {
   await db.products.clear()
   await db.optionGroups.clear()
   await db.options.clear()
+  await db.orders.clear()
+  await db.orders.clear()
   useCartStore.getState().resetCart()
   useCheckoutStore.getState().resetCheckoutState()
+  vi.mocked(syncEngine.kick).mockReset()
 })
 
 afterEach(async () => {
@@ -70,6 +76,7 @@ afterEach(async () => {
   await db.products.clear()
   await db.optionGroups.clear()
   await db.options.clear()
+  await db.orders.clear()
   useCartStore.getState().resetCart()
   useCheckoutStore.getState().resetCheckoutState()
   db.close()
@@ -177,8 +184,8 @@ describe('PosShell product browsing', () => {
   })
 
 
-  it('renders checkout summary, changes payment method, and starts UI-only checkout', async () => {
-    await seedMenu(); const user = userEvent.setup(); renderPosShell()
+  it('renders checkout summary, changes payment method, finalizes locally, and hands off receipt state', async () => {
+    await seedMenu(); const user = userEvent.setup(); const finalized = vi.fn(); window.addEventListener('order.finalized', finalized); renderPosShell()
     await user.click(await screen.findByRole('button', { name: 'Trà đào, 45.000 ₫' }))
     const checkout = screen.getByLabelText('Tóm tắt thanh toán')
     expect(within(checkout).getByText('Tổng tiền')).toHaveClass('text-3xl')
@@ -187,9 +194,26 @@ describe('PosShell product browsing', () => {
     await user.click(within(checkout).getByRole('radio', { name: /Chuyển khoản/ }))
     expect(useCheckoutStore.getState().paymentMethod).toBe('transfer')
     await user.click(within(checkout).getByRole('button', { name: 'Hoàn tất đơn' }))
-    expect(useCheckoutStore.getState().isCheckingOut).toBe(true)
-    expect(within(checkout).getByRole('button', { name: 'Đang chuẩn bị đơn...' })).toBeDisabled()
-    expect(await db.orders.count()).toBe(0)
+    await waitFor(() => expect(db.orders.count()).resolves.toBe(1))
+    const [order] = await db.orders.toArray()
+    expect(order).toMatchObject({ status: 'pendingSync', paymentMethod: 'transfer', deviceId: 'POS01', total: 45000 })
+    expect(syncEngine.kick).toHaveBeenCalledTimes(1)
+    expect(useCartStore.getState().items).toEqual([])
+    expect(useCheckoutStore.getState().lastFinalizedOrder?.clientOrderId).toBe(order!.clientOrderId)
+    expect(finalized).toHaveBeenCalledTimes(1)
+    window.removeEventListener('order.finalized', finalized)
+  })
+
+  it('keeps cart and shows error when Dexie write fails', async () => {
+    await seedMenu(); const user = userEvent.setup(); const addSpy = vi.spyOn(db.orders, 'add').mockRejectedValueOnce(new Error('IndexedDB quota'))
+    renderPosShell()
+    await user.click(await screen.findByRole('button', { name: 'Trà đào, 45.000 ₫' }))
+    await user.click(screen.getByRole('button', { name: 'Hoàn tất đơn' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('IndexedDB quota')
+    expect(useCartStore.getState().items).toHaveLength(1)
+    expect(useCheckoutStore.getState().isCheckingOut).toBe(false)
+    expect(syncEngine.kick).not.toHaveBeenCalled()
+    addSpy.mockRestore()
   })
 
   it('confirms removing multi-quantity lines and keeps cart snapshots across menu updates', async () => {

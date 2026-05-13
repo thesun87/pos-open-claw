@@ -24,8 +24,8 @@ afterEach(async () => {
 describe('buildLocalOrder', () => {
   it('builds snapshot order with fixed discount, uuid v7, UTC soldAt, menu version, and no mutation', async () => {
     await db.orders.bulkPut([
-      { id: 'old-1', createdAt: 1, deviceId: 'POS01', soldAt: '2026-05-09T01:00:00.000Z' },
-      { id: 'other-device', createdAt: 2, deviceId: 'POS02', soldAt: '2026-05-09T02:00:00.000Z' },
+      { clientOrderId: 'old-1', orderCode: '20260509-POS01-0001', deviceId: 'POS01', soldAt: '2026-05-09T01:00:00.000Z', menuVersionAtSale: 7, items: [], discountAmount: 0, total: 0, paymentMethod: 'cash', status: 'pendingSync', createdAt: '2026-05-09T01:00:00.000Z', updatedAt: '2026-05-09T01:00:00.000Z' },
+      { clientOrderId: 'other-device', orderCode: '20260509-POS02-0001', deviceId: 'POS02', soldAt: '2026-05-09T02:00:00.000Z', menuVersionAtSale: 7, items: [], discountAmount: 0, total: 0, paymentMethod: 'cash', status: 'pendingSync', createdAt: '2026-05-09T02:00:00.000Z', updatedAt: '2026-05-09T02:00:00.000Z' },
     ])
     const cart = { items, discount: { type: 'fixed' as const, value: 10000 } }
     const before = structuredClone(cart)
