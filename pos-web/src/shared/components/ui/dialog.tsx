@@ -9,7 +9,7 @@ const DialogPortal = DialogPrimitive.Portal
 const DialogClose = DialogPrimitive.Close
 
 const DialogOverlay = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Overlay>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>>(({ className, ...props }, ref) => (
-  <DialogPrimitive.Overlay ref={ref} className={cn('fixed inset-0 z-50 bg-text-primary/50', className)} {...props} />
+  <DialogPrimitive.Overlay ref={ref} data-radix-dialog-overlay className={cn('fixed inset-0 z-50 bg-text-primary/50', className)} {...props} />
 ))
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
@@ -18,11 +18,12 @@ const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.C
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      data-radix-dialog-content
       className={cn('fixed left-1/2 top-1/2 z-50 w-[min(92vw,32rem)] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-surface p-6 text-text-primary shadow-lg', className)}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm p-1 text-text-secondary hover:text-text-primary focus-visible:outline-none">
+      <DialogPrimitive.Close data-radix-dialog-close className="absolute right-4 top-4 rounded-sm p-1 text-text-secondary hover:text-text-primary focus-visible:outline-none">
         <X className="h-4 w-4" aria-hidden="true" />
         <span className="sr-only">Đóng</span>
       </DialogPrimitive.Close>

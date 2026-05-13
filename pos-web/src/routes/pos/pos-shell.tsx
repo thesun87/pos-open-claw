@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { MenuProductRecord } from '../../db/schemas/menu'
 import { useCartStore } from '../../features/orders/cart-store'
+import { useCheckoutStore } from '../../features/orders/checkout-store'
 import { CartPanel } from '../../features/orders/components/cart-panel'
+import { ReceiptModal } from '../../features/orders/components/receipt-modal'
 import { CategoryNav } from '../../features/menu/components/category-nav'
 import { OptionModal } from '../../features/menu/components/option-modal'
 import { ProductTile } from '../../features/menu/components/product-tile'
@@ -33,6 +35,13 @@ export function PosShell() {
   })
   const [selectedProductForOptions, setSelectedProductForOptions] = useState<MenuProductRecord | null>(null)
   const addItem = useCartStore((state) => state.addItem)
+  const lastFinalizedOrder = useCheckoutStore((state) => state.lastFinalizedOrder)
+  const clearLastFinalizedOrder = useCheckoutStore((state) => state.clearLastFinalizedOrder)
+  const isReceiptOpen = Boolean(lastFinalizedOrder)
+
+  function handleReceiptOpenChange(open: boolean) {
+    if (!open) clearLastFinalizedOrder()
+  }
 
   function handleSelectProduct(product: MenuProductRecord) {
     if (product.optionGroupIds.length > 0) {
@@ -88,6 +97,7 @@ export function PosShell() {
         </section>
         <CartPanel />
       </div>
+      <ReceiptModal order={lastFinalizedOrder} open={isReceiptOpen} onOpenChange={handleReceiptOpenChange} />
       <OptionModal product={selectedProductForOptions} open={selectedProductForOptions !== null} onOpenChange={(open) => { if (!open) setSelectedProductForOptions(null) }} onAddToCart={addItem} />
     </section>
   )

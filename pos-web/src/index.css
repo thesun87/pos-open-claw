@@ -1,2 +1,73 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm 20mm;
+  }
+
+  /* Ẩn toàn bộ UI, chỉ hiện receipt */
+  body * {
+    visibility: hidden !important;
+  }
+
+  [data-print-receipt],
+  [data-print-receipt] * {
+    visibility: visible !important;
+  }
+
+  /* Ẩn overlay, close button của Radix Dialog */
+  [data-radix-dialog-overlay],
+  [data-radix-dialog-close],
+  .receipt-actions {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Reset clipping trên DialogContent wrapper của Radix */
+  [data-radix-dialog-content] {
+    position: fixed !important;
+    inset: 0 !important;
+    transform: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Receipt content — A4, căn giữa trang */
+  [data-print-receipt] {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-width: 160mm !important;
+    margin: 0 auto !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+
+  [data-print-receipt] .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Ẩn spacing/border utility của article wrapper nếu cần */
+  [data-print-receipt] > * {
+    page-break-inside: avoid;
+  }
+}

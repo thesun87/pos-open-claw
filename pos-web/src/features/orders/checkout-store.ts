@@ -12,6 +12,7 @@ interface CheckoutState {
   finishCheckout: () => void
   completeCheckout: (order: LocalOrderRecord) => void
   failCheckout: (message: string) => void
+  clearLastFinalizedOrder: () => void
   resetCheckoutState: () => void
 }
 
@@ -24,5 +25,6 @@ export const useCheckoutStore = create<CheckoutState>((set) => ({
   finishCheckout: () => set({ isCheckingOut: false }),
   completeCheckout: (order) => set({ ...initialState, lastFinalizedOrder: order }),
   failCheckout: (message) => set({ isCheckingOut: false, errorMessage: message }),
+  clearLastFinalizedOrder: () => set({ lastFinalizedOrder: null }),
   resetCheckoutState: () => set(initialState),
 }))
