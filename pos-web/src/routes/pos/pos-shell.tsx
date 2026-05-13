@@ -2,13 +2,13 @@ import { useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { MenuProductRecord } from '../../db/schemas/menu'
 import { useCartStore } from '../../features/orders/cart-store'
+import { CartPanel } from '../../features/orders/components/cart-panel'
 import { CategoryNav } from '../../features/menu/components/category-nav'
 import { OptionModal } from '../../features/menu/components/option-modal'
 import { ProductTile } from '../../features/menu/components/product-tile'
 import { useCategories, useDebouncedValue, useProducts } from '../../features/menu/hooks'
 import { EmptyState } from '../../shared/components/ui/empty-state'
 import { Input } from '../../shared/components/ui/input'
-import { formatVnd } from '../../shared/lib/format-vnd'
 
 const SEARCH_DEBOUNCE_MS = 200
 
@@ -32,9 +32,7 @@ export function PosShell() {
     ...(isMenuEmpty ? {} : { search: debouncedSearch }),
   })
   const [selectedProductForOptions, setSelectedProductForOptions] = useState<MenuProductRecord | null>(null)
-  const items = useCartStore((state) => state.items)
   const addItem = useCartStore((state) => state.addItem)
-  const total = items.reduce((sum, item) => sum + item.lineTotal, 0)
 
   function handleSelectProduct(product: MenuProductRecord) {
     if (product.optionGroupIds.length > 0) {
@@ -88,17 +86,7 @@ export function PosShell() {
             )}
           </div>
         </section>
-        <aside className="min-h-[70vh] rounded-lg border border-border bg-surface p-6" aria-label="Giỏ hàng và thanh toán" tabIndex={0}>
-          <h2 className="text-xl font-semibold">Giỏ hàng / thanh toán</h2>
-          <p className="mt-2 text-text-secondary">Panel cố định bên phải cho đơn hiện tại.</p>
-          <div className="mt-6 rounded-lg border border-border bg-surface-muted p-4">
-            <div className="text-sm text-text-secondary">Số món</div>
-            <div className="text-2xl font-bold">{items.length}</div>
-            <div className="mt-4 text-sm text-text-secondary">Tạm tính</div>
-            <div className="text-3xl font-bold">{formatVnd(total)}</div>
-          </div>
-          {items.length > 0 ? <p className="mt-4 text-sm text-text-secondary">Món mới nhất: {items.at(-1)?.productNameSnapshot ?? ''}</p> : null}
-        </aside>
+        <CartPanel />
       </div>
       <OptionModal product={selectedProductForOptions} open={selectedProductForOptions !== null} onOpenChange={(open) => { if (!open) setSelectedProductForOptions(null) }} onAddToCart={addItem} />
     </section>

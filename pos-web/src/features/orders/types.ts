@@ -4,6 +4,11 @@ export interface CartItemOptionSnapshot {
   priceDeltaSnapshot: number
 }
 
+export interface CartDiscount {
+  type: 'fixed' | 'percentage'
+  value: number
+}
+
 export interface CartItem {
   tempId: string
   productId: string
@@ -11,7 +16,7 @@ export interface CartItem {
   unitPriceSnapshot: number
   options: CartItemOptionSnapshot[]
   note?: string
-  quantity: 1
+  quantity: number
   lineTotal: number
 }
 
