@@ -9,6 +9,7 @@ import { TenantScopeMiddleware } from './common/middleware/tenant-scope.middlewa
 import { generateTraceId, TRACE_ID_HEADER } from './common/utils/trace-id';
 import { HealthModule } from './health/health.module';
 import { MenuModule } from './menu/menu.module';
+import { OrdersModule } from './orders/orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -32,6 +33,7 @@ import { PrismaModule } from './prisma/prisma.module';
     HealthModule,
     AuthModule,
     MenuModule,
+    OrdersModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

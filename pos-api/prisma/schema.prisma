@@ -23,6 +23,8 @@ model Tenant {
   optionGroups OptionGroup[]
   options      Option[]
   menuVersions MenuVersion[]
+  orders       Order[]
+  syncLogs     SyncLog[]
 
   @@map("tenants")
 }
@@ -39,6 +41,8 @@ model Store {
   optionGroups OptionGroup[]
   options      Option[]
   menuVersions MenuVersion[]
+  orders       Order[]
+  syncLogs     SyncLog[]
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -58,6 +62,8 @@ model User {
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   store         Store          @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   refreshTokens RefreshToken[]
+  orders        Order[]
+  orderVoids    OrderVoid[]
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -113,6 +119,7 @@ model Product {
   store               Store                @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   category            Category             @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   productOptionGroups ProductOptionGroup[]
+  orderItems          OrderItem[]
   createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -143,20 +150,21 @@ model OptionGroup {
 }
 
 model Option {
-  id            String      @id @db.Uuid
-  tenantId      String      @map("tenant_id") @db.Uuid
-  storeId       String      @map("store_id") @db.Uuid
-  optionGroupId String      @map("option_group_id") @db.Uuid
-  name          String
-  priceDeltaVnd Int         @default(0) @map("price_delta_vnd")
-  isDefault     Boolean     @default(false) @map("is_default")
-  isActive      Boolean     @default(true) @map("is_active")
-  sortOrder     Int         @default(0) @map("sort_order")
-  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  store         Store       @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  optionGroup   OptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id               String            @id @db.Uuid
+  tenantId         String            @map("tenant_id") @db.Uuid
+  storeId          String            @map("store_id") @db.Uuid
+  optionGroupId    String            @map("option_group_id") @db.Uuid
+  name             String
+  priceDeltaVnd    Int               @default(0) @map("price_delta_vnd")
+  isDefault        Boolean           @default(false) @map("is_default")
+  isActive         Boolean           @default(true) @map("is_active")
+  sortOrder        Int               @default(0) @map("sort_order")
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  store            Store             @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  optionGroup      OptionGroup       @relation(fields: [optionGroupId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  orderItemOptions OrderItemOption[]
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([optionGroupId], map: "idx_options_option_group_id")
   @@index([tenantId, storeId], map: "idx_options_tenant_store")
@@ -187,4 +195,101 @@ model MenuVersion {
 
   @@unique([tenantId, storeId], map: "uq_menu_versions_tenant_store")
   @@map("menu_versions")
+}
+
+enum PaymentMethod {
+  Cash
+  Transfer
+  Card
+}
+
+model Order {
+  id                String        @id @db.Uuid
+  tenantId          String        @map("tenant_id") @db.Uuid
+  storeId           String        @map("store_id") @db.Uuid
+  clientOrderId     String        @map("client_order_id") @db.Uuid
+  orderCode         String        @map("order_code")
+  deviceId          String        @map("device_id")
+  cashierId         String        @map("cashier_id") @db.Uuid
+  soldAt            DateTime      @map("sold_at") @db.Timestamptz(6)
+  syncedAt          DateTime      @default(now()) @map("synced_at") @db.Timestamptz(6)
+  menuVersionAtSale Int           @map("menu_version_at_sale")
+  discountAmount    Int           @default(0) @map("discount_amount")
+  total             Int
+  paymentMethod     PaymentMethod @map("payment_method")
+  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  store             Store         @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  cashier           User          @relation(fields: [cashierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items             OrderItem[]
+  syncLog           SyncLog?
+  voids             OrderVoid[]
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, storeId, deviceId, clientOrderId], map: "uq_orders_tenant_store_device_client")
+  @@index([clientOrderId], map: "idx_orders_client_order_id")
+  @@index([soldAt], map: "idx_orders_sold_at")
+  @@index([tenantId, storeId], map: "idx_orders_tenant_store")
+  @@map("orders")
+}
+
+model OrderItem {
+  id                  String            @id @db.Uuid
+  orderId             String            @map("order_id") @db.Uuid
+  productId           String            @map("product_id") @db.Uuid
+  productNameSnapshot String            @map("product_name_snapshot")
+  unitPriceSnapshot   Int               @map("unit_price_snapshot")
+  quantity            Int
+  note                String?
+  lineTotal           Int               @map("line_total")
+  order               Order             @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  product             Product           @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  options             OrderItemOption[]
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orderId], map: "idx_order_items_order_id")
+  @@map("order_items")
+}
+
+model OrderItemOption {
+  id                 String    @id @db.Uuid
+  orderItemId        String    @map("order_item_id") @db.Uuid
+  optionId           String    @map("option_id") @db.Uuid
+  labelSnapshot      String    @map("label_snapshot")
+  priceDeltaSnapshot Int       @map("price_delta_snapshot")
+  orderItem          OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  option             Option    @relation(fields: [optionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([orderItemId], map: "idx_order_item_options_order_item_id")
+  @@map("order_item_options")
+}
+
+model SyncLog {
+  id            String   @id @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  storeId       String   @map("store_id") @db.Uuid
+  deviceId      String   @map("device_id")
+  clientOrderId String   @map("client_order_id") @db.Uuid
+  orderId       String   @unique(map: "uq_sync_log_order_id") @map("order_id") @db.Uuid
+  firstSyncedAt DateTime @default(now()) @map("first_synced_at") @db.Timestamptz(6)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  store         Store    @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([tenantId, storeId, deviceId, clientOrderId], map: "uq_sync_log_tenant_store_device_client")
+  @@index([tenantId, storeId], map: "idx_sync_log_tenant_store")
+  @@map("sync_log")
+}
+
+model OrderVoid {
+  id       String   @id @db.Uuid
+  orderId  String   @map("order_id") @db.Uuid
+  voidedBy String   @map("voided_by") @db.Uuid
+  reason   String
+  voidedAt DateTime @default(now()) @map("voided_at") @db.Timestamptz(6)
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user     User     @relation(fields: [voidedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([orderId], map: "idx_order_voids_order_id")
+  @@map("order_voids")
 }

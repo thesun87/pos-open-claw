@@ -22,11 +22,19 @@ describe('Prisma tenant scope helpers', () => {
   });
   it('tracks scoped/excluded/productOptionGroup model intent', () => {
     expect(prismaTenantScopeTestUtils.SCOPED_MODELS.has('Category')).toBe(true);
+    expect(prismaTenantScopeTestUtils.SCOPED_MODELS.has('Order')).toBe(true);
+    expect(prismaTenantScopeTestUtils.SCOPED_MODELS.has('SyncLog')).toBe(true);
     expect(prismaTenantScopeTestUtils.SCOPED_MODELS.has('User')).toBe(false);
     expect(
       prismaTenantScopeTestUtils.BLOCKED_RELATION_MODELS.has(
         'ProductOptionGroup',
       ),
+    ).toBe(true);
+    expect(
+      prismaTenantScopeTestUtils.BLOCKED_RELATION_MODELS.has('OrderItem'),
+    ).toBe(true);
+    expect(
+      prismaTenantScopeTestUtils.BLOCKED_RELATION_MODELS.has('OrderItemOption'),
     ).toBe(true);
   });
   it('allows tests to set async tenant context', () => {

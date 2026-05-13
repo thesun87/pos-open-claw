@@ -8,8 +8,17 @@ const SCOPED_MODELS = new Set([
   'OptionGroup',
   'Option',
   'MenuVersion',
+  'Order',
+  'SyncLog',
 ]);
-const BLOCKED_RELATION_MODELS = new Set(['ProductOptionGroup']);
+const BLOCKED_RELATION_MODELS = new Set([
+  'ProductOptionGroup',
+  // OrderItem and OrderItemOption do not duplicate tenant/store columns.
+  // Access them only through OrdersRepository nested writes/reads after the
+  // parent Order has been scoped by tenantId/storeId.
+  'OrderItem',
+  'OrderItemOption',
+]);
 const WRITE_ACTIONS = new Set([
   'create',
   'createMany',
