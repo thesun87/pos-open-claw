@@ -8,7 +8,7 @@ import type {
   MenuProductRecord,
 } from './schemas/menu'
 
-export type PendingOrderPlaceholder = { id: string; createdAt: number }
+export type PendingOrderPlaceholder = { id: string; createdAt: number; deviceId?: string; soldAt?: string }
 
 export class PosDexie extends Dexie {
   session!: Table<SessionRecord, string>

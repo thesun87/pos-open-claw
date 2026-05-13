@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from '../../db/dexie'
 import { useDebouncedValue } from '../../features/menu/hooks'
 import { useCartStore } from '../../features/orders/cart-store'
+import { useCheckoutStore } from '../../features/orders/checkout-store'
 import { PosShell } from './pos-shell'
 
 const categories = [
@@ -60,6 +61,7 @@ beforeEach(async () => {
   await db.optionGroups.clear()
   await db.options.clear()
   useCartStore.getState().resetCart()
+  useCheckoutStore.getState().resetCheckoutState()
 })
 
 afterEach(async () => {
@@ -69,6 +71,7 @@ afterEach(async () => {
   await db.optionGroups.clear()
   await db.options.clear()
   useCartStore.getState().resetCart()
+  useCheckoutStore.getState().resetCheckoutState()
   db.close()
 })
 
@@ -156,7 +159,7 @@ describe('PosShell product browsing', () => {
   it('renders cart empty state, adds direct item, updates quantity, note, discount, and total', async () => {
     await seedMenu(); const user = userEvent.setup(); renderPosShell()
     expect(await screen.findByText('Chọn món để bắt đầu đơn.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Hoàn tất' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Hoàn tất đơn' })).toBeDisabled()
     await user.click(await screen.findByRole('button', { name: 'Trà đào, 45.000 ₫' }))
     expect(screen.getByRole('heading', { name: 'Trà đào' })).toBeInTheDocument()
     expect(screen.getAllByText('45.000 ₫').length).toBeGreaterThan(0)
@@ -171,6 +174,22 @@ describe('PosShell product browsing', () => {
     await user.click(screen.getByRole('button', { name: 'Áp dụng' }))
     expect(screen.getByText('-10 ₫')).toBeInTheDocument()
     expect(screen.getByText('89.990 ₫')).toBeInTheDocument()
+  })
+
+
+  it('renders checkout summary, changes payment method, and starts UI-only checkout', async () => {
+    await seedMenu(); const user = userEvent.setup(); renderPosShell()
+    await user.click(await screen.findByRole('button', { name: 'Trà đào, 45.000 ₫' }))
+    const checkout = screen.getByLabelText('Tóm tắt thanh toán')
+    expect(within(checkout).getByText('Tổng tiền')).toHaveClass('text-3xl')
+    expect(within(checkout).getByRole('radio', { name: /Tiền mặt/ })).toBeChecked()
+    expect(useCheckoutStore.getState().paymentMethod).toBe('cash')
+    await user.click(within(checkout).getByRole('radio', { name: /Chuyển khoản/ }))
+    expect(useCheckoutStore.getState().paymentMethod).toBe('transfer')
+    await user.click(within(checkout).getByRole('button', { name: 'Hoàn tất đơn' }))
+    expect(useCheckoutStore.getState().isCheckingOut).toBe(true)
+    expect(within(checkout).getByRole('button', { name: 'Đang chuẩn bị đơn...' })).toBeDisabled()
+    expect(await db.orders.count()).toBe(0)
   })
 
   it('confirms removing multi-quantity lines and keeps cart snapshots across menu updates', async () => {

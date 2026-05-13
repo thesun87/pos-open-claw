@@ -5,6 +5,7 @@ import { EmptyState } from '../../../shared/components/ui/empty-state'
 import { formatVnd } from '../../../shared/lib/format-vnd'
 import { calculateCartTotals, useCartStore } from '../cart-store'
 import type { CartItem } from '../types'
+import { CheckoutSummary } from './checkout-summary'
 import { DiscountControl } from './discount-control'
 
 function optionText(item: CartItem) {
@@ -82,12 +83,7 @@ export function CartPanel() {
       </div>
       <div className="mt-6 space-y-4 border-t border-border pt-4">
         {items.length > 0 ? <DiscountControl subtotal={totals.subtotal} discount={totals.discount} onChange={setDiscount} /> : null}
-        <dl className="space-y-2 text-sm">
-          <div className="flex justify-between"><dt>Tạm tính</dt><dd>{formatVnd(totals.subtotal)}</dd></div>
-          {totals.discount ? <div className="flex justify-between text-text-secondary"><dt>Giảm giá</dt><dd>-{formatVnd(totals.discountAmount)}</dd></div> : null}
-          <div className="flex items-end justify-between pt-2"><dt className="font-semibold">Tổng tiền</dt><dd className="text-3xl font-bold leading-none">{formatVnd(totals.total)}</dd></div>
-        </dl>
-        <Button type="button" className="w-full" size="lg" disabled>Hoàn tất</Button>
+        <CheckoutSummary items={items} discount={totals.discount} />
       </div>
       <Dialog open={pendingRemove !== null} onOpenChange={(open) => { if (!open) setPendingRemove(null) }}>
         <DialogContent aria-describedby="remove-line-description">
