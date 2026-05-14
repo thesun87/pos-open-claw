@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Button } from '../../../shared/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../shared/components/ui/dialog'
 import { EmptyState } from '../../../shared/components/ui/empty-state'
 import { formatVnd } from '../../../shared/lib/format-vnd'
 import { calculateCartTotals, useCartStore } from '../cart-store'
+import { useCheckoutStore } from '../checkout-store'
 import type { CartItem } from '../types'
 import { CheckoutSummary } from './checkout-summary'
 import { DiscountControl } from './discount-control'
+import { VoidOrderDialog } from './void-order-dialog'
 
 function optionText(item: CartItem) {
   return item.options.map((option) => `${option.priceDeltaSnapshot > 0 ? '+' : ''}${option.labelSnapshot}`).join(', ')
@@ -67,11 +69,37 @@ export function CartPanel() {
   const discount = useCartStore((state) => state.discount)
   const setDiscount = useCartStore((state) => state.setDiscount)
   const removeItem = useCartStore((state) => state.removeItem)
+  const resetCart = useCartStore((state) => state.resetCart)
+  const resetCheckoutState = useCheckoutStore((state) => state.resetCheckoutState)
   const [pendingRemove, setPendingRemove] = useState<CartItem | null>(null)
+  const [isVoidDialogOpen, setIsVoidDialogOpen] = useState(false)
+  const [cartFeedback, setCartFeedback] = useState<string | null>(null)
+  const cancelButtonRef = useRef<HTMLButtonElement>(null)
+  const cartPanelRef = useRef<HTMLElement>(null)
   const totals = useMemo(() => calculateCartTotals(items, discount), [discount, items])
 
+  function focusCartAfterVoidDialogClose() {
+    window.setTimeout(() => {
+      if (cancelButtonRef.current && items.length > 0) cancelButtonRef.current.focus()
+      else cartPanelRef.current?.focus()
+    }, 0)
+  }
+
+  function handleVoidDialogOpenChange(open: boolean) {
+    setIsVoidDialogOpen(open)
+    if (!open) focusCartAfterVoidDialogClose()
+  }
+
+  function handleVoidOrder() {
+    resetCart()
+    resetCheckoutState()
+    setCartFeedback('Đã hủy đơn')
+    setIsVoidDialogOpen(false)
+    window.setTimeout(() => cartPanelRef.current?.focus(), 0)
+  }
+
   return (
-    <aside className="flex min-h-[70vh] flex-col rounded-lg border border-border bg-surface p-6" aria-label="Giỏ hàng và thanh toán" tabIndex={0}>
+    <aside ref={cartPanelRef} className="flex min-h-[70vh] flex-col rounded-lg border border-border bg-surface p-6" aria-label="Giỏ hàng và thanh toán" tabIndex={0}>
       <div>
         <h2 className="text-xl font-semibold">Giỏ hàng / thanh toán</h2>
         <p className="mt-2 text-sm text-text-secondary">Panel cố định bên phải cho đơn hiện tại.</p>
@@ -82,9 +110,16 @@ export function CartPanel() {
         ) : items.map((item) => <CartLineItem key={item.tempId} item={item} onAskRemove={setPendingRemove} />)}
       </div>
       <div className="mt-6 space-y-4 border-t border-border pt-4">
-        {items.length > 0 ? <DiscountControl subtotal={totals.subtotal} discount={totals.discount} onChange={setDiscount} /> : null}
+        {cartFeedback ? <p role="status" aria-live="polite" className="rounded-md border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-text-primary">{cartFeedback}</p> : null}
+        {items.length > 0 ? (
+          <>
+            <DiscountControl subtotal={totals.subtotal} discount={totals.discount} onChange={setDiscount} />
+            <Button ref={cancelButtonRef} type="button" variant="destructive" className="w-full" onClick={() => { setCartFeedback(null); setIsVoidDialogOpen(true) }}>Hủy đơn</Button>
+          </>
+        ) : null}
         <CheckoutSummary items={items} discount={totals.discount} />
       </div>
+      <VoidOrderDialog open={isVoidDialogOpen} onOpenChange={handleVoidDialogOpenChange} onConfirm={handleVoidOrder} />
       <Dialog open={pendingRemove !== null} onOpenChange={(open) => { if (!open) setPendingRemove(null) }}>
         <DialogContent aria-describedby="remove-line-description">
           <DialogHeader>
