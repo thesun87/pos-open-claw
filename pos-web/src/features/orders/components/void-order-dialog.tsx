@@ -7,8 +7,10 @@ type VoidOrderDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onConfirm: (reason: string) => void
+  isSubmitting?: boolean
   title?: string
   description?: string
+  submitLabel?: string
 }
 
 const REQUIRED_REASON_MESSAGE = 'Vui lòng nhập lý do hủy'
@@ -19,6 +21,8 @@ export function VoidOrderDialog({
   onConfirm,
   title = 'Hủy đơn đang trong giỏ?',
   description = 'Nhập lý do hủy để xác nhận. Hành động này chỉ áp dụng cho giỏ chưa hoàn tất.',
+  isSubmitting = false,
+  submitLabel = 'Hủy đơn này',
 }: VoidOrderDialogProps) {
   const [reason, setReason] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -30,6 +34,7 @@ export function VoidOrderDialog({
 
   function handleConfirm() {
     const trimmedReason = reason.trim()
+    if (isSubmitting) return
     if (!trimmedReason) {
       setErrorMessage(REQUIRED_REASON_MESSAGE)
       reasonInputRef.current?.focus()
@@ -72,8 +77,8 @@ export function VoidOrderDialog({
           {errorMessage ? <p id="void-order-reason-error" role="alert" className="text-sm text-danger">{errorMessage}</p> : null}
         </div>
         <div className="mt-6 flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Quay lại</Button>
-          <Button type="button" variant="destructive" onClick={handleConfirm}>Hủy đơn này</Button>
+          <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => onOpenChange(false)}>Quay lại</Button>
+          <Button type="button" variant="destructive" disabled={isSubmitting} onClick={handleConfirm}>{isSubmitting ? 'Đang hủy...' : submitLabel}</Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -4,6 +4,7 @@ import {
   Headers,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Res,
   UseGuards,
@@ -12,6 +13,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiHeader,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -22,6 +24,7 @@ import type { TenantContext as TenantContextType } from '../common/decorators/te
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { SyncOrderDto, syncOrderExample } from './dto/sync-order.dto';
+import { VoidOrderDto, voidOrderExample } from './dto/void-order.dto';
 import { OrdersService } from './orders.service';
 
 @ApiTags('orders')
@@ -87,5 +90,33 @@ export class OrdersController {
     );
     if (result.idempotent_replay) response.status(HttpStatus.OK);
     return result;
+  }
+
+  @Post(':id/void')
+  @Roles('cashier', 'admin')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiParam({ name: 'id', example: '018f0000-0000-7000-8000-000000009999' })
+  @ApiBody({
+    type: VoidOrderDto,
+    examples: { void: { value: voidOrderExample } },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Voided',
+    schema: {
+      example: {
+        voidId: '018f0000-0000-7000-8000-000000008888',
+        voidedAt: '2026-05-14T15:03:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Order not found Problem Details' })
+  @ApiResponse({ status: 409, description: 'Already voided Problem Details' })
+  async void(
+    @TenantContext() context: TenantContextType | undefined,
+    @Param('id') id: string,
+    @Body() body: VoidOrderDto,
+  ) {
+    return this.ordersService.voidOrder(context, id, body);
   }
 }

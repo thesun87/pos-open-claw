@@ -7,7 +7,9 @@ import { Prisma } from '@prisma/client';
 import { PinoLogger } from 'nestjs-pino';
 import { TenantContext } from '../common/decorators/tenant-context.decorator';
 import { PROBLEM_TYPES } from '../common/errors/problem-types';
+import { isUuidV7 } from '../common/utils/trace-id';
 import { SyncOrderDto } from './dto/sync-order.dto';
+import { VoidOrderDto } from './dto/void-order.dto';
 import { OrdersRepository } from './repositories/orders.repository';
 import { SyncLogRepository } from './repositories/sync-log.repository';
 
@@ -15,6 +17,11 @@ export interface SyncOrderResponse {
   orderId: string;
   idempotent_replay: boolean;
   syncedAt?: string;
+}
+
+export interface VoidOrderResponse {
+  voidId: string;
+  voidedAt: string;
 }
 
 const IDEMPOTENCY_TARGETS = new Set([
@@ -140,5 +147,29 @@ export class OrdersService {
       }
       throw error;
     }
+  }
+
+  async voidOrder(
+    context: TenantContext | undefined,
+    orderId: string,
+    body: VoidOrderDto,
+  ): Promise<VoidOrderResponse> {
+    if (!context?.tenantId || !context.storeId || !context.userId) {
+      throw new ForbiddenException('Missing tenant context');
+    }
+    if (!isUuidV7(orderId)) {
+      throw new BadRequestException({
+        type: PROBLEM_TYPES.validation,
+        title: 'Bad Request',
+        detail: 'order id must be a UUID v7',
+      });
+    }
+
+    const result = await this.ordersRepository.voidOrder(
+      context,
+      orderId,
+      body.reason.trim(),
+    );
+    return { voidId: result.voidId, voidedAt: result.voidedAt.toISOString() };
   }
 }

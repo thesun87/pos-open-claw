@@ -1,7 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { PaymentMethod, Prisma } from '@prisma/client';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { PaymentMethod } from '@prisma/client';
 import { v7 as uuidv7 } from 'uuid';
 import { TenantContext } from '../../common/decorators/tenant-context.decorator';
+import { PROBLEM_TYPES } from '../../common/errors/problem-types';
 import { runWithTenantContext } from '../../common/middleware/tenant-scope.middleware';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SyncOrderDto } from '../dto/sync-order.dto';
@@ -9,6 +14,11 @@ import { SyncOrderDto } from '../dto/sync-order.dto';
 export interface CreatedOrderResult {
   orderId: string;
   syncedAt: Date;
+}
+
+export interface VoidedOrderResult {
+  voidId: string;
+  voidedAt: Date;
 }
 
 const paymentMap = {
@@ -71,7 +81,7 @@ export class OrdersRepository {
                 },
               })),
             },
-          } as Prisma.OrderUncheckedCreateInput,
+          },
           select: { id: true, syncedAt: true },
         });
         await tx.syncLog.create({
@@ -86,6 +96,57 @@ export class OrdersRepository {
           },
         });
         return { orderId: order.id, syncedAt: order.syncedAt };
+      }),
+    );
+  }
+
+  voidOrder(
+    context: TenantContext,
+    orderId: string,
+    reason: string,
+  ): Promise<VoidedOrderResult> {
+    return runWithTenantContext(context, async () =>
+      this.prisma.$transaction(async (tx) => {
+        const order = await tx.order.findFirst({
+          where: {
+            id: orderId,
+            tenantId: context.tenantId,
+            storeId: context.storeId,
+          },
+          select: { id: true },
+        });
+        if (!order) {
+          throw new NotFoundException({
+            type: PROBLEM_TYPES.notFound,
+            title: 'Not Found',
+            detail: 'Order not found',
+          });
+        }
+
+        const existingVoid = await tx.orderVoid.findFirst({
+          where: { orderId },
+          select: { id: true },
+        });
+        if (existingVoid) {
+          throw new ConflictException({
+            type: PROBLEM_TYPES.alreadyVoided,
+            title: 'Đơn đã được hủy',
+            detail: 'Đơn đã được hủy',
+          });
+        }
+
+        const voidedAt = new Date();
+        const orderVoid = await tx.orderVoid.create({
+          data: {
+            id: uuidv7(),
+            orderId,
+            voidedBy: context.userId!,
+            reason,
+            voidedAt,
+          },
+          select: { id: true, voidedAt: true },
+        });
+        return { voidId: orderVoid.id, voidedAt: orderVoid.voidedAt };
       }),
     );
   }

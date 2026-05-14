@@ -5,6 +5,7 @@ export const PROBLEM_TYPES = {
   forbidden: 'https://pos.example/errors/forbidden',
   notFound: 'https://pos.example/errors/not-found',
   conflict: 'https://pos.example/errors/conflict',
+  alreadyVoided: 'https://pos.example/errors/already-voided',
   internal: 'https://pos.example/errors/internal',
   missingTenantContext: 'https://pos.example/errors/missing-tenant-context',
   invalidCredentials: 'https://pos.example/errors/invalid-credentials',

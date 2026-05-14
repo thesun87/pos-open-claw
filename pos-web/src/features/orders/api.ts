@@ -1,4 +1,5 @@
 import { db } from '../../db/dexie'
+import { apiClient } from '../../shared/lib/api-client'
 import type { LocalOrderRecord } from '../../db/schemas/orders'
 import { syncEngine } from '../sync/engine'
 import { buildLocalOrder } from './builder'
@@ -9,6 +10,14 @@ export type FinalizeOrderInput = {
   paymentMethod: PaymentMethod
   deviceId: string
   cashierId?: string
+}
+
+export type VoidSyncedOrderInput = { serverOrderId: string; reason: string }
+export type VoidSyncedOrderResponse = { voidId: string; voidedAt: string }
+
+export async function voidSyncedOrder({ serverOrderId, reason }: VoidSyncedOrderInput): Promise<VoidSyncedOrderResponse> {
+  const response = await apiClient.post<VoidSyncedOrderResponse>(`/orders/${serverOrderId}/void`, { reason: reason.trim() })
+  return response.data
 }
 
 export class FinalizeOrderError extends Error {

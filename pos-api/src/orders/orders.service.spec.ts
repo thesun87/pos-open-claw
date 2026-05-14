@@ -47,10 +47,17 @@ function service(
     create: unknown;
     menuVersion: number;
     createReject: unknown;
+    voidResult: unknown;
   }> = {},
 ) {
   const ordersRepository = {
     currentMenuVersion: jest.fn().mockResolvedValue(overrides.menuVersion ?? 1),
+    voidOrder: jest.fn().mockResolvedValue(
+      overrides.voidResult ?? {
+        voidId: '018f0000-0000-7000-8000-00000000v001',
+        voidedAt: new Date('2026-05-14T15:03:00.000Z'),
+      },
+    ),
     createOrderWithSyncLog: jest.fn(
       overrides.createReject
         ? () => Promise.reject(overrides.createReject as Error)
@@ -181,6 +188,38 @@ describe('OrdersService', () => {
       p2002,
     );
     expect(syncLogRepository.findReplay).toHaveBeenCalledTimes(1);
+  });
+
+  it('voids an order with trimmed reason and ISO timestamp', async () => {
+    const { svc, ordersRepository } = service();
+    await expect(
+      svc.voidOrder(context, '018f0000-0000-7000-8000-000000009999', {
+        reason: '  Khách đổi ý  ',
+      }),
+    ).resolves.toEqual({
+      voidId: '018f0000-0000-7000-8000-00000000v001',
+      voidedAt: '2026-05-14T15:03:00.000Z',
+    });
+    expect(ordersRepository.voidOrder).toHaveBeenCalledWith(
+      context,
+      '018f0000-0000-7000-8000-000000009999',
+      'Khách đổi ý',
+    );
+  });
+
+  it('rejects void when context is missing or order id is not UUID v7', async () => {
+    const { svc, ordersRepository } = service();
+    await expect(
+      svc.voidOrder(undefined, '018f0000-0000-7000-8000-000000009999', {
+        reason: 'abc',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(
+      svc.voidOrder(context, '018f0000-0000-4000-8000-000000009999', {
+        reason: 'abc',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(ordersRepository.voidOrder).not.toHaveBeenCalled();
   });
 
   it('rejects empty product and option snapshot strings in DTO validation', async () => {

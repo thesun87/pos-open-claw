@@ -3,10 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db, PosDexie } from '../../db/dexie'
 import { MENU_META_ID } from '../../db/schemas/menu'
 import { syncEngine } from '../sync/engine'
-import { finalizeOrder } from './api'
+import { apiClient } from '../../shared/lib/api-client'
+import { finalizeOrder, voidSyncedOrder } from './api'
 import type { CartItem } from './types'
 
 vi.mock('../sync/engine', () => ({ syncEngine: { kick: vi.fn() } }))
+vi.mock('../../shared/lib/api-client', () => ({ apiClient: { post: vi.fn() } }))
 
 const item: CartItem = {
   tempId: 'tmp-1',
@@ -25,6 +27,7 @@ beforeEach(async () => {
   await db.menuMeta.clear()
   await db.menuMeta.put({ id: MENU_META_ID, menuVersion: 12, lastPulledAt: '2026-05-13T09:00:00.000Z' })
   vi.mocked(syncEngine.kick).mockReset()
+  vi.mocked(apiClient.post).mockReset()
 })
 
 afterEach(async () => {
@@ -63,5 +66,14 @@ describe('finalizeOrder', () => {
     expect(rows.map((row) => row.clientOrderId)).toContain(order.clientOrderId)
     reopened.close()
     await db.open()
+  })
+})
+
+
+describe('voidSyncedOrder', () => {
+  it('posts trimmed reason to the backend void endpoint', async () => {
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { voidId: 'void-1', voidedAt: '2026-05-14T15:03:00.000Z' } })
+    await expect(voidSyncedOrder({ serverOrderId: '018f0000-0000-7000-8000-000000009999', reason: '  Khách đổi ý  ' })).resolves.toEqual({ voidId: 'void-1', voidedAt: '2026-05-14T15:03:00.000Z' })
+    expect(apiClient.post).toHaveBeenCalledWith('/orders/018f0000-0000-7000-8000-000000009999/void', { reason: 'Khách đổi ý' })
   })
 })

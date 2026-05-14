@@ -4,8 +4,12 @@ import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from '../../../db/dexie'
+import { useConnectivityStore } from '../../../shared/stores/connectivity.store'
+import { voidSyncedOrder } from '../api'
 import type { LocalOrderRecord } from '../../../db/schemas/orders'
 import { ReceiptModal } from './receipt-modal'
+
+vi.mock('../api', () => ({ voidSyncedOrder: vi.fn() }))
 
 const order: LocalOrderRecord = {
   clientOrderId: 'client-1',
@@ -29,6 +33,8 @@ function renderReceipt(props: Partial<React.ComponentProps<typeof ReceiptModal>>
 }
 
 beforeEach(async () => {
+  useConnectivityStore.getState().setConnectivityState({ isOnline: true, lastCheckedAt: new Date('2026-05-13T10:00:00.000Z') })
+  vi.mocked(voidSyncedOrder).mockReset()
   await db.open()
   await db.orders.clear()
   await db.orders.put(order)
@@ -73,6 +79,54 @@ describe('ReceiptModal', () => {
     renderReceipt()
     await user.click(screen.getByRole('button', { name: 'In hóa đơn' }))
     expect(print).toHaveBeenCalledTimes(1)
+  })
+
+
+  it('voids a synced order through the backend and stores local void metadata', async () => {
+    vi.mocked(voidSyncedOrder).mockResolvedValue({ voidId: 'void-1', voidedAt: '2026-05-14T15:03:00.000Z' })
+    await db.orders.update(order.clientOrderId, { status: 'synced', serverOrderId: '018f0000-0000-7000-8000-000000009999' })
+    const user = userEvent.setup()
+    renderReceipt({ order: { ...order, status: 'synced', serverOrderId: '018f0000-0000-7000-8000-000000009999' } })
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Void đơn này' })).toBeEnabled())
+    await user.click(screen.getByRole('button', { name: 'Void đơn này' }))
+    await user.type(await screen.findByPlaceholderText('Ví dụ: Khách đổi ý, Hết món'), 'Khách đổi ý')
+    await user.click(screen.getAllByRole('button', { name: 'Void đơn này' }).at(-1)!)
+
+    await waitFor(() => expect(voidSyncedOrder).toHaveBeenCalledWith({ serverOrderId: '018f0000-0000-7000-8000-000000009999', reason: 'Khách đổi ý' }))
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Đã void đơn 20260513-POS01-0001'))
+    expect(await db.orders.get(order.clientOrderId)).toMatchObject({ voidedAt: '2026-05-14T15:03:00.000Z', voidReason: 'Khách đổi ý' })
+    expect(await screen.findByText('Đã void')).toBeInTheDocument()
+    expect(await screen.findByText('ĐÃ HỦY')).toBeInTheDocument()
+    expect(await screen.findByText('Lý do: Khách đổi ý')).toBeInTheDocument()
+    expect(screen.getByText('75.000 ₫')).toBeInTheDocument()
+  })
+
+  it('blocks synced order void while offline without changing Dexie', async () => {
+    useConnectivityStore.getState().setConnectivityState({ isOnline: false, lastCheckedAt: new Date('2026-05-13T10:00:00.000Z') })
+    await db.orders.update(order.clientOrderId, { status: 'synced', serverOrderId: '018f0000-0000-7000-8000-000000009999' })
+    renderReceipt({ order: { ...order, status: 'synced', serverOrderId: '018f0000-0000-7000-8000-000000009999' } })
+
+    expect(await screen.findByText('Cần kết nối để void đơn đã đồng bộ')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Void đơn này' })).toBeDisabled()
+    expect(voidSyncedOrder).not.toHaveBeenCalled()
+    expect(await db.orders.get(order.clientOrderId)).not.toMatchObject({ voidedAt: expect.any(String) })
+  })
+
+  it('does not show void action for pending, failed, missing-server, or already voided orders', async () => {
+    const { rerender } = render(<ReceiptModal order={order} open onOpenChange={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Void đơn này' })).not.toBeInTheDocument()
+
+    rerender(<ReceiptModal order={{ ...order, status: 'syncFailed' }} open onOpenChange={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Void đơn này' })).not.toBeInTheDocument()
+
+    rerender(<ReceiptModal order={{ ...order, status: 'synced' }} open onOpenChange={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Void đơn này' })).not.toBeInTheDocument()
+
+    rerender(<ReceiptModal order={{ ...order, status: 'synced', serverOrderId: 's1', voidedAt: '2026-05-14T15:03:00.000Z', voidReason: 'Nhầm đơn' }} open onOpenChange={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Void đơn này' })).not.toBeInTheDocument()
+    expect(screen.getByText('Đã void')).toBeInTheDocument()
+    expect(screen.getByText('ĐÃ HỦY')).toBeInTheDocument()
   })
 
   it('closes via button and Escape without mutating the order', async () => {
