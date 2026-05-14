@@ -6,7 +6,7 @@ export interface LocalOrderRecord extends LocalOrder {
   cashierId?: string
   status: OrderSyncStatus
   serverOrderId?: string
-  failReason?: string
+  failReason?: string | null
   lastTriedAt?: string
   syncedAt?: string
   voidedAt?: string

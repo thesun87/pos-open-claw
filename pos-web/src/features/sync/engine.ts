@@ -2,6 +2,7 @@ import axios from 'axios'
 import { db } from '../../db/dexie'
 import type { LocalOrderRecord } from '../../db/schemas/orders'
 import { apiClient } from '../../shared/lib/api-client'
+import type { ProblemDetails } from '../../shared/lib/error-mapper'
 import { useConnectivityStore } from '../../shared/stores/connectivity.store'
 import { getRetryDelay, shouldPauseAfterAttempt } from './retry'
 
@@ -39,13 +40,19 @@ function buildSyncPayload(order: LocalOrderRecord): SyncOrderPayload {
   }
 }
 
-function extractSafeFailReason(error: unknown): string {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { detail?: unknown; message?: unknown } | undefined
-    if (typeof data?.detail === 'string' && data.detail.trim()) return data.detail
-    if (typeof data?.message === 'string' && data.message.trim()) return data.message
-  }
-  return 'Không thể đồng bộ đơn hàng. Vui lòng kiểm tra lại dữ liệu đơn.'
+const SAFE_SYNC_FAIL_REASON = 'Chưa đồng bộ được. Hệ thống sẽ thử lại khi có mạng.'
+
+function extractProblemDetails(error: unknown): ProblemDetails | undefined {
+  if (!axios.isAxiosError(error)) return undefined
+  const data = error.response?.data
+  return data && typeof data === 'object' ? (data as ProblemDetails) : undefined
+}
+
+function extractTraceId(error: unknown, problemDetail: ProblemDetails | undefined): string | undefined {
+  if (typeof problemDetail?.traceId === 'string') return problemDetail.traceId
+  if (!axios.isAxiosError(error)) return undefined
+  const headerValue = error.response?.headers?.['x-trace-id'] ?? error.response?.headers?.['X-Trace-Id']
+  return typeof headerValue === 'string' ? headerValue : undefined
 }
 
 function isNonRetryableClientError(error: unknown): boolean {
@@ -106,18 +113,17 @@ export class SyncEngine {
         } catch (error) {
           const nowIso = new Date().toISOString()
           if (isNonRetryableClientError(error)) {
-            const status = axios.isAxiosError(error) ? error.response?.status : undefined
-            const detail = extractSafeFailReason(error)
+            const problemDetail = extractProblemDetails(error)
             await db.orders.update(order.clientOrderId, {
               status: 'syncFailed',
-              failReason: detail,
+              failReason: SAFE_SYNC_FAIL_REASON,
               lastTriedAt: nowIso,
               updatedAt: nowIso,
             })
-            console.warn('Order sync failed with non-retryable client error', {
+            console.warn('[sync] failed', {
               clientOrderId: order.clientOrderId,
-              status,
-              detail,
+              problemDetail: { type: problemDetail?.type },
+              traceId: extractTraceId(error, problemDetail),
             })
             continue
           }

@@ -43,11 +43,13 @@ function axiosError(status?: number, data?: unknown) {
 
 beforeEach(async () => {
   postMock.mockReset()
+  vi.spyOn(console, 'warn').mockImplementation(() => undefined)
   await db.orders.clear()
 })
 
 afterEach(() => {
   vi.useRealTimers()
+  vi.restoreAllMocks()
 })
 
 describe('SyncEngine', () => {
@@ -126,15 +128,17 @@ describe('SyncEngine', () => {
     expect((await db.orders.get('c1'))?.status).toBe('pendingSync')
   })
 
-  it('marks 4xx validation errors syncFailed and continues', async () => {
+  it('marks 4xx validation errors syncFailed with sanitized reason and safe warning payload, then continues', async () => {
     const engine = new SyncEngine()
     await db.orders.bulkPut([order('bad', '2026-05-14T01:00:00.000Z'), order('good', '2026-05-14T02:00:00.000Z')])
-    postMock.mockRejectedValueOnce(axiosError(422, { detail: 'payload invalid' })).mockReturnValueOnce(ok('s2'))
+    postMock.mockRejectedValueOnce(axiosError(422, { type: 'https://api.test/problems/validation', detail: 'payload invalid tenant_id stack', traceId: 'trace-1' })).mockReturnValueOnce(ok('s2'))
 
     await engine.drain()
 
-    expect(await db.orders.get('bad')).toMatchObject({ status: 'syncFailed', failReason: 'payload invalid' })
+    expect(await db.orders.get('bad')).toMatchObject({ status: 'syncFailed', failReason: 'Chưa đồng bộ được. Hệ thống sẽ thử lại khi có mạng.' })
     expect(await db.orders.get('good')).toMatchObject({ status: 'synced', serverOrderId: 's2' })
+    expect(console.warn).toHaveBeenCalledWith('[sync] failed', { clientOrderId: 'bad', problemDetail: { type: 'https://api.test/problems/validation' }, traceId: 'trace-1' })
+    expect(JSON.stringify((await db.orders.get('bad'))?.failReason)).not.toContain('tenant_id')
   })
 
   it('treats idempotent replay as success with local syncedAt fallback', async () => {

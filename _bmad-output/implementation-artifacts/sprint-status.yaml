@@ -22,7 +22,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-05-10T15:11:57+07:00"
-last_updated: "2026-05-14T15:12:00+07:00"
+last_updated: "2026-05-14T15:43:00+07:00"
 project: pos-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -52,7 +52,7 @@ development_status:
   2-8-receipt-modal-print: done
   2-9-sync-engine-fsm-triggers-exponential-backoff: done
   2-10-connectivity-indicator-pending-counter: done
-  2-11-manual-sync-trigger-sync-retry-panel-error-mapping: backlog
+  2-11-manual-sync-trigger-sync-retry-panel-error-mapping: done
   2-12-cancel-pending-order-cart-level-void-before-sync: backlog
   2-13-backend-void-endpoint-frontend-void-synced-order-flow: backlog
   epic-2-retrospective: optional
