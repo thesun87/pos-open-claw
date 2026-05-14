@@ -2,6 +2,7 @@ import axios from 'axios'
 import { db } from '../../db/dexie'
 import type { LocalOrderRecord } from '../../db/schemas/orders'
 import { apiClient } from '../../shared/lib/api-client'
+import { useConnectivityStore } from '../../shared/stores/connectivity.store'
 import { getRetryDelay, shouldPauseAfterAttempt } from './retry'
 
 export type SyncEngineState = 'idle' | 'running' | 'backoff'
@@ -77,7 +78,7 @@ export class SyncEngine {
     if (this.state === 'running') return
     if (this.state === 'backoff') return
 
-    this.state = 'running'
+    this.setState('running')
 
     try {
       while (true) {
@@ -85,7 +86,7 @@ export class SyncEngine {
         const order = orders[0]
         if (!order) {
           this.retryAttemptCount = 0
-          this.state = 'idle'
+          this.setState('idle')
           return
         }
 
@@ -101,6 +102,7 @@ export class SyncEngine {
             updatedAt: nowIso,
           })
           this.retryAttemptCount = 0
+          useConnectivityStore.getState().setSyncUiState(this.state, new Date())
         } catch (error) {
           const nowIso = new Date().toISOString()
           if (isNonRetryableClientError(error)) {
@@ -133,19 +135,24 @@ export class SyncEngine {
         }
       }
     } catch (error) {
-      this.state = 'idle'
+      this.setState('idle')
       throw error
     }
+  }
+
+  private setState(state: SyncEngineState): void {
+    this.state = state
+    useConnectivityStore.getState().setSyncUiState(state)
   }
 
   private scheduleBackoff(): void {
     const delay = getRetryDelay(this.retryAttemptCount)
     this.retryAttemptCount += 1
 
-    this.state = 'backoff'
+    this.setState('backoff')
     this.backoffTimer = setTimeout(() => {
       this.backoffTimer = undefined
-      this.state = 'idle'
+      this.setState('idle')
 
       if (shouldPauseAfterAttempt(this.retryAttemptCount)) return
 
