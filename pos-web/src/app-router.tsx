@@ -20,7 +20,17 @@ export function createAppRouter() {
             { path: 'pos', element: <PosShell /> },
             {
               element: <AdminRoleGate />,
-              children: [{ path: 'admin/*', lazy: async () => ({ Component: (await import('./routes/admin/admin-shell')).default }) }],
+              children: [{
+                path: 'admin',
+                lazy: async () => { const m = await import('./routes/admin/_layout'); return { Component: m.default } },
+                children: [
+                  { index: true, lazy: async () => { const m = await import('./routes/admin/_layout'); return { Component: m.AdminHome } } },
+                  { path: 'menu/categories', lazy: async () => { const m = await import('./routes/admin/_layout'); return { Component: () => <m.PlaceholderPage title="Danh mục" /> } } },
+                  { path: 'menu/products', lazy: async () => { const m = await import('./routes/admin/_layout'); return { Component: () => <m.PlaceholderPage title="Sản phẩm" /> } } },
+                  { path: 'menu/option-groups', lazy: async () => { const m = await import('./routes/admin/_layout'); return { Component: () => <m.PlaceholderPage title="Nhóm tùy chọn" /> } } },
+                  { path: 'reports', lazy: async () => { const m = await import('./routes/admin/_layout'); return { Component: () => <m.PlaceholderPage title="Báo cáo" /> } } },
+                ],
+              }],
             },
           ],
         },
