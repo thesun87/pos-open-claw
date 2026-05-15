@@ -1,0 +1,72 @@
+### Story 3.4 demo contract: create Size/Đá/Đường/Topping option groups.
+# Prerequisites: run `npm run seed`, authenticate as admin, and set variables below.
+@baseUrl = http://localhost:3000/api/v1
+@accessToken = replace-with-admin-access-token
+
+### Create Size; observe menu_version increments after successful mutation via menu sync/version endpoint in app flow.
+POST {{baseUrl}}/option-groups
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Size",
+  "isRequired": true,
+  "minSelect": 1,
+  "maxSelect": 1,
+  "sortOrder": 10,
+  "options": [
+    { "label": "M", "priceDeltaVnd": 0, "isDefault": true, "sortOrder": 10 },
+    { "label": "L", "priceDeltaVnd": 5000, "sortOrder": 20 }
+  ]
+}
+
+### Create Đá
+POST {{baseUrl}}/option-groups
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Đá",
+  "isRequired": false,
+  "minSelect": 0,
+  "maxSelect": 1,
+  "sortOrder": 20,
+  "options": [
+    { "label": "Ít đá", "priceDeltaVnd": 0, "sortOrder": 10 },
+    { "label": "Nhiều đá", "priceDeltaVnd": 0, "sortOrder": 20 }
+  ]
+}
+
+### Create Đường
+POST {{baseUrl}}/option-groups
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Đường",
+  "isRequired": false,
+  "minSelect": 0,
+  "maxSelect": 1,
+  "sortOrder": 30,
+  "options": [
+    { "label": "30%", "priceDeltaVnd": 0, "sortOrder": 10 },
+    { "label": "70%", "priceDeltaVnd": 0, "isDefault": true, "sortOrder": 20 }
+  ]
+}
+
+### Create Topping
+POST {{baseUrl}}/option-groups
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Topping",
+  "isRequired": false,
+  "minSelect": 0,
+  "maxSelect": 3,
+  "sortOrder": 40,
+  "options": [
+    { "label": "Trân châu", "priceDeltaVnd": 5000, "sortOrder": 10 },
+    { "label": "Kem cheese", "priceDeltaVnd": 10000, "sortOrder": 20 }
+  ]
+}

@@ -7,6 +7,10 @@ export const PROBLEM_TYPES = {
   conflict: 'https://pos.example/errors/conflict',
   categoryHasProducts: 'https://pos.example/errors/category-has-products',
   categoryNameConflict: 'https://pos.example/errors/category-name-conflict',
+  optionGroupInUse: 'https://pos.example/errors/option-group-in-use',
+  optionInUse: 'https://pos.example/errors/option-in-use',
+  optionGroupNameConflict:
+    'https://pos.example/errors/option-group-name-conflict',
   alreadyVoided: 'https://pos.example/errors/already-voided',
   internal: 'https://pos.example/errors/internal',
   missingTenantContext: 'https://pos.example/errors/missing-tenant-context',
