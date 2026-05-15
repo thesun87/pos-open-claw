@@ -79,6 +79,7 @@ export class CategoriesRepository {
           storeId: context.storeId,
           name: dto.name,
           sortOrder: dto.sortOrder,
+          ...(dto.isActive === undefined ? {} : { isActive: dto.isActive }),
         },
         select: selectCategory,
       }),

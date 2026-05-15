@@ -1,5 +1,9 @@
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../../common/decorators/roles.decorator';
+import { CreateCategoryDto } from '../dto/create-category.dto';
+import { UpdateCategoryDto } from '../dto/update-category.dto';
 import { CategoriesController } from './categories.controller';
 
 describe('CategoriesController', () => {
@@ -45,6 +49,33 @@ describe('CategoriesController', () => {
       ),
     ).toEqual(['admin']);
   });
+
+  it('rejects non-boolean isActive values through DTO validation', async () => {
+    const createDto = plainToInstance(CreateCategoryDto, {
+      name: 'A',
+      sortOrder: 0,
+      isActive: 'false',
+    });
+    const updateDto = plainToInstance(UpdateCategoryDto, { isActive: 'yes' });
+
+    await expect(validate(createDto)).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          property: 'isActive',
+          constraints: expect.objectContaining({ isBoolean: expect.any(String) }),
+        }),
+      ]),
+    );
+    await expect(validate(updateDto)).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          property: 'isActive',
+          constraints: expect.objectContaining({ isBoolean: expect.any(String) }),
+        }),
+      ]),
+    );
+  });
+
   it('delegates create/update/delete', async () => {
     const ctx = { tenantId: 't1', storeId: 's1' };
     await controller.create(ctx, { name: 'A', sortOrder: 0 });

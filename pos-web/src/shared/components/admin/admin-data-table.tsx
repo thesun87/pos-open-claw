@@ -18,6 +18,7 @@ export type AdminDataTableRowAction<T extends object> = {
   label: string
   onClick: (row: T) => void
   variant?: NonNullable<ButtonProps['variant']>
+  disabled?: boolean | ((row: T) => boolean)
 }
 
 type AdminDataTableProps<T extends object> = {
@@ -86,7 +87,10 @@ export function AdminDataTable<T extends object>({ columns, data, rowActions = [
             <TableRow key={row.id}>
               {row.getVisibleCells().map((cell) => (
                 <TableCell key={cell.id} className={cn(cell.column.id === 'actions' && 'whitespace-nowrap text-right')}>
-                  {cell.column.id === 'actions' ? <div className="inline-flex flex-wrap justify-end gap-2">{rowActions.map((action) => <Button key={action.label} type="button" variant={action.variant ?? 'ghost'} size="sm" onClick={() => action.onClick(row.original)}>{action.label}</Button>)}</div> : flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  {cell.column.id === 'actions' ? <div className="inline-flex flex-wrap justify-end gap-2">{rowActions.map((action) => {
+                    const isDisabled = typeof action.disabled === 'function' ? action.disabled(row.original) : (action.disabled ?? false)
+                    return <Button key={action.label} type="button" variant={action.variant ?? 'ghost'} size="sm" disabled={isDisabled} onClick={() => action.onClick(row.original)}>{action.label}</Button>
+                  })}</div> : flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
               ))}
             </TableRow>

@@ -56,11 +56,11 @@ describe('CategoriesService', () => {
     repo.create.mockResolvedValue(category);
     menuVersion.bumpMenuVersion.mockResolvedValue(1);
     await expect(
-      service.create(context, { name: 'Coffee', sortOrder: 1 }),
+      service.create(context, { name: 'Coffee', sortOrder: 1, isActive: false }),
     ).resolves.toBe(category);
     expect(repo.create).toHaveBeenCalledWith(
       context,
-      { name: 'Coffee', sortOrder: 1 },
+      { name: 'Coffee', sortOrder: 1, isActive: false },
       { tx: true },
     );
     expect(menuVersion.bumpMenuVersion).toHaveBeenCalledWith('t1', 's1', {
@@ -71,13 +71,13 @@ describe('CategoriesService', () => {
   it('updates only existing category and bumps in same transaction client', async () => {
     const { service, repo, menuVersion } = setup();
     repo.findById.mockResolvedValue(category);
-    repo.update.mockResolvedValue({ ...category, name: 'Tea' });
-    await service.update(context, 'c1', { name: 'Tea' });
+    repo.update.mockResolvedValue({ ...category, name: 'Tea', isActive: false });
+    await service.update(context, 'c1', { name: 'Tea', isActive: false });
     expect(repo.findById).toHaveBeenCalledWith(context, 'c1', { tx: true });
     expect(repo.update).toHaveBeenCalledWith(
       context,
       'c1',
-      { name: 'Tea' },
+      { name: 'Tea', isActive: false },
       { tx: true },
     );
     expect(menuVersion.bumpMenuVersion).toHaveBeenCalledWith('t1', 's1', {
