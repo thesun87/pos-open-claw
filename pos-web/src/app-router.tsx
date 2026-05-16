@@ -28,7 +28,7 @@ export function createAppRouter() {
                   { path: 'menu/categories', lazy: async () => { const m = await import('./routes/admin/menu/categories-page'); return { Component: m.default } } },
                   { path: 'menu/products', lazy: async () => { const m = await import('./routes/admin/menu/products-page'); return { Component: m.default } } },
                   { path: 'menu/option-groups', lazy: async () => { const m = await import('./routes/admin/menu/option-groups-page'); return { Component: m.default } } },
-                  { path: 'reports', lazy: async () => { const m = await import('./routes/admin/_layout'); return { Component: () => <m.PlaceholderPage title="Báo cáo" /> } } },
+                  { path: 'reports', lazy: async () => { const m = await import('./routes/admin/reports/reports-page'); return { Component: m.default } } },
                 ],
               }],
             },

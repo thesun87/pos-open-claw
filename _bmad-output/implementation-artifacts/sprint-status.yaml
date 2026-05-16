@@ -1,5 +1,5 @@
 # generated: 2026-05-10T15:13:01+07:00
-# last_updated: 2026-05-10T17:17:00+07:00
+# last_updated: 2026-05-16
 # project: pos-bmad
 # project_key: NOKEY
 # tracking_system: file-system
@@ -69,7 +69,7 @@ development_status:
   epic-3-retrospective: optional
   epic-4: in-progress
   4-1-be-reports-endpoint-voi-4-metric-aggregations-tz-asia-ho-chi-minh-void-exclusion: done
-  4-2-fe-reports-page-layout-daterangereportfilter-component: backlog
+  4-2-fe-reports-page-layout-daterangereportfilter-component: done
   4-3-fe-revenue-by-day-chart-total-orders-summary-card: backlog
   4-4-fe-revenue-by-payment-method-top-products-display: backlog
   epic-4-retrospective: optional
