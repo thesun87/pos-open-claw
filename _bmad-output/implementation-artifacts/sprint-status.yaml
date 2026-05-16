@@ -22,7 +22,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-05-10T15:11:57+07:00"
-last_updated: "2026-05-16T13:08:00+07:00"
+last_updated: "2026-05-16T17:30:00+07:00"
 project: pos-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -67,8 +67,8 @@ development_status:
   3-8-be-versioned-menu-sync-endpoint-get-api-v1-menu-since-version-n: done
   3-9-fe-menu-auto-sync-engine-menuupdatedtoast-snapshot-preserved: done
   epic-3-retrospective: optional
-  epic-4: backlog
-  4-1-be-reports-endpoint-voi-4-metric-aggregations-tz-asia-ho-chi-minh-void-exclusion: backlog
+  epic-4: in-progress
+  4-1-be-reports-endpoint-voi-4-metric-aggregations-tz-asia-ho-chi-minh-void-exclusion: done
   4-2-fe-reports-page-layout-daterangereportfilter-component: backlog
   4-3-fe-revenue-by-day-chart-total-orders-summary-card: backlog
   4-4-fe-revenue-by-payment-method-top-products-display: backlog

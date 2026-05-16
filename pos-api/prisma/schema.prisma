@@ -229,6 +229,7 @@ model Order {
   @@index([clientOrderId], map: "idx_orders_client_order_id")
   @@index([soldAt], map: "idx_orders_sold_at")
   @@index([tenantId, storeId], map: "idx_orders_tenant_store")
+  @@index([paymentMethod, soldAt], map: "idx_orders_payment_method_sold_at")
   @@map("orders")
 }
 

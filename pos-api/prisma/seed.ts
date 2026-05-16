@@ -1,5 +1,6 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PaymentMethod, PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { v7 as uuidv7 } from 'uuid';
 import { createPrismaClientOptions } from '../src/prisma/prisma-client-options';
 
 const prisma = new PrismaClient(createPrismaClientOptions());
@@ -261,7 +262,133 @@ async function seedDemoData() {
   });
 
   console.info('Seeded Café Demo tenant/store/users/menu catalog/menu version.');
-  console.info('Sample synced orders are deferred: current Prisma schema has no Order/OrderItem/OrderItemOption/SyncLog models.');
+
+  // Seed sample synced orders for reports demo (Story 4.1)
+  // Idempotent: skip if orders already exist for this tenant/store
+  const existingOrderCount = await prisma.order.count({
+    where: { tenantId: TENANT_ID, storeId: STORE_ID },
+  });
+  if (existingOrderCount > 0) {
+    console.info(`Sample orders already seeded (${existingOrderCount} orders exist). Skipping order seed.`);
+    return;
+  }
+
+  // ~150 orders spread over last 30 days with mixed payment methods and products
+  const paymentMethods: PaymentMethod[] = [PaymentMethod.Cash, PaymentMethod.Transfer, PaymentMethod.Card];
+
+  // Product snapshot pool — uses seeded product names + one "deleted product" snapshot
+  const productSnapshots = [
+    { id: '018f0000-0000-7000-8000-000000000201', name: 'Bạc Xỉu', price: 35000 },
+    { id: '018f0000-0000-7000-8000-000000000202', name: 'Cà phê đen', price: 25000 },
+    { id: '018f0000-0000-7000-8000-000000000203', name: 'Cà phê sữa', price: 30000 },
+    { id: '018f0000-0000-7000-8000-000000000207', name: 'Trà đào', price: 40000 },
+    { id: '018f0000-0000-7000-8000-000000000211', name: 'Matcha latte', price: 50000 },
+  ];
+
+  // One "deleted product" order uses existing productId but a different snapshot name (AR24 NFR14)
+  const deletedProductOrder: { id: string; name: string; price: number } = {
+    id: '018f0000-0000-7000-8000-000000000201', // valid FK (Bạc Xỉu productId)
+    name: 'Món đã bị xóa',              // snapshot doesn't match current product.name
+    price: 40000,
+  };
+
+  const now = new Date();
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+  const ordersToCreate: Array<{
+    id: string;
+    clientOrderId: string;
+    orderCode: string;
+    soldAt: Date;
+    paymentMethod: PaymentMethod;
+    productIdx: number;
+    quantity: number;
+    isVoided: boolean;
+    isDeletedProductOrder: boolean;
+  }> = [];
+
+  // 150 regular orders + 1 "deleted product" order
+  for (let i = 0; i < 150; i++) {
+    const daysAgo = Math.floor((i / 150) * 30); // spread evenly over 30 days
+    const soldAt = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000 - 4 * 60 * 60 * 1000); // sold at 20:00 local (+07 = 13:00 UTC - roughly)
+    ordersToCreate.push({
+      id: uuidv7(),
+      clientOrderId: uuidv7(),
+      orderCode: `SEED-${String(i + 1).padStart(4, '0')}`,
+      soldAt,
+      paymentMethod: paymentMethods[i % 3]!,
+      productIdx: i % productSnapshots.length,
+      quantity: (i % 3) + 1,
+      isVoided: i < 5, // first 5 orders are voided
+      isDeletedProductOrder: false,
+    });
+  }
+
+  // 1 "deleted product" order
+  const deletedProductOrderEntry = {
+    id: uuidv7(),
+    clientOrderId: uuidv7(),
+    orderCode: 'SEED-DELETED-PRODUCT',
+    soldAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+    paymentMethod: PaymentMethod.Cash,
+    productIdx: -1, // special flag
+    quantity: 1,
+    isVoided: false,
+    isDeletedProductOrder: true,
+  };
+  ordersToCreate.push(deletedProductOrderEntry);
+
+  console.info(`Seeding ${ordersToCreate.length} sample orders...`);
+
+  for (const orderDef of ordersToCreate) {
+    const product: { id: string; name: string; price: number } = orderDef.isDeletedProductOrder
+      ? deletedProductOrder
+      : productSnapshots[orderDef.productIdx]!;
+
+    const lineTotal = product.price * orderDef.quantity;
+    const order = await prisma.order.create({
+      data: {
+        id: orderDef.id,
+        tenantId: TENANT_ID,
+        storeId: STORE_ID,
+        clientOrderId: orderDef.clientOrderId,
+        orderCode: orderDef.orderCode,
+        deviceId: 'SEED-POS01',
+        cashierId: CASHIER_USER_ID,
+        soldAt: orderDef.soldAt,
+        menuVersionAtSale: 1,
+        discountAmount: 0,
+        total: lineTotal,
+        paymentMethod: orderDef.paymentMethod,
+        items: {
+          create: [
+            {
+              id: uuidv7(),
+              productId: product.id,
+              productNameSnapshot: product.name,
+              unitPriceSnapshot: product.price,
+              quantity: orderDef.quantity,
+              lineTotal,
+            },
+          ],
+        },
+      },
+    });
+
+    if (orderDef.isVoided) {
+      await prisma.orderVoid.create({
+        data: {
+          id: uuidv7(),
+          orderId: order.id,
+          voidedBy: ADMIN_USER_ID,
+          reason: 'Demo void for reports exclusion test',
+          voidedAt: new Date(orderDef.soldAt.getTime() + 60 * 1000),
+        },
+      });
+    }
+  }
+
+  console.info(`Seeded ${ordersToCreate.length} sample orders (${5} voided, 1 deleted-product snapshot).`);
 }
 
 seedDemoData()
