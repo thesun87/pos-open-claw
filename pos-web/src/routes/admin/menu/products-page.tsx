@@ -10,7 +10,7 @@ import { StatusBadge } from '../../../shared/components/ui/status-badge'
 import { formatVnd } from '../../../shared/lib/format-vnd'
 import { adminMenuQueryKey, categoriesQueryKey, fetchCategories } from '../../../features/admin/categories/api'
 import { fetchOptionGroups, optionGroupsQueryKey } from '../../../features/admin/option-groups/api'
-import { createProduct, deleteProduct, fetchProducts, productsQueryKey, updateProduct, type ProductDto } from '../../../features/admin/products/api'
+import { createProduct, deleteProduct, fetchProducts, productsQueryKey, updateProduct, type ProductDto, type ProductFilters } from '../../../features/admin/products/api'
 import { ProductForm, type ProductFormValues } from './_shared/product-form'
 
 type DialogState = { mode: 'create' } | { mode: 'edit'; product: ProductDto } | { mode: 'delete'; product: ProductDto } | null
@@ -35,7 +35,7 @@ export default function ProductsPage() {
     }, 300)
     return () => window.clearTimeout(handle)
   }, [searchText, searchParams, setSearchParams])
-  const filters = useMemo(() => ({ categoryId: categoryId || undefined, search: debouncedSearch || undefined, isActive: activeOnly ? true : undefined }), [categoryId, debouncedSearch, activeOnly])
+  const filters = useMemo(() => { const f: ProductFilters = {}; if (categoryId) f.categoryId = categoryId; if (debouncedSearch) f.search = debouncedSearch; if (activeOnly) f.isActive = true; return f; }, [categoryId, debouncedSearch, activeOnly])
   const productsKey = productsQueryKey(filters)
   const productsQuery = useQuery({ queryKey: productsKey, queryFn: () => fetchProducts(filters) })
   const categoriesQuery = useQuery({ queryKey: categoriesQueryKey, queryFn: fetchCategories })
