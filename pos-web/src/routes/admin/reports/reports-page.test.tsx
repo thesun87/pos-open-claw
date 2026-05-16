@@ -221,15 +221,33 @@ describe('ReportsPage', () => {
   })
 
   describe('Successful response', () => {
-    it('renders 4 section cards with placeholder content after loading', async () => {
+    it('replaces Story 4.3 placeholders with chart and summary while keeping Story 4.4 placeholders', async () => {
       mockApiGet.mockResolvedValue({ data: successResponse })
-      renderPage()
+      renderPage('/admin/reports?from=2026-05-10&to=2026-05-16')
+
       await waitFor(() => {
-        expect(screen.getByTestId('placeholder-section-1')).toBeInTheDocument()
-        expect(screen.getByTestId('placeholder-section-2')).toBeInTheDocument()
+        expect(screen.queryByTestId('placeholder-section-1')).not.toBeInTheDocument()
+        expect(screen.queryByTestId('placeholder-section-2')).not.toBeInTheDocument()
+        expect(screen.getByRole('img', { name: /Biểu đồ doanh thu/i })).toBeInTheDocument()
+        expect(screen.getByText('Tổng số đơn')).toBeInTheDocument()
+        expect(screen.getByText('10')).toBeInTheDocument()
+        expect(screen.getByText('500.000 ₫')).toBeInTheDocument()
         expect(screen.getByTestId('placeholder-section-3')).toBeInTheDocument()
         expect(screen.getByTestId('placeholder-section-4')).toBeInTheDocument()
       }, { timeout: 5000 })
+    })
+
+    it('fetches reports with a single metric=all call', async () => {
+      mockApiGet.mockResolvedValue({ data: successResponse })
+      renderPage('/admin/reports?from=2026-05-01&to=2026-05-07')
+
+      await waitFor(() => {
+        expect(screen.getByRole('img', { name: /Biểu đồ doanh thu/i })).toBeInTheDocument()
+      })
+      expect(mockApiGet).toHaveBeenCalledTimes(1)
+      expect(mockApiGet).toHaveBeenCalledWith('/reports', {
+        params: { from: '2026-05-01', to: '2026-05-07', metric: 'all' },
+      })
     })
   })
 
