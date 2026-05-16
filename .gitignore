@@ -63,3 +63,4 @@ venv/
 .agents/
 
 _bmad/
+.claude/
