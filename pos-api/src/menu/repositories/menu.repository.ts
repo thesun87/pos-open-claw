@@ -3,6 +3,10 @@ import { TenantContext } from '../../common/decorators/tenant-context.decorator'
 import { runWithTenantContext } from '../../common/middleware/tenant-scope.middleware';
 import { PrismaService } from '../../prisma/prisma.service';
 
+export interface MenuReadOptions {
+  includeInactive?: boolean;
+}
+
 @Injectable()
 export class MenuRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -16,18 +20,20 @@ export class MenuRepository {
     });
   }
 
-  findCategories(context: TenantContext) {
+  findCategories(context: TenantContext, options: MenuReadOptions = {}) {
     return runWithTenantContext(context, () =>
       this.prisma.category.findMany({
+        ...(options.includeInactive ? {} : { where: { isActive: true } }),
         select: { id: true, name: true, sortOrder: true, isActive: true },
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       }),
     );
   }
 
-  findProducts(context: TenantContext) {
+  findProducts(context: TenantContext, options: MenuReadOptions = {}) {
     return runWithTenantContext(context, () =>
       this.prisma.product.findMany({
+        ...(options.includeInactive ? {} : { where: { isActive: true } }),
         select: {
           id: true,
           name: true,
@@ -36,6 +42,13 @@ export class MenuRepository {
           isActive: true,
           sortOrder: true,
           productOptionGroups: {
+            ...(options.includeInactive
+              ? {}
+              : {
+                  where: {
+                    optionGroup: { options: { some: { isActive: true } } },
+                  },
+                }),
             select: {
               optionGroupId: true,
               sortOrder: true,
@@ -53,9 +66,12 @@ export class MenuRepository {
     );
   }
 
-  findOptionGroups(context: TenantContext) {
+  findOptionGroups(context: TenantContext, options: MenuReadOptions = {}) {
     return runWithTenantContext(context, () =>
       this.prisma.optionGroup.findMany({
+        ...(options.includeInactive
+          ? {}
+          : { where: { options: { some: { isActive: true } } } }),
         select: {
           id: true,
           name: true,
@@ -64,6 +80,7 @@ export class MenuRepository {
           maxSelect: true,
           sortOrder: true,
           options: {
+            ...(options.includeInactive ? {} : { where: { isActive: true } }),
             select: {
               id: true,
               name: true,

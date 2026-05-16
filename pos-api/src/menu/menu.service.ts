@@ -44,22 +44,62 @@ export interface MenuSnapshotDto {
   optionGroups: MenuOptionGroupDto[];
 }
 
+export interface MenuSnapshotPayloadDto {
+  categories: MenuCategoryDto[];
+  products: MenuProductDto[];
+  optionGroups: MenuOptionGroupDto[];
+}
+
+export type VersionedMenuSyncDto =
+  | { menuVersion: number; hasChanges: false; snapshot: null }
+  | { menuVersion: number; hasChanges: true; snapshot: MenuSnapshotPayloadDto };
+
+export interface GetVersionedMenuQuery {
+  since_version?: number;
+  include_inactive?: boolean;
+}
+
 @Injectable()
 export class MenuService {
   constructor(private readonly repository: MenuRepository) {}
 
+  async getVersionedMenu(
+    context: TenantContext,
+    query: GetVersionedMenuQuery = {},
+  ): Promise<VersionedMenuSyncDto> {
+    const menuVersion = await this.repository.findCurrentMenuVersion(context);
+
+    if (query.since_version === menuVersion) {
+      return { menuVersion, hasChanges: false, snapshot: null };
+    }
+
+    const includeInactive =
+      context.role === 'admin' && query.include_inactive === true;
+    const snapshot = await this.getMenuSnapshotPayload(context, {
+      includeInactive,
+    });
+
+    return { menuVersion, hasChanges: true, snapshot };
+  }
+
   async getMenuSnapshot(context: TenantContext): Promise<MenuSnapshotDto> {
-    const [menuVersion, categories, products, optionGroups] = await Promise.all(
-      [
-        this.repository.findCurrentMenuVersion(context),
-        this.repository.findCategories(context),
-        this.repository.findProducts(context),
-        this.repository.findOptionGroups(context),
-      ],
-    );
+    const menuVersion = await this.repository.findCurrentMenuVersion(context);
+    const snapshot = await this.getMenuSnapshotPayload(context);
+
+    return { menuVersion, ...snapshot };
+  }
+
+  private async getMenuSnapshotPayload(
+    context: TenantContext,
+    options: { includeInactive?: boolean } = {},
+  ): Promise<MenuSnapshotPayloadDto> {
+    const [categories, products, optionGroups] = await Promise.all([
+      this.repository.findCategories(context, options),
+      this.repository.findProducts(context, options),
+      this.repository.findOptionGroups(context, options),
+    ]);
 
     return {
-      menuVersion,
       categories: categories.map((category) => ({
         id: category.id,
         name: category.name,
