@@ -26,7 +26,7 @@ export function createAppRouter() {
                 children: [
                   { index: true, lazy: async () => { const m = await import('./routes/admin/_layout'); return { Component: m.AdminHome } } },
                   { path: 'menu/categories', lazy: async () => { const m = await import('./routes/admin/menu/categories-page'); return { Component: m.default } } },
-                  { path: 'menu/products', lazy: async () => { const m = await import('./routes/admin/_layout'); return { Component: () => <m.PlaceholderPage title="Sản phẩm" /> } } },
+                  { path: 'menu/products', lazy: async () => { const m = await import('./routes/admin/menu/products-page'); return { Component: m.default } } },
                   { path: 'menu/option-groups', lazy: async () => { const m = await import('./routes/admin/menu/option-groups-page'); return { Component: m.default } } },
                   { path: 'reports', lazy: async () => { const m = await import('./routes/admin/_layout'); return { Component: () => <m.PlaceholderPage title="Báo cáo" /> } } },
                 ],
