@@ -30,6 +30,20 @@ describe('CategoriesPage', () => {
     expect(screen.getByLabelText('Bật danh mục Trà mới')).toBeInTheDocument()
   })
 
+  it('normalizes versioned menu sync response before counting products', async () => {
+    mockedApi.get.mockImplementation((url: string) => Promise.resolve({ data: url === '/categories' ? categories : { menuVersion: 2, hasChanges: true, snapshot: menu } }))
+    renderPage()
+    expect(await screen.findByText('Cà phê')).toBeInTheDocument()
+    expect(screen.getByText('1')).toBeInTheDocument()
+  })
+
+  it('does not crash and shows unknown counts when menu sync has no snapshot', async () => {
+    mockedApi.get.mockImplementation((url: string) => Promise.resolve({ data: url === '/categories' ? categories : { menuVersion: 2, hasChanges: false, snapshot: null } }))
+    renderPage()
+    expect(await screen.findByText('Cà phê')).toBeInTheDocument()
+    expect(screen.getAllByText('—')).toHaveLength(2)
+  })
+
   it('renders empty state', async () => {
     mockedApi.get.mockImplementation((url: string) => Promise.resolve({ data: url === '/categories' ? [] : menu }))
     renderPage()

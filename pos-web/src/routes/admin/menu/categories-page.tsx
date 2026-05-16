@@ -26,7 +26,7 @@ export default function CategoriesPage() {
   const menuQuery = useQuery({ queryKey: adminMenuQueryKey, queryFn: fetchAdminMenu, retry: false })
   const rows = useMemo<Row[]>(() => {
     const counts = new Map<string, number>()
-    menuQuery.data?.products.forEach((product) => counts.set(product.categoryId, (counts.get(product.categoryId) ?? 0) + 1))
+    ;(menuQuery.data?.products ?? []).forEach((product) => counts.set(product.categoryId, (counts.get(product.categoryId) ?? 0) + 1))
     return (categoriesQuery.data ?? []).map((category) => ({ ...category, productCount: menuQuery.data ? (counts.get(category.id) ?? 0) : undefined }))
   }, [categoriesQuery.data, menuQuery.data])
   const defaultSortOrder = rows.length ? Math.max(...rows.map((c) => c.sortOrder)) + 10 : 10

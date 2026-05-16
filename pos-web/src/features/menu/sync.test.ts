@@ -64,6 +64,16 @@ describe('menu sync', () => {
     await expect(database.products.count()).resolves.toBe(1)
   })
 
+  it('keeps existing cache when API reports no menu changes', async () => {
+    const database = createDb()
+    await writeMenuSnapshot(snapshot, database)
+    const fetchMenu = vi.fn().mockResolvedValue(null)
+
+    await expect(pullMenu({ database, fetchMenu })).resolves.toBeNull()
+    await expect(database.products.count()).resolves.toBe(1)
+    await expect(database.menuMeta.get(MENU_META_ID)).resolves.toMatchObject({ menuVersion: 3 })
+  })
+
   it('preserves session data across Dexie version upgrade', async () => {
     const database = createDb()
     await database.session.put({

@@ -59,10 +59,11 @@ export async function pullMenu({
   now,
 }: {
   database?: PosDexie
-  fetchMenu?: () => Promise<MenuSnapshotDto>
+  fetchMenu?: () => Promise<MenuSnapshotDto | null>
   now?: () => Date
-} = {}): Promise<MenuSnapshotDto> {
+} = {}): Promise<MenuSnapshotDto | null> {
   const snapshot = await fetchMenu()
+  if (!snapshot) return null
   await writeMenuSnapshot(snapshot, database, now)
   return snapshot
 }
