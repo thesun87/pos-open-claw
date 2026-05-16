@@ -8,6 +8,8 @@ import { fetchReportsAll, reportsQueryKey, type ReportsAllResponse } from '../..
 import { DateRangeReportFilter } from './_shared/date-range-report-filter'
 import { SectionCard } from './_shared/section-card'
 import { RevenueByDayChart } from './sections/revenue-by-day-chart'
+import { RevenueByPaymentMethod } from './sections/revenue-by-payment-method'
+import { TopProductsTable } from './sections/top-products-table'
 import { TotalOrdersSummary } from './sections/total-orders-summary'
 
 const YMD_REGEX = /^\d{4}-\d{2}-\d{2}$/
@@ -173,10 +175,10 @@ export default function ReportsPage() {
             loading={isLoading}
             empty={!isLoading && isEmpty && !is5xxError}
           >
-            {/* Placeholder: Story 4.4 sẽ render chart tại đây */}
-            <p className="text-sm text-text-secondary" data-testid="placeholder-section-3">
-              Sẽ cập nhật ở Story 4.4
-            </p>
+            <RevenueByPaymentMethod
+              data={query.data?.revenueByPaymentMethod ?? []}
+              isUpdating={isBackgroundUpdating}
+            />
           </SectionCard>
 
           <SectionCard
@@ -184,10 +186,10 @@ export default function ReportsPage() {
             loading={isLoading}
             empty={!isLoading && isEmpty && !is5xxError}
           >
-            {/* Placeholder: Story 4.4 sẽ render bảng tại đây */}
-            <p className="text-sm text-text-secondary" data-testid="placeholder-section-4">
-              Sẽ cập nhật ở Story 4.4
-            </p>
+            <TopProductsTable
+              data={query.data?.topProducts ?? []}
+              isUpdating={isBackgroundUpdating}
+            />
           </SectionCard>
         </div>
       )}
