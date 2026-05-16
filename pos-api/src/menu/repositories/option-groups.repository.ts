@@ -107,9 +107,14 @@ export class OptionGroupsRepository {
           maxSelect: dto.maxSelect,
           sortOrder: dto.sortOrder,
           options: {
-            create: dto.options.map((o) =>
-              this.optionCreateData(context, id, o),
-            ),
+            create: dto.options.map((o) => {
+              const { optionGroupId, ...rest } = this.optionCreateData(
+                context,
+                id,
+                o,
+              );
+              return rest;
+            }),
           },
         },
       });
