@@ -42,4 +42,5 @@ export interface MenuMetaRecord {
   id: typeof MENU_META_ID
   menuVersion: number
   lastPulledAt: string
+  lastCheckedAt?: string
 }

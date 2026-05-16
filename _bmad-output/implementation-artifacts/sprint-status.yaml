@@ -22,7 +22,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-05-10T15:11:57+07:00"
-last_updated: "2026-05-16T09:03:00+07:00"
+last_updated: "2026-05-16T13:08:00+07:00"
 project: pos-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -65,7 +65,7 @@ development_status:
   3-6-be-products-crud-option-groups-assignment: done
   3-7-fe-products-admin-page-crud-category-optiongroups-active-sort: done
   3-8-be-versioned-menu-sync-endpoint-get-api-v1-menu-since-version-n: done
-  3-9-fe-menu-auto-sync-engine-menuupdatedtoast-snapshot-preserved: backlog
+  3-9-fe-menu-auto-sync-engine-menuupdatedtoast-snapshot-preserved: done
   epic-3-retrospective: optional
   epic-4: backlog
   4-1-be-reports-endpoint-voi-4-metric-aggregations-tz-asia-ho-chi-minh-void-exclusion: backlog

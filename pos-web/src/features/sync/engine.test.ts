@@ -5,10 +5,12 @@ import { db } from '../../db/dexie'
 import type { LocalOrderRecord } from '../../db/schemas/orders'
 import { apiClient } from '../../shared/lib/api-client'
 import { SyncEngine } from './engine'
+import { checkAndPullIfNewer } from '../menu/sync'
 
 vi.mock('../../shared/lib/api-client', () => ({
   apiClient: { post: vi.fn() },
 }))
+vi.mock('../menu/sync', () => ({ checkAndPullIfNewer: vi.fn().mockResolvedValue(undefined) }))
 
 const postMock = vi.mocked(apiClient.post)
 
@@ -151,6 +153,33 @@ describe('SyncEngine', () => {
     const synced = await db.orders.get('c1')
     expect(synced).toMatchObject({ status: 'synced', serverOrderId: 's1' })
     expect(synced?.syncedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+  })
+
+  it('refreshes menu-version-stale errors and retries without marking order failed or rebuilding payload', async () => {
+    const engine = new SyncEngine()
+    const stale = order('stale', '2026-05-14T01:00:00.000Z')
+    await db.orders.put(stale)
+    postMock.mockRejectedValueOnce(axiosError(409, { type: 'https://api.test/problems/menu-version-stale' })).mockReturnValueOnce(ok('s1'))
+
+    await engine.drain()
+
+    expect(checkAndPullIfNewer).toHaveBeenCalledTimes(1)
+    expect(postMock).toHaveBeenCalledTimes(2)
+    expect(postMock.mock.calls[1]?.[1]).toMatchObject({ menuVersionAtSale: 1, items: stale.items })
+    expect(await db.orders.get('stale')).toMatchObject({ status: 'synced', serverOrderId: 's1', menuVersionAtSale: 1, items: stale.items })
+  })
+
+  it('keeps stale-menu refresh failures retryable with backoff', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    vi.mocked(checkAndPullIfNewer).mockRejectedValueOnce(new Error('offline'))
+    const engine = new SyncEngine()
+    await db.orders.put(order('stale', '2026-05-14T01:00:00.000Z'))
+    postMock.mockRejectedValueOnce(axiosError(409, { type: 'https://api.test/problems/menu-version-stale' }))
+
+    await engine.drain()
+
+    expect(engine.getState()).toBe('backoff')
+    expect(await db.orders.get('stale')).toMatchObject({ status: 'pendingSync' })
   })
 
   it('keeps kick idempotent while running', async () => {

@@ -4,6 +4,7 @@ import { PosDexie } from '../../db/dexie'
 import { MENU_META_ID } from '../../db/schemas/menu'
 import { installMenuOnlineRecovery, pullMenu, triggerMenuPull, writeMenuSnapshot } from './sync'
 import type { MenuSnapshotDto } from './types'
+import type { VersionedMenuSyncDto } from './api'
 
 const snapshot: MenuSnapshotDto = {
   menuVersion: 3,
@@ -52,6 +53,7 @@ describe('menu sync', () => {
       id: MENU_META_ID,
       menuVersion: 3,
       lastPulledAt: '2026-05-11T09:00:00.000Z',
+      lastCheckedAt: '2026-05-11T09:00:00.000Z',
     })
   })
 
@@ -122,4 +124,50 @@ describe('menu sync', () => {
     expect(onUnhandled).not.toHaveBeenCalled()
   })
 
+})
+
+describe('versioned menu sync', () => {
+  it('requests since_version from local meta and emits after changed snapshot write', async () => {
+    const database = createDb()
+    await writeMenuSnapshot(snapshot, database)
+    const nextSnapshot = { ...snapshot, products: [{ ...snapshot.products[0], id: 'prod-2', name: 'Latte' }] }
+    const fetchVersionedMenu = vi.fn().mockResolvedValue({ menuVersion: 4, hasChanges: true, snapshot: { categories: nextSnapshot.categories, products: nextSnapshot.products, optionGroups: nextSnapshot.optionGroups } })
+    const dispatchEvent = vi.fn()
+    const { checkAndPullIfNewer } = await import('./sync')
+
+    await expect(checkAndPullIfNewer({ database, fetchVersionedMenu, dispatchEvent })).resolves.toMatchObject({ menuVersion: 4, hasChanges: true })
+
+    expect(fetchVersionedMenu).toHaveBeenCalledWith(3)
+    await expect(database.products.toArray()).resolves.toEqual(expect.arrayContaining([expect.objectContaining({ id: 'prod-2' })]))
+    expect(dispatchEvent).toHaveBeenCalledTimes(1)
+    expect((dispatchEvent.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({ menuVersion: 4 })
+  })
+
+  it('no-change updates lastCheckedAt without clearing cache or emitting', async () => {
+    const database = createDb()
+    await writeMenuSnapshot(snapshot, database, () => new Date('2026-05-11T09:00:00.000Z'))
+    const fetchVersionedMenu = vi.fn().mockResolvedValue({ menuVersion: 3, hasChanges: false, snapshot: null })
+    const dispatchEvent = vi.fn()
+    const { checkAndPullIfNewer } = await import('./sync')
+
+    await checkAndPullIfNewer({ database, fetchVersionedMenu, dispatchEvent, now: () => new Date('2026-05-11T10:00:00.000Z') })
+
+    await expect(database.products.count()).resolves.toBe(1)
+    await expect(database.menuMeta.get(MENU_META_ID)).resolves.toMatchObject({ menuVersion: 3, lastPulledAt: '2026-05-11T09:00:00.000Z', lastCheckedAt: '2026-05-11T10:00:00.000Z' })
+    expect(dispatchEvent).not.toHaveBeenCalled()
+  })
+
+  it('missing meta requests a full snapshot safely and coalesces in-flight checks', async () => {
+    const database = createDb()
+    let resolve!: (value: VersionedMenuSyncDto) => void
+    const fetchVersionedMenu = vi.fn(() => new Promise<VersionedMenuSyncDto>((r) => { resolve = r }))
+    const { checkAndPullIfNewer } = await import('./sync')
+    const first = checkAndPullIfNewer({ database, fetchVersionedMenu })
+    const second = checkAndPullIfNewer({ database, fetchVersionedMenu })
+    await vi.waitFor(() => expect(fetchVersionedMenu).toHaveBeenCalledTimes(1))
+    expect(fetchVersionedMenu).toHaveBeenCalledWith(undefined)
+    resolve({ menuVersion: 1, hasChanges: false, snapshot: null })
+    await expect(first).resolves.toMatchObject({ menuVersion: 1 })
+    await expect(second).resolves.toMatchObject({ menuVersion: 1 })
+  })
 })

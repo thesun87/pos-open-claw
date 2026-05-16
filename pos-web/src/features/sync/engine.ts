@@ -4,6 +4,8 @@ import type { LocalOrderRecord } from '../../db/schemas/orders'
 import { apiClient } from '../../shared/lib/api-client'
 import type { ProblemDetails } from '../../shared/lib/error-mapper'
 import { useConnectivityStore } from '../../shared/stores/connectivity.store'
+import { mapProblemToAction } from '../../shared/lib/error-mapper'
+import { checkAndPullIfNewer } from '../menu/sync'
 import { getRetryDelay, shouldPauseAfterAttempt } from './retry'
 
 export type SyncEngineState = 'idle' | 'running' | 'backoff'
@@ -68,6 +70,12 @@ function isRetryableError(error: unknown): boolean {
 }
 
 export class SyncEngine {
+  private readonly refreshMenu: () => Promise<unknown>
+
+  constructor(refreshMenu: () => Promise<unknown> = () => checkAndPullIfNewer()) {
+    this.refreshMenu = refreshMenu
+  }
+
   private state: SyncEngineState = 'idle'
   private retryAttemptCount = 0
   private backoffTimer: ReturnType<typeof setTimeout> | undefined
@@ -112,8 +120,21 @@ export class SyncEngine {
           useConnectivityStore.getState().setSyncUiState(this.state, new Date())
         } catch (error) {
           const nowIso = new Date().toISOString()
+          const problemDetail = extractProblemDetails(error)
+          const action = mapProblemToAction(problemDetail)
+          if (action.type === 'retry-after-action' && action.payload.action === 'refresh-menu') {
+            try {
+              await this.refreshMenu()
+              await db.orders.update(order.clientOrderId, { lastTriedAt: nowIso, updatedAt: nowIso })
+              continue
+            } catch {
+              await db.orders.update(order.clientOrderId, { lastTriedAt: nowIso, updatedAt: nowIso })
+              this.scheduleBackoff()
+              return
+            }
+          }
+
           if (isNonRetryableClientError(error)) {
-            const problemDetail = extractProblemDetails(error)
             await db.orders.update(order.clientOrderId, {
               status: 'syncFailed',
               failReason: SAFE_SYNC_FAIL_REASON,

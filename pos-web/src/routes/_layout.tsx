@@ -6,6 +6,7 @@ import { ConnectivityIndicator } from '../shared/components/layout/connectivity-
 import { PendingCounter } from '../shared/components/layout/pending-counter'
 import { ConnectivityRegistrar } from '../connectivity-registrar'
 import { PwaUpdatePrompt } from '../shared/components/layout/pwa-update-prompt'
+import { MenuUpdatedToast } from '../features/menu/components/menu-updated-toast'
 
 export function RootLayout() {
   const [isSyncPanelOpen, setIsSyncPanelOpen] = useState(false)
@@ -25,6 +26,7 @@ export function RootLayout() {
       </header>
       <main><SessionBootProvider><Outlet /></SessionBootProvider></main>
       <PwaUpdatePrompt />
+      <MenuUpdatedToast />
       <SyncRetryPanel open={isSyncPanelOpen} onOpenChange={setIsSyncPanelOpen} />
     </div>
   )
