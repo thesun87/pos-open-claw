@@ -1,0 +1,49 @@
+### Story 3.6 seed-driven demo contract
+# Requires seeded admin token and existing category/option group IDs from seed data.
+# Proves product can be created with Size/Topping groups and each successful mutation bumps menu_version.
+
+@baseUrl = http://localhost:3000/api/v1
+@token = replace-with-admin-jwt
+@categoryId = replace-with-seeded-category-uuid
+@sizeGroupId = replace-with-seeded-size-option-group-uuid
+@toppingGroupId = replace-with-seeded-topping-option-group-uuid
+
+### Observe current menu version
+GET {{baseUrl}}/menu
+Authorization: Bearer {{token}}
+
+### Create product with Size/Topping option groups; expect 201 and menu_version increment
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Demo cà phê sữa",
+  "categoryId": "{{categoryId}}",
+  "priceVnd": 35000,
+  "isActive": true,
+  "sortOrder": 10,
+  "optionGroupIds": ["{{sizeGroupId}}", "{{toppingGroupId}}"]
+}
+
+### Update product; expect menu_version increment and snapshots untouched
+PATCH {{baseUrl}}/products/replace-with-created-product-id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "priceVnd": 39000, "optionGroupIds": ["{{sizeGroupId}}"] }
+
+### Tạm tắt product instead of deleting if it may be sold again; expect menu_version increment
+PATCH {{baseUrl}}/products/replace-with-created-product-id/toggle-active
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "isActive": false }
+
+### Delete only if no historical order_items; expect 204 and menu_version increment
+DELETE {{baseUrl}}/products/replace-with-created-product-id
+Authorization: Bearer {{token}}
+
+### If product has historical order_items, expect 409 product-in-use with Vietnamese guidance
+DELETE {{baseUrl}}/products/replace-with-in-use-product-id
+Authorization: Bearer {{token}}

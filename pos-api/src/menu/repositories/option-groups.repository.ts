@@ -123,7 +123,7 @@ export class OptionGroupsRepository {
     client: Client,
   ) {
     return runWithTenantContext(context, async () => {
-      const scoped = tenantScopedClient(client as any);
+      const scoped = tenantScopedClient(client);
       await scoped.optionGroup.updateMany({
         where: { id },
         data: {
@@ -196,7 +196,7 @@ export class OptionGroupsRepository {
   }
   async delete(context: TenantContext, id: string, client: Client) {
     return runWithTenantContext(context, async () => {
-      const scoped = tenantScopedClient(client as any);
+      const scoped = tenantScopedClient(client);
       const options = await scoped.option.findMany({
         where: { optionGroupId: id },
         select: { id: true },

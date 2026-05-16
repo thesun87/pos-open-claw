@@ -145,18 +145,22 @@ describe('OptionGroupsService', () => {
   it('blocks partial min/max update that would make resulting state invalid', async () => {
     const { service, repo, menuVersion } = setup();
     repo.findById.mockResolvedValue({ ...group, minSelect: 1, maxSelect: 2 });
-    await expect(service.update(context, 'g1', { minSelect: 3 })).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.update(context, 'g1', { minSelect: 3 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(repo.updateWithOptions).not.toHaveBeenCalled();
     expect(menuVersion.bumpMenuVersion).not.toHaveBeenCalled();
   });
   it('blocks partial required-min result without bumping', async () => {
     const { service, repo, menuVersion } = setup();
-    repo.findById.mockResolvedValue({ ...group, isRequired: false, minSelect: 0 });
-    await expect(service.update(context, 'g1', { isRequired: true })).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    repo.findById.mockResolvedValue({
+      ...group,
+      isRequired: false,
+      minSelect: 0,
+    });
+    await expect(
+      service.update(context, 'g1', { isRequired: true }),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(repo.updateWithOptions).not.toHaveBeenCalled();
     expect(menuVersion.bumpMenuVersion).not.toHaveBeenCalled();
   });
@@ -164,7 +168,9 @@ describe('OptionGroupsService', () => {
     const { service, repo, menuVersion } = setup();
     repo.findById.mockResolvedValue(group);
     repo.countHistoricalOptionReferences.mockResolvedValue(0);
-    repo.updateWithOptions.mockRejectedValue(new OptionChildNotFoundError('wrong'));
+    repo.updateWithOptions.mockRejectedValue(
+      new OptionChildNotFoundError('wrong'),
+    );
     await expect(
       service.update(context, 'g1', {
         options: [{ id: 'wrong', label: 'X', priceDeltaVnd: 0, sortOrder: 0 }],

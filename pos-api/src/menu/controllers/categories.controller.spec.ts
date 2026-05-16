@@ -62,7 +62,9 @@ describe('CategoriesController', () => {
       expect.arrayContaining([
         expect.objectContaining({
           property: 'isActive',
-          constraints: expect.objectContaining({ isBoolean: expect.any(String) }),
+          constraints: expect.objectContaining({
+            isBoolean: expect.any(String),
+          }),
         }),
       ]),
     );
@@ -70,7 +72,9 @@ describe('CategoriesController', () => {
       expect.arrayContaining([
         expect.objectContaining({
           property: 'isActive',
-          constraints: expect.objectContaining({ isBoolean: expect.any(String) }),
+          constraints: expect.objectContaining({
+            isBoolean: expect.any(String),
+          }),
         }),
       ]),
     );

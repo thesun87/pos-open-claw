@@ -3,13 +3,16 @@ import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { CategoriesController } from './controllers/categories.controller';
 import { OptionGroupsController } from './controllers/option-groups.controller';
+import { ProductsController } from './controllers/products.controller';
 import { MenuSyncController } from './menu-sync.controller';
 import { MenuService } from './menu.service';
 import { CategoriesRepository } from './repositories/categories.repository';
 import { OptionGroupsRepository } from './repositories/option-groups.repository';
+import { ProductsRepository } from './repositories/products.repository';
 import { MenuRepository } from './repositories/menu.repository';
 import { CategoriesService } from './services/categories.service';
 import { OptionGroupsService } from './services/option-groups.service';
+import { ProductsService } from './services/products.service';
 import { MenuVersionService } from './services/menu-version.service';
 
 @Module({
@@ -18,6 +21,7 @@ import { MenuVersionService } from './services/menu-version.service';
     MenuSyncController,
     CategoriesController,
     OptionGroupsController,
+    ProductsController,
   ],
   providers: [
     MenuService,
@@ -26,6 +30,8 @@ import { MenuVersionService } from './services/menu-version.service';
     CategoriesRepository,
     OptionGroupsService,
     OptionGroupsRepository,
+    ProductsService,
+    ProductsRepository,
     MenuVersionService,
   ],
 })
