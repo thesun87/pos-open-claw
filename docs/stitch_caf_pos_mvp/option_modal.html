@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "error-container": "#f97386",
+                "secondary-fixed-dim": "#d4d3dd",
+                "on-secondary": "#faf8ff",
+                "primary": "#684cb6",
+                "surface-container-high": "#e8e7f5",
+                "error": "#a8364b",
+                "on-tertiary-fixed": "#004b33",
+                "on-primary": "#fdf7ff",
+                "on-secondary-container": "#515159",
+                "on-surface-variant": "#5d5e6c",
+                "outline-variant": "#b1b1c0",
+                "tertiary": "#006d4b",
+                "secondary-container": "#e3e1ec",
+                "surface-container": "#eeecfa",
+                "tertiary-fixed": "#6bffc1",
+                "primary-fixed-dim": "#987cea",
+                "on-tertiary-fixed-variant": "#006b4a",
+                "on-primary-fixed": "#000000",
+                "tertiary-container": "#6bffc1",
+                "surface-variant": "#e2e1f2",
+                "primary-fixed": "#a589f8",
+                "on-primary-container": "#230062",
+                "tertiary-fixed-dim": "#5af0b4",
+                "surface-container-low": "#f4f2fe",
+                "on-primary-fixed-variant": "#2e007c",
+                "on-error-container": "#6e0523",
+                "on-background": "#30323e",
+                "on-secondary-fixed": "#3e3f47",
+                "secondary-dim": "#52525b",
+                "surface-tint": "#684cb6",
+                "surface-dim": "#d9d8e9",
+                "inverse-surface": "#0d0e14",
+                "inverse-primary": "#a589f8",
+                "surface-container-lowest": "#ffffff",
+                "surface-bright": "#fbf8ff",
+                "tertiary-dim": "#005f41",
+                "on-tertiary-container": "#006042",
+                "surface": "#fbf8ff",
+                "primary-dim": "#5b3fa9",
+                "on-secondary-fixed-variant": "#5a5b63",
+                "outline": "#797988",
+                "primary-container": "#a589f8",
+                "on-error": "#fff7f7",
+                "on-surface": "#30323e",
+                "secondary-fixed": "#e3e1ec",
+                "inverse-on-surface": "#9d9ca4",
+                "surface-container-highest": "#e2e1f2",
+                "error-dim": "#6b0221",
+                "on-tertiary": "#e6ffef",
+                "secondary": "#5e5e67",
+                "background": "#fbf8ff"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "md": "16px",
+                "lg": "24px",
+                "base": "8px",
+                "xs": "4px",
+                "sm": "8px",
+                "xl": "32px",
+                "margin-page": "24px",
+                "sidebar-width": "380px",
+                "touch-target-min": "44px",
+                "stack-gap": "12px",
+                "gutter-grid": "16px"
+        },
+        "fontFamily": {
+                "label-sm": ["Geist"],
+                "body-md": ["Geist"],
+                "headline-lg": ["Geist"],
+                "headline-md": ["Geist"]
+        },
+        "fontSize": {
+                "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                "headline-md": ["20px", {"lineHeight": "26px", "fontWeight": "600"}]
+        }
+},
+    },
+  }
+</script>
+</head>
+<body class="bg-background min-h-screen font-body-md text-on-background relative overflow-hidden">
+<!-- Main Shell: Top Bar -->
+<header class="bg-surface text-primary font-headline-md text-headline-md docked full-width top-0 border-b border-outline-variant shadow-sm flex justify-between items-center w-full px-margin-page h-16 z-50 fixed">
+<div class="font-headline-md text-headline-md font-bold text-primary">Artisanal Brew POS</div>
+<div class="flex items-center gap-4 text-on-surface">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">fiber_manual_record</span>
+<span class="material-symbols-outlined">wifi</span>
+<span class="material-symbols-outlined">sync</span>
+<span class="material-symbols-outlined">settings</span>
+</div>
+</header>
+<!-- Sidebar Navigation -->
+<nav class="bg-surface text-on-surface font-label-sm text-label-sm docked left-0 h-full w-24 border-r border-outline-variant shadow-md fixed left-0 top-16 bottom-0 flex flex-col items-center py-4 z-40">
+<div class="flex flex-col gap-6 w-full items-center">
+<div class="flex flex-col items-center gap-1 w-full py-2 hover:bg-surface-variant transition-all duration-200 ease-in-out cursor-pointer">
+<span class="material-symbols-outlined">coffee</span>
+<span>Coffee</span>
+</div>
+<div class="flex flex-col items-center gap-1 w-full py-2 bg-secondary-container text-on-secondary-container rounded-lg mx-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">local_cafe</span>
+<span>Tea</span>
+</div>
+<div class="flex flex-col items-center gap-1 w-full py-2 hover:bg-surface-variant transition-all duration-200 ease-in-out cursor-pointer">
+<span class="material-symbols-outlined">bakery_dining</span>
+<span>Pastry</span>
+</div>
+<div class="flex flex-col items-center gap-1 w-full py-2 hover:bg-surface-variant transition-all duration-200 ease-in-out cursor-pointer">
+<span class="material-symbols-outlined">eco</span>
+<span>Seasonal</span>
+</div>
+<div class="flex flex-col items-center gap-1 w-full py-2 hover:bg-surface-variant transition-all duration-200 ease-in-out cursor-pointer">
+<span class="material-symbols-outlined">shopping_bag</span>
+<span>Merch</span>
+</div>
+</div>
+</nav>
+<!-- Modal Backdrop -->
+<div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+<!-- Option Modal -->
+<div class="relative w-full max-w-2xl bg-surface rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[921px]">
+<!-- Modal Header -->
+<div class="p-6 border-b border-outline-variant flex justify-between items-start">
+<div class="flex gap-4">
+<div class="w-20 h-20 rounded-lg overflow-hidden shadow-sm border border-outline-variant">
+<img alt="Iced Caramel Macchiato" class="w-full h-full object-cover" data-alt="A macro photography shot of an iced caramel macchiato in a clear tall glass, showing beautiful layers of dark espresso, creamy white milk, and golden caramel drizzle. The drink is set against a warm, sunlit cafe background with a soft, dreamy bokeh effect. The lighting is high-end and atmospheric, emphasizing the rich textures and refreshing condensation on the glass." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYMqP2_yust9JmkeQ60EYnCNJJvlKBrsLkKGTqrvralB8OlV55j8zrHUR0P3RJ6BIjmtdnRqiJ__N31XqD7Ie7-5JiLXqJ6KI84cA4V8FgPTX23wtokZ9qoUjFq0UsSLQztlSNaUE1HpbRbNHklPOxi_0GG_vrkOqomL2CEXKP0pcjMM0eW-HD64DS4hyrdh6QGRPHxY0y-mUpPC9sAgm9zLZt65wGngGzOEjQ7IxhxX6vCUIKAxX4fQYRn-5AD8LQJF0d4rtfjNo"/>
+</div>
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-1">Iced Caramel Macchiato</h2>
+<p class="text-on-surface-variant font-body-md">Hand-crafted espresso with vanilla-flavored syrup, milk and ice.</p>
+</div>
+</div>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-on-surface">close</span>
+</button>
+</div>
+<!-- Modal Content (Scrollable) -->
+<div class="p-6 space-y-8 overflow-y-auto flex-1">
+<!-- Size Selection -->
+<section>
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-3 block">Size</label>
+<div class="grid grid-cols-2 gap-3">
+<button class="py-4 rounded-lg border border-outline-variant bg-surface hover:bg-surface-variant transition-all active:scale-95 text-center font-body-md text-on-surface">Small</button>
+<button class="py-4 rounded-lg border-2 border-primary bg-primary-container transition-all active:scale-95 shadow-sm text-center font-body-md text-on-primary-container font-bold">Medium</button>
+<button class="py-4 rounded-lg border border-outline-variant bg-surface hover:bg-surface-variant transition-all active:scale-95 text-center font-body-md text-on-surface col-span-2">Large</button>
+</div>
+</section>
+<!-- Milk Selection -->
+<section>
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-3 block">Milk</label>
+<div class="grid grid-cols-2 gap-3">
+<button class="py-4 rounded-lg border-2 border-primary bg-primary-container transition-all active:scale-95 shadow-sm text-center font-body-md text-on-primary-container font-bold">Regular</button>
+<button class="py-4 rounded-lg border border-outline-variant bg-surface hover:bg-surface-variant transition-all active:scale-95 text-center font-body-md text-on-surface">Oat Milk (+$0.75)</button>
+<button class="py-4 rounded-lg border border-outline-variant bg-surface hover:bg-surface-variant transition-all active:scale-95 text-center font-body-md text-on-surface">Almond Milk (+$0.75)</button>
+<button class="py-4 rounded-lg border border-outline-variant bg-surface hover:bg-surface-variant transition-all active:scale-95 text-center font-body-md text-on-surface">Soy Milk (+$0.75)</button>
+</div>
+</section>
+<!-- Ice Level -->
+<section>
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-3 block">Ice Level</label>
+<div class="grid grid-cols-2 gap-3">
+<button class="py-4 rounded-lg border border-outline-variant bg-surface hover:bg-surface-variant transition-all active:scale-95 text-center font-body-md text-on-surface">0%</button>
+<button class="py-4 rounded-lg border-2 border-primary bg-primary-container transition-all active:scale-95 shadow-sm text-center font-body-md text-on-primary-container font-bold">50%</button>
+<button class="py-4 rounded-lg border border-outline-variant bg-surface hover:bg-surface-variant transition-all active:scale-95 text-center font-body-md text-on-surface col-span-2">100%</button>
+</div>
+</section>
+<!-- Add-ons -->
+<section>
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-3 block">Add-ons</label>
+<div class="grid grid-cols-2 gap-3">
+<button class="py-4 rounded-lg border-2 border-primary bg-primary-container transition-all active:scale-95 shadow-sm text-center font-body-md text-on-primary-container font-bold">Extra Shot (+$1.00)</button>
+<button class="py-4 rounded-lg border border-outline-variant bg-surface hover:bg-surface-variant transition-all active:scale-95 text-center font-body-md text-on-surface">Caramel Drizzle (+$0.50)</button>
+</div>
+</section>
+</div>
+<!-- Modal Footer / Action -->
+<div class="p-6 bg-surface-container-low border-t border-outline-variant flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-on-surface-variant uppercase">Subtotal</span>
+<span class="font-headline-lg text-headline-lg text-on-surface">$6.25</span>
+</div>
+<button class="bg-primary text-on-primary px-10 h-[56px] rounded-lg font-headline-md text-headline-md flex items-center gap-2 shadow-sm hover:bg-primary-dim active:scale-95 transition-transform">
+<span>Add to Cart</span>
+<span class="material-symbols-outlined">shopping_cart_checkout</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Main Content Underlay (to visualize the context) -->
+<main class="fixed inset-0 pt-20 pl-28 pr-[400px] grid grid-cols-3 gap-6 p-margin-page pointer-events-none">
+<!-- Mock Product Grid -->
+<div class="aspect-square bg-surface border border-outline-variant rounded-lg flex flex-col justify-end p-4">
+<div class="h-10 w-2/3 bg-surface-variant rounded"></div>
+</div>
+<div class="aspect-square bg-surface border border-outline-variant rounded-lg flex flex-col justify-end p-4">
+<div class="h-10 w-2/3 bg-surface-variant rounded"></div>
+</div>
+<div class="aspect-square bg-surface border border-outline-variant rounded-lg flex flex-col justify-end p-4">
+<div class="h-10 w-2/3 bg-surface-variant rounded"></div>
+</div>
+</main>
+<!-- Cart Panel Mock -->
+<aside class="fixed right-0 top-16 bottom-0 w-[380px] bg-surface border-l border-outline-variant p-6 z-30 flex flex-col pointer-events-none">
+<h3 class="font-headline-md text-headline-md mb-6">Current Order</h3>
+<div class="space-y-4 flex-1">
+<div class="flex justify-between items-center opacity-40">
+<div class="w-12 h-12 bg-surface-variant rounded-lg"></div>
+<div class="flex-1 ml-4 h-4 bg-surface-variant rounded"></div>
+</div>
+</div>
+</aside>
+<!-- Footer System (Fixed/Floating) -->
+<footer class="fixed bottom-0 right-[380px] left-24 px-4 py-2 flex justify-between items-center opacity-50 bg-transparent text-on-surface-variant font-label-sm text-label-sm z-40">
+<div>© 2024 Artisanal Brew Systems</div>
+<div class="flex gap-4">
+<span class="hover:text-primary cursor-pointer transition-opacity">Privacy Policy</span>
+<span class="hover:text-primary cursor-pointer transition-opacity">Support</span>
+</div>
+</footer>
+</body></html>
