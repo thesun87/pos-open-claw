@@ -1,3 +1,4 @@
+import { forwardRef } from 'react'
 import type { PaymentMethod } from '../types'
 
 const OPTIONS: Array<{ value: PaymentMethod; label: string }> = [
@@ -12,11 +13,11 @@ type PaymentMethodSelectorProps = {
   disabled?: boolean
 }
 
-export function PaymentMethodSelector({ value, onChange, disabled = false }: PaymentMethodSelectorProps) {
+export const PaymentMethodSelector = forwardRef<HTMLInputElement, PaymentMethodSelectorProps>(function PaymentMethodSelector({ value, onChange, disabled = false }, ref) {
   return (
-    <fieldset className="rounded-lg border border-border bg-surface-muted p-3" aria-label="Phương thức thanh toán">
+    <fieldset className="rounded-lg border border-border bg-surface-muted p-3">
       <legend className="px-1 text-sm font-semibold text-text-primary">Phương thức thanh toán</legend>
-      <div className="mt-2 grid gap-2" role="radiogroup" aria-label="Chọn phương thức thanh toán">
+      <div className="mt-2 grid gap-2" role="radiogroup" aria-label="Phương thức thanh toán">
         {OPTIONS.map((option) => {
           const selected = value === option.value
           return (
@@ -25,6 +26,7 @@ export function PaymentMethodSelector({ value, onChange, disabled = false }: Pay
               className={`flex min-h-touch items-center gap-3 rounded-md border px-3 py-2 text-sm font-medium ${selected ? 'border-primary bg-primary/10 ring-2 ring-primary/30' : 'border-border bg-surface'} ${disabled ? 'opacity-70' : ''}`}
             >
               <input
+                ref={option.value === 'cash' ? ref : undefined}
                 type="radio"
                 name="payment-method"
                 value={option.value}
@@ -40,4 +42,4 @@ export function PaymentMethodSelector({ value, onChange, disabled = false }: Pay
       </div>
     </fieldset>
   )
-}
+})

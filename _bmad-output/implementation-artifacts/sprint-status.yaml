@@ -22,7 +22,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-05-10T15:11:57+07:00"
-last_updated: "2026-05-16T20:37:00+07:00"
+last_updated: "2026-05-17T14:39:00+07:00"
 project: pos-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -55,6 +55,7 @@ development_status:
   2-11-manual-sync-trigger-sync-retry-panel-error-mapping: done
   2-12-cancel-pending-order-cart-level-void-before-sync: done
   2-13-backend-void-endpoint-frontend-void-synced-order-flow: done
+  2-14-payment-method-modal-on-checkout: done
   epic-2-retrospective: optional
   epic-3: in-progress
   3-1-admin-layout-sectioned-navigation-admindatatable-statusbadge-foundation: done

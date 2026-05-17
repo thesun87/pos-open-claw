@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto'
 import '@testing-library/jest-dom/vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from '../../../db/dexie'
@@ -33,6 +33,39 @@ afterEach(async () => {
   vi.restoreAllMocks()
   await db.orders.clear()
   db.close()
+})
+
+describe('CartPanel checkout payment modal', () => {
+  it('removes inline payment selector and opens modal without finalizing', async () => {
+    const user = userEvent.setup()
+    const finalizeSpy = vi.spyOn(ordersApi, 'finalizeOrder')
+    const addSpy = vi.spyOn(db.orders, 'add')
+    useCartStore.getState().addItem(cartItem)
+
+    render(<CartPanel />)
+    const checkout = screen.getByLabelText('Tóm tắt thanh toán')
+    expect(within(checkout).queryByText('Phương thức thanh toán')).not.toBeInTheDocument()
+    expect(within(checkout).queryByRole('radio', { name: /Tiền mặt/ })).not.toBeInTheDocument()
+
+    const finalizeButton = within(checkout).getByRole('button', { name: 'Hoàn tất đơn' })
+    await user.click(finalizeButton)
+
+    expect(screen.getByRole('heading', { name: 'Chọn phương thức thanh toán' })).toBeInTheDocument()
+    expect(finalizeSpy).not.toHaveBeenCalled()
+    expect(addSpy).not.toHaveBeenCalled()
+    expect(syncEngine.kick).not.toHaveBeenCalled()
+  })
+
+  it('closes payment modal with Quay lại and leaves checkout trigger enabled', async () => {
+    const user = userEvent.setup()
+    useCartStore.getState().addItem(cartItem)
+    render(<CartPanel />)
+    const finalizeButton = screen.getByRole('button', { name: 'Hoàn tất đơn' })
+    await user.click(finalizeButton)
+    await user.click(screen.getByRole('button', { name: 'Quay lại' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(finalizeButton).toBeEnabled()
+  })
 })
 
 describe('CartPanel cart-level void', () => {

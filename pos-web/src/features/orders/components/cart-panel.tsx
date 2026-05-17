@@ -8,6 +8,7 @@ import { useCheckoutStore } from '../checkout-store'
 import type { CartItem } from '../types'
 import { CheckoutSummary } from './checkout-summary'
 import { DiscountControl } from './discount-control'
+import { PaymentMethodModal } from './payment-method-modal'
 import { VoidOrderDialog } from './void-order-dialog'
 
 function optionText(item: CartItem) {
@@ -119,6 +120,7 @@ export function CartPanel() {
         ) : null}
         <CheckoutSummary items={items} discount={totals.discount} />
       </div>
+      <PaymentMethodModal items={items} discount={totals.discount} />
       <VoidOrderDialog open={isVoidDialogOpen} onOpenChange={handleVoidDialogOpenChange} onConfirm={handleVoidOrder} />
       <Dialog open={pendingRemove !== null} onOpenChange={(open) => { if (!open) setPendingRemove(null) }}>
         <DialogContent aria-describedby="remove-line-description">
