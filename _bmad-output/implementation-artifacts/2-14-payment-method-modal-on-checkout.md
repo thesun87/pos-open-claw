@@ -26,34 +26,34 @@ so that khu vực giỏ hàng gọn gàng hơn và bước chọn phương thứ
 
 ## Tasks / Subtasks
 
-- [ ] Inspect các file checkout/cart hiện tại trước khi sửa (AC: 1-9)
-  - [ ] Đọc lại `pos-web/src/features/orders/components/checkout-summary.tsx`, `payment-method-selector.tsx`, `cart-panel.tsx`, `cart-panel.test.tsx`, `pos-web/src/features/orders/checkout-store.ts`, `api.ts`, `pos-web/src/routes/pos/pos-shell.tsx`, `pos-shell.test.tsx`, `shared/components/ui/dialog.tsx`, `void-order-dialog.tsx` (template tham khảo).
-  - [ ] Bảo toàn hành vi không nằm trong scope: cart line items (Story 2.4), DiscountControl, void/cancel order (Story 2.12/2.13), ReceiptModal (Story 2.8), sync engine kick (Story 2.7/2.9), connectivity indicator (Story 2.10), POS shell layout & route message.
-- [ ] Mở rộng checkout-store với UI state cho popup PTTT (AC: 2,6,7,8)
-  - [ ] Thêm field `isPaymentMethodModalOpen: boolean` (default `false`) vào `CheckoutState`.
-  - [ ] Thêm actions: `openPaymentMethodModal()` (set `true`, clear `errorMessage`), `closePaymentMethodModal()` (set `false`, KHÔNG đổi `paymentMethod` để giữ lựa chọn của cashier).
-  - [ ] Update `initialState` để chứa `isPaymentMethodModalOpen: false`; `completeCheckout` và `resetCheckoutState` phải đảm bảo `isPaymentMethodModalOpen` về `false`; `failCheckout` KHÔNG đóng popup (giữ popup mở để retry — AC8).
-  - [ ] Giữ nguyên `paymentMethod` default `'cash'`, `startCheckout`, `finishCheckout`, `completeCheckout(order)`, `failCheckout(message)`, `clearLastFinalizedOrder`, `lastFinalizedOrder`, `errorMessage` — đây là contract Story 2.7/2.8 đang dùng.
-- [ ] Tách `PaymentMethodModal` component mới (AC: 2-9)
-  - [ ] Tạo `pos-web/src/features/orders/components/payment-method-modal.tsx`. Dùng `Dialog`, `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription` từ `shared/components/ui/dialog.tsx`; KHÔNG tự cài Radix dialog mới.
-  - [ ] Render bên trong: tiêu đề `Chọn phương thức thanh toán`, description `Chọn phương thức thanh toán cho đơn hiện tại.`, body bọc lại `<PaymentMethodSelector value={...} onChange={...} disabled={isCheckingOut} />` (reuse component, không duplicate radio markup), error block (`role="alert"`) nếu `errorMessage` có giá trị, footer 2 button `Quay lại` (`variant="outline"`) và `Hoàn tất` (default variant).
-  - [ ] Props/contract đề xuất: `{ items: CartItem[]; discount: CartDiscount | null }` để gọi `finalizeOrder` (hoặc tách thành callback `onConfirm`/`onCancel` nếu giúp test gọn hơn — chọn phương án tối thiểu đủ AC, không thêm abstraction).
-  - [ ] Logic `handleConfirm` trong modal phải tái sử dụng đúng sequence hiện có của `CheckoutSummary.handleFinalizeOrder` (AC5). KHÔNG copy-paste rồi để 2 nguồn — di chuyển logic finalize từ `CheckoutSummary` sang modal, hoặc tách thành 1 hook chung trong `features/orders` nếu thấy cần. Mục tiêu là CheckoutSummary KHÔNG còn gọi `finalizeOrder` trực tiếp.
-  - [ ] Logic `handleCancel`: nếu `isCheckingOut` thì no-op (AC7), ngược lại gọi `closePaymentMethodModal()`.
-  - [ ] Đảm bảo Radix `onOpenChange={(open) => { if (!open) handleCancel() }}` cho cả overlay click / ESC / nút X; truyền vào `Dialog open={isPaymentMethodModalOpen}`.
-  - [ ] Khi `isCheckingOut === true`, disable cả `Quay lại` và `Hoàn tất`, chặn đóng popup (xem pattern ở `VoidOrderDialog` cho mock submit state).
-- [ ] Refactor `CheckoutSummary` (AC: 1,2,3)
-  - [ ] Xoá `<PaymentMethodSelector .../>` khỏi JSX; xoá import nếu không còn dùng trong file này.
-  - [ ] Đổi `onClick` của button `Hoàn tất đơn` thành `openPaymentMethodModal()` thay vì `handleFinalizeOrder`; xoá `handleFinalizeOrder` khỏi `CheckoutSummary` nếu đã move sang modal (đừng để code chết).
-  - [ ] Bỏ các selector store không còn cần trong CheckoutSummary (vd `paymentMethod`, `setPaymentMethod`, `completeCheckout`, `failCheckout`) sau khi move logic finalize; giữ `isCheckingOut`, `errorMessage`, button label.
-  - [ ] Giữ `errorMessage` hiển thị trong CheckoutSummary cho lần finalize trước (AC3); đảm bảo không bị duplicate ở cả 2 vị trí khi popup đóng. Quy ước: error nằm trong popup khi popup mở (AC8), đồng thời sau khi popup đóng nếu `errorMessage` còn → hiển thị ở CheckoutSummary. (Pattern đơn giản: dùng cùng `errorMessage` state, render điều kiện theo `isPaymentMethodModalOpen` để tránh trùng.)
-  - [ ] Giữ `Hoàn tất đơn` disabled khi `!hasItems || isCheckingOut`; class/layout của button không thay đổi.
-- [ ] Wire modal vào CartPanel/POS shell (AC: 2,5,9)
-  - [ ] Render `<PaymentMethodModal items={items} discount={totals.discount} />` 1 lần trong `CartPanel` (cùng cấp với `VoidOrderDialog` và remove confirm dialog), sau `<CheckoutSummary ... />`. Đảm bảo modal đọc cùng `items`/`discount` mà CheckoutSummary đang dùng để finalize đúng snapshot.
-  - [ ] Không thay đổi layout 2 cột POS, không di chuyển `<ReceiptModal />` (vẫn nằm ở `pos-shell.tsx`).
-  - [ ] Sau khi `completeCheckout(order)` set `lastFinalizedOrder`, `ReceiptModal` (đang lắng `useCheckoutStore.lastFinalizedOrder` từ `pos-shell.tsx`) tự mở — không cần thay đổi `pos-shell.tsx`.
-- [ ] Tests (AC: 10,11)
-  - [ ] Tạo `pos-web/src/features/orders/components/payment-method-modal.test.tsx`:
+- [x] Inspect các file checkout/cart hiện tại trước khi sửa (AC: 1-9)
+  - [x] Đọc lại `pos-web/src/features/orders/components/checkout-summary.tsx`, `payment-method-selector.tsx`, `cart-panel.tsx`, `cart-panel.test.tsx`, `pos-web/src/features/orders/checkout-store.ts`, `api.ts`, `pos-web/src/routes/pos/pos-shell.tsx`, `pos-shell.test.tsx`, `shared/components/ui/dialog.tsx`, `void-order-dialog.tsx` (template tham khảo).
+  - [x] Bảo toàn hành vi không nằm trong scope: cart line items (Story 2.4), DiscountControl, void/cancel order (Story 2.12/2.13), ReceiptModal (Story 2.8), sync engine kick (Story 2.7/2.9), connectivity indicator (Story 2.10), POS shell layout & route message.
+- [x] Mở rộng checkout-store với UI state cho popup PTTT (AC: 2,6,7,8)
+  - [x] Thêm field `isPaymentMethodModalOpen: boolean` (default `false`) vào `CheckoutState`.
+  - [x] Thêm actions: `openPaymentMethodModal()` (set `true`, clear `errorMessage`), `closePaymentMethodModal()` (set `false`, KHÔNG đổi `paymentMethod` để giữ lựa chọn của cashier).
+  - [x] Update `initialState` để chứa `isPaymentMethodModalOpen: false`; `completeCheckout` và `resetCheckoutState` phải đảm bảo `isPaymentMethodModalOpen` về `false`; `failCheckout` KHÔNG đóng popup (giữ popup mở để retry — AC8).
+  - [x] Giữ nguyên `paymentMethod` default `'cash'`, `startCheckout`, `finishCheckout`, `completeCheckout(order)`, `failCheckout(message)`, `clearLastFinalizedOrder`, `lastFinalizedOrder`, `errorMessage` — đây là contract Story 2.7/2.8 đang dùng.
+- [x] Tách `PaymentMethodModal` component mới (AC: 2-9)
+  - [x] Tạo `pos-web/src/features/orders/components/payment-method-modal.tsx`. Dùng `Dialog`, `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription` từ `shared/components/ui/dialog.tsx`; KHÔNG tự cài Radix dialog mới.
+  - [x] Render bên trong: tiêu đề `Chọn phương thức thanh toán`, description `Chọn phương thức thanh toán cho đơn hiện tại.`, body bọc lại `<PaymentMethodSelector value={...} onChange={...} disabled={isCheckingOut} />` (reuse component, không duplicate radio markup), error block (`role="alert"`) nếu `errorMessage` có giá trị, footer 2 button `Quay lại` (`variant="outline"`) và `Hoàn tất` (default variant).
+  - [x] Props/contract đề xuất: `{ items: CartItem[]; discount: CartDiscount | null }` để gọi `finalizeOrder` (hoặc tách thành callback `onConfirm`/`onCancel` nếu giúp test gọn hơn — chọn phương án tối thiểu đủ AC, không thêm abstraction).
+  - [x] Logic `handleConfirm` trong modal phải tái sử dụng đúng sequence hiện có của `CheckoutSummary.handleFinalizeOrder` (AC5). KHÔNG copy-paste rồi để 2 nguồn — di chuyển logic finalize từ `CheckoutSummary` sang modal, hoặc tách thành 1 hook chung trong `features/orders` nếu thấy cần. Mục tiêu là CheckoutSummary KHÔNG còn gọi `finalizeOrder` trực tiếp.
+  - [x] Logic `handleCancel`: nếu `isCheckingOut` thì no-op (AC7), ngược lại gọi `closePaymentMethodModal()`.
+  - [x] Đảm bảo Radix `onOpenChange={(open) => { if (!open) handleCancel() }}` cho cả overlay click / ESC / nút X; truyền vào `Dialog open={isPaymentMethodModalOpen}`.
+  - [x] Khi `isCheckingOut === true`, disable cả `Quay lại` và `Hoàn tất`, chặn đóng popup (xem pattern ở `VoidOrderDialog` cho mock submit state).
+- [x] Refactor `CheckoutSummary` (AC: 1,2,3)
+  - [x] Xoá `<PaymentMethodSelector .../>` khỏi JSX; xoá import nếu không còn dùng trong file này.
+  - [x] Đổi `onClick` của button `Hoàn tất đơn` thành `openPaymentMethodModal()` thay vì `handleFinalizeOrder`; xoá `handleFinalizeOrder` khỏi `CheckoutSummary` nếu đã move sang modal (đừng để code chết).
+  - [x] Bỏ các selector store không còn cần trong CheckoutSummary (vd `paymentMethod`, `setPaymentMethod`, `completeCheckout`, `failCheckout`) sau khi move logic finalize; giữ `isCheckingOut`, `errorMessage`, button label.
+  - [x] Giữ `errorMessage` hiển thị trong CheckoutSummary cho lần finalize trước (AC3); đảm bảo không bị duplicate ở cả 2 vị trí khi popup đóng. Quy ước: error nằm trong popup khi popup mở (AC8), đồng thời sau khi popup đóng nếu `errorMessage` còn → hiển thị ở CheckoutSummary. (Pattern đơn giản: dùng cùng `errorMessage` state, render điều kiện theo `isPaymentMethodModalOpen` để tránh trùng.)
+  - [x] Giữ `Hoàn tất đơn` disabled khi `!hasItems || isCheckingOut`; class/layout của button không thay đổi.
+- [x] Wire modal vào CartPanel/POS shell (AC: 2,5,9)
+  - [x] Render `<PaymentMethodModal items={items} discount={totals.discount} />` 1 lần trong `CartPanel` (cùng cấp với `VoidOrderDialog` và remove confirm dialog), sau `<CheckoutSummary ... />`. Đảm bảo modal đọc cùng `items`/`discount` mà CheckoutSummary đang dùng để finalize đúng snapshot.
+  - [x] Không thay đổi layout 2 cột POS, không di chuyển `<ReceiptModal />` (vẫn nằm ở `pos-shell.tsx`).
+  - [x] Sau khi `completeCheckout(order)` set `lastFinalizedOrder`, `ReceiptModal` (đang lắng `useCheckoutStore.lastFinalizedOrder` từ `pos-shell.tsx`) tự mở — không cần thay đổi `pos-shell.tsx`.
+- [x] Tests (AC: 10,11)
+  - [x] Tạo `pos-web/src/features/orders/components/payment-method-modal.test.tsx`:
     - Open modal mặc định không render; sau `openPaymentMethodModal()` render đúng title, description, 3 radio (default `Tiền mặt`), button `Quay lại`, `Hoàn tất`.
     - Chọn `Chuyển khoản` → state `paymentMethod === 'transfer'`.
     - Bấm `Hoàn tất` (mock `finalizeOrder` resolve với `LocalOrderRecord` fixture) → `finalizeOrder` được gọi đúng tham số, cart reset, `lastFinalizedOrder` set, popup đóng, sự kiện `order.finalized` dispatch.
@@ -61,19 +61,19 @@ so that khu vực giỏ hàng gọn gàng hơn và bước chọn phương thứ
     - ESC / overlay click → tương đương `Quay lại`.
     - Mock `finalizeOrder` reject → popup vẫn mở, error hiển thị trong popup `role="alert"`, cart không reset.
     - `isCheckingOut === true` → cả 2 button disabled, ESC/overlay không đóng popup.
-  - [ ] Update `pos-web/src/features/orders/components/cart-panel.test.tsx` (hoặc thêm test mới song song):
+  - [x] Update `pos-web/src/features/orders/components/cart-panel.test.tsx` (hoặc thêm test mới song song):
     - CheckoutSummary không còn fieldset `Phương thức thanh toán`/radio inline.
     - Click `Hoàn tất đơn` → popup PTTT xuất hiện, `finalizeOrder` chưa được gọi.
     - Sau khi finalize qua popup, focus trở về button `Hoàn tất đơn`.
-  - [ ] Update `pos-web/src/routes/pos/pos-shell.test.tsx` nếu test cũ đang chọn radio inline để finalize — đổi sang flow mở popup → chọn radio → bấm `Hoàn tất`. Nếu test 2-7/2-8 hiện đang assert receipt sau khi click `Hoàn tất đơn` trực tiếp, cập nhật theo flow mới.
-  - [ ] Reset `useCartStore` và `useCheckoutStore` (`resetCart`, `resetCheckoutState`) trong `beforeEach`; mock `syncEngine.kick` như test hiện tại.
-- [ ] Chạy regression gates (AC: 11)
-  - [ ] `cd pos-web && npm run typecheck`
-  - [ ] `cd pos-web && npm run lint`
-  - [ ] `cd pos-web && npm test`
-  - [ ] `cd pos-web && npm run build`
-  - [ ] `grep -R "localStorage\|sessionStorage\|dangerouslySetInnerHTML" -n pos-web/src --exclude='*.test.ts' --exclude='*.test.tsx'`
-  - [ ] Ghi kết quả vào Dev Agent Record > Debug Log References.
+  - [x] Update `pos-web/src/routes/pos/pos-shell.test.tsx` nếu test cũ đang chọn radio inline để finalize — đổi sang flow mở popup → chọn radio → bấm `Hoàn tất`. Nếu test 2-7/2-8 hiện đang assert receipt sau khi click `Hoàn tất đơn` trực tiếp, cập nhật theo flow mới.
+  - [x] Reset `useCartStore` và `useCheckoutStore` (`resetCart`, `resetCheckoutState`) trong `beforeEach`; mock `syncEngine.kick` như test hiện tại.
+- [x] Chạy regression gates (AC: 11)
+  - [x] `cd pos-web && npm run typecheck`
+  - [x] `cd pos-web && npm run lint`
+  - [x] `cd pos-web && npm test`
+  - [x] `cd pos-web && npm run build`
+  - [x] `grep -R "localStorage\|sessionStorage\|dangerouslySetInnerHTML" -n pos-web/src --exclude='*.test.ts' --exclude='*.test.tsx'`
+  - [x] Ghi kết quả vào Dev Agent Record > Debug Log References.
 
 ## Dev Notes
 
@@ -187,29 +187,31 @@ grep -R "localStorage\|sessionStorage\|dangerouslySetInnerHTML" -n pos-web/src -
 
 ### Agent Model Used
 
-vllm/kr/claude-sonnet-4.5
+vllm/cx/gpt-5.5
 
 ### Debug Log References
 
-N/A
+- `cd pos-web && npm run typecheck` → PASS
+- `cd pos-web && npm run lint` → PASS (4 existing React Compiler warnings; 0 errors)
+- `cd pos-web && npm test -- --run src/features/orders/components/payment-method-modal.test.tsx src/features/orders/components/cart-panel.test.tsx src/routes/pos/pos-shell.test.tsx` → PASS (3 files, 23 tests)
+- `cd pos-web && npm test` → PASS (44 files, 234 tests)
+- `cd pos-web && npm run build` → PASS (Vite chunk-size warning only)
+- `cd pos-web && grep -R "localStorage\|sessionStorage\|dangerouslySetInnerHTML" -n src --exclude='*.test.ts' --exclude='*.test.tsx'` → PASS (no matches; grep exit 1)
 
 ### Completion Notes List
 
-- Implemented PaymentMethodModal component with Radix Dialog
-- Refactored CheckoutSummary to remove inline PaymentMethodSelector
-- Extended checkout-store with isPaymentMethodModalOpen state and actions
-- Added focus management to return focus to trigger button after modal closes
-- All 11 acceptance criteria met
-- All tests passing (234 tests total)
-- All regression gates passed: typecheck, lint, test, build
-- Security scan clean: no localStorage/sessionStorage/dangerouslySetInnerHTML
+- Đã refactor CheckoutSummary thành phần tổng tiền + trigger mở modal; không còn radio PTTT inline trong cart.
+- Đã thêm state `isPaymentMethodModalOpen` và actions mở/đóng modal trong checkout store; finalize success đóng modal qua `completeCheckout`, fail giữ modal mở.
+- Đã thêm PaymentMethodModal dùng Radix Dialog wrapper hiện có, reuse PaymentMethodSelector, chặn đóng khi đang checkout, và di chuyển flow `finalizeOrder` vào modal.
+- Đã cập nhật tests cho flow mở modal, chọn chuyển khoản, confirm finalize, cancel/no-op, ESC/overlay, lỗi finalize, và regression POS shell.
 
 ### File List
 
-- pos-web/src/features/orders/checkout-store.ts (updated: added isPaymentMethodModalOpen state + actions)
-- pos-web/src/features/orders/components/payment-method-modal.tsx (new: modal wrapper with finalize logic)
-- pos-web/src/features/orders/components/payment-method-modal.test.tsx (new: 7 test cases)
-- pos-web/src/features/orders/components/checkout-summary.tsx (updated: removed inline selector, changed onClick to openModal)
-- pos-web/src/features/orders/components/cart-panel.tsx (updated: added PaymentMethodModal render)
-- pos-web/src/features/orders/components/cart-panel.test.tsx (updated: 2 new test cases for modal behavior)
-- pos-web/src/features/orders/components/payment-method-selector.tsx (updated: removed duplicate aria-label)
+- `pos-web/src/features/orders/checkout-store.ts`
+- `pos-web/src/features/orders/components/checkout-summary.tsx`
+- `pos-web/src/features/orders/components/cart-panel.tsx`
+- `pos-web/src/features/orders/components/payment-method-selector.tsx`
+- `pos-web/src/features/orders/components/payment-method-modal.tsx`
+- `pos-web/src/features/orders/components/payment-method-modal.test.tsx`
+- `pos-web/src/features/orders/components/cart-panel.test.tsx`
+- `pos-web/src/routes/pos/pos-shell.test.tsx`
