@@ -2,7 +2,6 @@ import { useMemo, useRef, useState } from 'react'
 import { Button } from '../../../shared/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../shared/components/ui/dialog'
 import { formatVnd } from '../../../shared/lib/format-vnd'
-import { getTextInitials } from '../../../shared/lib/text-initials'
 import { calculateCartTotals, useCartStore } from '../cart-store'
 import { useCheckoutStore } from '../checkout-store'
 import type { CartItem } from '../types'
@@ -20,15 +19,50 @@ function CartLineItem({ item, onAskRemove }: LineItemProps) {
   const [noteDraft, setNoteDraft] = useState(item.note ?? '')
   function removeLine() { if (item.quantity > 1) onAskRemove(item); else removeItem(item.tempId) }
   return (
-    <article className="flex gap-3 rounded-2xl border border-outline-variant/20 bg-surface-container p-3 shadow-sm shadow-on-surface/5" aria-label={`Món ${item.productNameSnapshot}`}>
-      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary-container/70 to-surface-container-high text-sm font-bold text-primary/60">{getTextInitials(item.productNameSnapshot)}</div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2"><div><h3 className="font-bold text-on-surface">{item.productNameSnapshot}</h3><p className="price text-sm font-bold text-on-surface-variant">{formatVnd(item.unitPriceSnapshot)}</p></div><button type="button" aria-label={`Xóa ${item.productNameSnapshot}`} onClick={removeLine} className="grid h-8 w-8 place-items-center rounded-md text-error hover:bg-error-container/40"><span aria-hidden="true" className="material-symbols-outlined">close</span></button></div>
-        {item.options.length > 0 ? <div className="mt-2 flex flex-wrap gap-1">{item.options.map((option) => <span key={option.optionId} className="rounded-full bg-surface-container-high px-2 py-0.5 text-[10px] text-on-surface-variant">{option.labelSnapshot}{option.priceDeltaSnapshot ? ` ${option.priceDeltaSnapshot > 0 ? '+' : ''}${formatVnd(option.priceDeltaSnapshot)}` : ''}</span>)}</div> : null}
-        {item.note ? <p className="mt-1 text-sm italic text-on-surface-variant">Ghi chú: {item.note}</p> : null}
-        <div className="mt-3 flex items-center justify-between gap-3"><div className="flex items-center rounded-md border border-outline-variant/30" aria-label={`Số lượng ${item.productNameSnapshot}`}><Button type="button" variant="ghost" size="icon" aria-label={`Giảm ${item.productNameSnapshot}`} onClick={() => updateQuantity(item.tempId, item.quantity - 1)} disabled={item.quantity <= 1}>−</Button><span className="min-w-8 text-center font-semibold" aria-label="Số lượng hiện tại">{item.quantity}</span><Button type="button" variant="ghost" size="icon" aria-label={`Tăng ${item.productNameSnapshot}`} onClick={() => updateQuantity(item.tempId, item.quantity + 1)}>+</Button></div><div className="total text-right font-bold">{formatVnd(item.lineTotal)}</div></div>
-        <Button type="button" variant="outline" className="mt-3 w-full border-outline-variant/30" onClick={() => { setNoteDraft(item.note ?? ''); setIsEditingNote((value) => !value) }}>Sửa ghi chú</Button>
-        {isEditingNote ? <div className="mt-2"><label className="text-sm font-medium" htmlFor={`note-${item.tempId}`}>Ghi chú món</label><textarea id={`note-${item.tempId}`} value={noteDraft} maxLength={200} onChange={(event) => setNoteDraft(event.target.value)} className="mt-1 min-h-20 w-full rounded-lg border border-outline-variant bg-surface px-3 py-2" /><div className="mt-2 flex items-center justify-between gap-2"><span className="text-xs text-on-surface-variant">Tối đa 200 ký tự</span><Button type="button" onClick={() => { updateItemNote(item.tempId, noteDraft); setIsEditingNote(false) }}>Lưu ghi chú</Button></div></div> : null}
+    <article className="bg-surface-container-lowest border border-outline-variant/50 rounded-lg p-3 shadow-sm" aria-label={`Món ${item.productNameSnapshot}`}>
+      <div className="flex justify-between items-start">
+        <h3 className="font-bold text-on-surface line-clamp-1">{item.productNameSnapshot}</h3>
+        <button type="button" aria-label={`Xóa ${item.productNameSnapshot}`} onClick={removeLine} className="text-on-surface-variant hover:text-error active:scale-95 transition-all">
+          <span aria-hidden="true" className="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div className="flex items-center gap-1 mt-1 flex-wrap">
+        <span className="text-sm font-medium text-on-surface-variant">{formatVnd(item.unitPriceSnapshot)}</span>
+        {item.options.map((option) => (
+          <span key={option.optionId} className="px-1 py-[2px] bg-secondary-container text-on-secondary-container text-xs rounded-[4px]">
+            {option.labelSnapshot}{option.priceDeltaSnapshot ? ` ${option.priceDeltaSnapshot > 0 ? '+' : ''}${formatVnd(option.priceDeltaSnapshot)}` : ''}
+          </span>
+        ))}
+      </div>
+      <div className="mt-1">
+        {item.note ? <p className="text-sm text-on-surface-variant italic">Ghi chú: {item.note}</p> : null}
+        <button type="button" onClick={() => { setNoteDraft(item.note ?? ''); setIsEditingNote((value) => !value) }} className="mt-1 text-primary text-sm font-medium flex items-center gap-1 hover:underline active:opacity-70 transition-all">
+          <span aria-hidden="true" className="material-symbols-outlined" style={{ fontSize: '14px' }}>{item.note ? 'edit' : 'add_comment'}</span>
+          {item.note ? 'Sửa ghi chú' : 'Thêm ghi chú'}
+        </button>
+      </div>
+      {isEditingNote && (
+        <div className="mt-2 pt-2 border-t border-outline-variant/50">
+          <textarea id={`note-${item.tempId}`} value={noteDraft} maxLength={200} onChange={(event) => setNoteDraft(event.target.value)} className="w-full bg-surface-container-low border border-outline-variant/50 rounded p-2 text-sm focus:ring-1 focus:ring-primary outline-none" rows={2} placeholder="Nhập ghi chú mới..." />
+          <div className="flex justify-between items-center mt-1">
+            <span className="text-xs text-on-surface-variant">Tối đa 200 ký tự</span>
+            <Button type="button" size="sm" onClick={() => { updateItemNote(item.tempId, noteDraft); setIsEditingNote(false) }}>Lưu</Button>
+          </div>
+        </div>
+      )}
+      <div className="flex justify-between items-center mt-2 pt-2 border-t border-outline-variant/30">
+        <div className="flex items-center bg-surface-container-high rounded-lg overflow-hidden" aria-label={`Số lượng ${item.productNameSnapshot}`}>
+          <button type="button" aria-label={`Giảm ${item.productNameSnapshot}`} onClick={() => updateQuantity(item.tempId, item.quantity - 1)} disabled={item.quantity <= 1} className="w-8 h-8 flex items-center justify-center text-primary hover:bg-primary-container active:scale-90 transition-all disabled:opacity-50 disabled:active:scale-100">
+            <span aria-hidden="true" className="material-symbols-outlined">remove</span>
+          </button>
+          <span className="w-10 text-center font-bold" aria-label="Số lượng hiện tại">{item.quantity}</span>
+          <button type="button" aria-label={`Tăng ${item.productNameSnapshot}`} onClick={() => updateQuantity(item.tempId, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center text-primary hover:bg-primary-container active:scale-90 transition-all">
+            <span aria-hidden="true" className="material-symbols-outlined">add</span>
+          </button>
+        </div>
+        <div className="text-right">
+          <span className="font-bold text-primary">{formatVnd(item.lineTotal)}</span>
+        </div>
       </div>
     </article>
   )
@@ -60,7 +94,7 @@ export function CartPanel() {
   return (
     <aside ref={cartPanelRef} className="fixed bottom-0 right-0 top-16 z-30 hidden w-[380px] flex-col border-l border-outline-variant/20 bg-surface/95 shadow-2xl shadow-on-surface/15 backdrop-blur-2xl md:flex" aria-label="Giỏ hàng và thanh toán" tabIndex={0}>
       <header className="border-b border-outline-variant/20 p-6"><div className="flex items-start justify-between gap-3"><div><h2 className="text-[24px] font-semibold leading-8 text-on-surface">Đơn hiện tại</h2><p className="mt-1 font-label-sm text-on-surface-variant">Đơn mới • POS01</p></div>{hasItems ? <button ref={cancelButtonRef} type="button" onClick={() => { setCartFeedback(null); setIsVoidDialogOpen(true) }} className="font-label-sm text-error hover:underline">Hủy đơn</button> : null}</div></header>
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">{items.length === 0 ? <div className="flex h-full flex-col items-center justify-center text-center font-body-md text-on-surface-variant"><span aria-hidden="true" className="material-symbols-outlined mb-3 text-6xl text-on-surface-variant/40">shopping_cart</span>Chọn món để bắt đầu đơn.</div> : items.map((item) => <CartLineItem key={item.tempId} item={item} onAskRemove={setPendingRemove} />)}</div>
+      <div className="flex-1 space-y-2 overflow-y-auto p-4">{items.length === 0 ? <div className="flex h-full flex-col items-center justify-center text-center font-body-md text-on-surface-variant"><span aria-hidden="true" className="material-symbols-outlined mb-3 text-6xl text-on-surface-variant/40">shopping_cart</span>Chọn món để bắt đầu đơn.</div> : items.map((item) => <CartLineItem key={item.tempId} item={item} onAskRemove={setPendingRemove} />)}</div>
       <footer aria-label="Tóm tắt thanh toán" className="space-y-4 border-t border-outline-variant/20 bg-surface p-6">{cartFeedback ? <p role="status" aria-live="polite" className="rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-on-surface">{cartFeedback}</p> : null}{errorMessage ? <p role="alert" className="rounded-xl border border-error/30 bg-error-container/20 px-3 py-2 text-sm text-on-error-container">{errorMessage}</p> : null}<dl className="space-y-2"><div className="flex justify-between"><dt>Tạm tính</dt><dd className="price">{formatVnd(totals.subtotal)}</dd></div>{totals.discount ? <div className="flex justify-between text-on-surface-variant"><dt>Giảm giá</dt><dd>-{formatVnd(totals.discountAmount)}</dd></div> : null}<div className="flex items-end justify-between border-t border-outline-variant/20 pt-3"><dt className="text-[28px] font-bold leading-9">Tổng tiền</dt><dd className="total text-[28px] font-bold leading-9">{formatVnd(totals.total)}</dd></div></dl><Button ref={discountButtonRef} type="button" variant="outline" className="w-full" disabled={!hasItems} onClick={() => setIsDiscountModalOpen(true)}>{totals.discount ? `Giảm giá (${totals.discount.type === 'fixed' ? formatVnd(totals.discount.value) : `${totals.discount.value}%`})` : 'Giảm giá'}</Button><Button type="button" className="min-h-[56px] w-full rounded-2xl bg-primary py-4 font-bold text-on-primary shadow-lg shadow-primary/25" disabled={!hasItems || isCheckingOut} onClick={() => openPaymentMethodModal()}>{isCheckingOut ? 'Đang chuẩn bị đơn...' : 'Hoàn tất đơn'}</Button></footer>
       <PaymentMethodModal items={items} discount={totals.discount} />
       <VoidOrderDialog open={isVoidDialogOpen} onOpenChange={handleVoidDialogOpenChange} onConfirm={handleVoidOrder} />
