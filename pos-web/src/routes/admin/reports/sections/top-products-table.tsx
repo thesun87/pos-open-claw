@@ -29,7 +29,7 @@ function sortProducts(data: TopProductRow[], sortMode: SortMode) {
 function RankCell({ rank }: { rank: number }) {
   if (rank <= 3) {
     return (
-      <span className="inline-flex min-h-6 items-center rounded-full border border-border bg-surface-muted px-2 text-xs font-medium" aria-label={`Top ${rank}`}>
+      <span className="inline-flex min-h-6 items-center rounded-full border border-admin-brand-100 bg-admin-brand-50 text-admin-brand-600 px-2 text-xs font-medium" aria-label={`Top ${rank}`}>
         Top {rank}
       </span>
     )
@@ -45,17 +45,17 @@ export function TopProductsTable({ data, isUpdating = false }: TopProductsTableP
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         {isUpdating ? (
-          <span className="text-xs font-medium text-primary" aria-live="polite">
+          <span className="text-xs font-medium text-admin-brand-600" aria-live="polite">
             Đang cập nhật
           </span>
         ) : (
-          <span className="text-xs text-text-secondary">Tối đa 10 sản phẩm</span>
+          <span className="text-xs text-admin-gray-500">Tối đa 10 sản phẩm</span>
         )}
 
         <div className="flex flex-wrap gap-2" aria-label="Sắp xếp top sản phẩm">
           <button
             type="button"
-            className="min-h-11 rounded-md border border-border px-3 py-2 text-xs font-medium text-text-primary hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="min-h-11 rounded-lg border border-admin-gray-300 px-3 py-2 text-xs font-medium text-admin-gray-700 hover:bg-admin-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-brand-500 focus-visible:ring-offset-2 aria-pressed:border-admin-brand-500 aria-pressed:bg-admin-brand-50 aria-pressed:text-admin-brand-600"
             aria-pressed={sortMode === 'quantity'}
             onClick={() => setSortMode('quantity')}
           >
@@ -63,7 +63,7 @@ export function TopProductsTable({ data, isUpdating = false }: TopProductsTableP
           </button>
           <button
             type="button"
-            className="min-h-11 rounded-md border border-border px-3 py-2 text-xs font-medium text-text-primary hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="min-h-11 rounded-lg border border-admin-gray-300 px-3 py-2 text-xs font-medium text-admin-gray-700 hover:bg-admin-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-brand-500 focus-visible:ring-offset-2 aria-pressed:border-admin-brand-500 aria-pressed:bg-admin-brand-50 aria-pressed:text-admin-brand-600"
             aria-pressed={sortMode === 'revenue'}
             onClick={() => setSortMode('revenue')}
           >
@@ -72,10 +72,10 @@ export function TopProductsTable({ data, isUpdating = false }: TopProductsTableP
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-border">
+      <div className="overflow-x-auto rounded-xl border border-admin-gray-200">
         <table className="w-full text-left text-sm">
           <caption className="sr-only">Top sản phẩm bán chạy</caption>
-          <thead className="bg-surface-muted text-text-secondary">
+          <thead className="bg-admin-gray-50 text-admin-gray-500">
             <tr>
               <th className="px-3 py-2 font-medium">#</th>
               <th className="px-3 py-2 font-medium">Sản phẩm</th>
@@ -85,9 +85,9 @@ export function TopProductsTable({ data, isUpdating = false }: TopProductsTableP
           </thead>
           <tbody>
             {sortedProducts.map((row, index) => (
-              <tr key={`${row.productName}-${index}`} className="border-t border-border">
+              <tr key={`${row.productName}-${index}`} className="border-t border-admin-gray-100">
                 <td className="px-3 py-2"><RankCell rank={index + 1} /></td>
-                <td className="px-3 py-2 font-medium text-text-primary">{row.productName}</td>
+                <td className="px-3 py-2 font-medium text-admin-gray-800">{row.productName}</td>
                 <td className="px-3 py-2">{numberFormatter.format(row.totalQuantity)}</td>
                 <td className="px-3 py-2">{formatVnd(row.totalRevenue)}</td>
               </tr>

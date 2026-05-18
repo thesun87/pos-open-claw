@@ -12,6 +12,7 @@ import { formatDmyDisplay } from '../../../../shared/lib/date'
 import { formatVnd } from '../../../../shared/lib/format-vnd'
 import { buildRevenueChartAriaLabel, formatChartDate, formatCompactVndAxis } from './revenue-by-day-chart.utils'
 
+const ADMIN_BRAND_500 = '#465fff'
 const orderFormatter = new Intl.NumberFormat('vi-VN')
 
 type RevenueByDayChartProps = {
@@ -34,10 +35,10 @@ function RevenueTooltip({ active, payload, label }: RevenueTooltipProps) {
   if (!row) return null
 
   return (
-    <div className="rounded-md border border-border bg-surface p-3 text-sm shadow-sm">
-      <p className="font-medium text-text-primary">{formatDmyDisplay(String(label ?? row.date))}</p>
-      <p className="text-text-secondary">Doanh thu: {formatVnd(row.revenue)}</p>
-      <p className="text-text-secondary">Số đơn: {orderFormatter.format(row.orderCount)} đơn</p>
+    <div className="rounded-md border border-admin-gray-200 bg-white p-3 text-sm shadow-sm">
+      <p className="font-medium text-admin-gray-800">{formatDmyDisplay(String(label ?? row.date))}</p>
+      <p className="text-admin-gray-500">Doanh thu: {formatVnd(row.revenue)}</p>
+      <p className="text-admin-gray-500">Số đơn: {orderFormatter.format(row.orderCount)} đơn</p>
     </div>
   )
 }
@@ -51,15 +52,15 @@ export function RevenueByDayChart({ data, from, to, isUpdating = false }: Revenu
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         {isUpdating ? (
-          <span className="text-xs font-medium text-primary" aria-live="polite">
+          <span className="text-xs font-medium text-admin-brand-600" aria-live="polite">
             Đang cập nhật
           </span>
         ) : (
-          <span className="text-xs text-text-secondary">Cập nhật theo khoảng ngày đã chọn</span>
+          <span className="text-xs text-admin-gray-500">Cập nhật theo khoảng ngày đã chọn</span>
         )}
         <button
           type="button"
-          className="rounded-md border border-border px-3 py-1 text-xs font-medium text-text-primary hover:bg-surface-muted"
+          className="rounded-xl border border-admin-gray-200 px-3 py-1 text-xs font-medium text-admin-gray-800 hover:bg-surface-muted"
           onClick={() => setShowTable((current) => !current)}
           aria-expanded={showTable}
         >
@@ -76,10 +77,10 @@ export function RevenueByDayChart({ data, from, to, isUpdating = false }: Revenu
             <Line
               type="monotone"
               dataKey="revenue"
-              stroke="var(--color-primary)"
+              stroke={ADMIN_BRAND_500}
               strokeWidth={2}
-              dot={{ r: 3, fill: 'var(--color-primary)' }}
-              activeDot={{ r: 5, fill: 'var(--color-primary)' }}
+              dot={{ r: 3, fill: ADMIN_BRAND_500 }}
+              activeDot={{ r: 5, fill: ADMIN_BRAND_500 }}
               isAnimationActive={false}
             />
           </LineChart>
@@ -87,10 +88,10 @@ export function RevenueByDayChart({ data, from, to, isUpdating = false }: Revenu
       </div>
 
       {showTable ? (
-        <div className="overflow-x-auto rounded-md border border-border">
+        <div className="overflow-x-auto rounded-xl border border-admin-gray-200">
           <table className="w-full text-left text-sm">
             <caption className="sr-only">Dữ liệu doanh thu theo ngày</caption>
-            <thead className="bg-surface-muted text-text-secondary">
+            <thead className="bg-admin-gray-50 text-admin-gray-500">
               <tr>
                 <th className="px-3 py-2 font-medium">Ngày</th>
                 <th className="px-3 py-2 font-medium">Doanh thu</th>
@@ -99,7 +100,7 @@ export function RevenueByDayChart({ data, from, to, isUpdating = false }: Revenu
             </thead>
             <tbody>
               {chartData.map((row) => (
-                <tr key={row.date} className="border-t border-border">
+                <tr key={row.date} className="border-t border-admin-gray-100">
                   <td className="px-3 py-2">{formatDmyDisplay(row.date)}</td>
                   <td className="px-3 py-2">{formatVnd(row.revenue)}</td>
                   <td className="px-3 py-2">{orderFormatter.format(row.orderCount)} đơn</td>

@@ -59,3 +59,53 @@ button, input, textarea { font: inherit; }
 button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .price, .total { font-variant-numeric: tabular-nums; }
 .material-symbols-outlined { font-family: 'Material Symbols Outlined'; font-weight: normal; font-style: normal; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; direction: ltr; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; font-variation-settings: 'FILL' 0, 'wght' 500; }
+
+/* TailAdmin admin-only tokens. Keep POS tokens above unchanged. */
+:root {
+  --color-admin-brand-25: #f2f7ff;
+  --color-admin-brand-50: #ecf3ff;
+  --color-admin-brand-100: #dde9ff;
+  --color-admin-brand-200: #c2d6ff;
+  --color-admin-brand-300: #9cb9ff;
+  --color-admin-brand-400: #7592ff;
+  --color-admin-brand-500: #465fff;
+  --color-admin-brand-600: #3641f5;
+  --color-admin-brand-700: #2a31d8;
+  --color-admin-brand-800: #252dae;
+  --color-admin-brand-900: #262e89;
+  --color-admin-brand-950: #161950;
+  --color-admin-gray-25: #fcfcfd;
+  --color-admin-gray-50: #f9fafb;
+  --color-admin-gray-100: #f2f4f7;
+  --color-admin-gray-200: #e4e7ec;
+  --color-admin-gray-300: #d0d5dd;
+  --color-admin-gray-400: #98a2b3;
+  --color-admin-gray-500: #667085;
+  --color-admin-gray-600: #475467;
+  --color-admin-gray-700: #344054;
+  --color-admin-gray-800: #1d2939;
+  --color-admin-gray-900: #101828;
+  --color-admin-gray-950: #0c111d;
+  --color-admin-gray-dark: #1a2231;
+  --color-admin-success-25: #f6fef9;
+  --color-admin-success-50: #ecfdf3;
+  --color-admin-success-200: #a6f4c5;
+  --color-admin-success-500: #12b76a;
+  --color-admin-success-600: #039855;
+  --color-admin-success-950: #053321;
+  --color-admin-error-25: #fffbfa;
+  --color-admin-error-50: #fef3f2;
+  --color-admin-error-200: #fecdca;
+  --color-admin-error-500: #f04438;
+  --color-admin-error-600: #d92d20;
+  --color-admin-error-950: #55160c;
+  --color-admin-warning-25: #fffcf5;
+  --color-admin-warning-50: #fffaeb;
+  --color-admin-warning-200: #fedf89;
+  --color-admin-warning-500: #f79009;
+  --color-admin-warning-600: #dc6803;
+  --color-admin-warning-950: #4e1d09;
+  --font-admin-ui: "Outfit", system-ui, sans-serif;
+}
+
+[data-admin-scope] { font-family: var(--font-admin-ui); }

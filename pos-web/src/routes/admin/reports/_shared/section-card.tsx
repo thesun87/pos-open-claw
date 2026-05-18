@@ -20,8 +20,8 @@ export function SectionCard({
   children,
 }: SectionCardProps) {
   return (
-    <article className="rounded-lg border border-border bg-surface p-4">
-      <h2 className="mb-4 text-base font-semibold text-text-primary">{title}</h2>
+    <article className="rounded-2xl border border-admin-gray-200 bg-white p-5 shadow-sm lg:p-6">
+      <h2 className="mb-4 text-sm font-medium uppercase tracking-wider text-admin-gray-500">{title}</h2>
       <div>
         {loading ? (
           <LoadingSkeleton.Card className="h-40 w-full" />

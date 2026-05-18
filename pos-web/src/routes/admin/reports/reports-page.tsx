@@ -119,13 +119,13 @@ export default function ReportsPage() {
   const isBackgroundUpdating = query.isFetching && !query.isLoading
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold">Báo cáo</h1>
+        <h1 className="text-title-sm font-semibold text-admin-gray-800">Báo cáo</h1><p className="text-sm text-admin-gray-500">Theo dõi doanh thu, đơn hàng và sản phẩm bán chạy.</p>
       </header>
 
       {/* Filter — sticky at top of content, always enabled even during loading */}
-      <div className="sticky top-0 z-10 rounded-lg border border-border bg-surface p-4">
+      <div className="sticky top-0 z-10 rounded-2xl border border-admin-gray-200 bg-white p-5 shadow-sm">
         <DateRangeReportFilter
           value={{ from, to }}
           onChange={handleRangeChange}

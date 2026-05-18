@@ -11,7 +11,7 @@ const data: Row[] = [{ id: '1', name: 'Cà phê', status: 'Đang bán' }]
 describe('AdminDataTable', () => {
   it('renders columns, data, row action and sort callback', async () => {
     const onAction = vi.fn(); const onSort = vi.fn()
-    render(<AdminDataTable columns={columns} data={data} onSortChange={onSort} rowActions={[{ label: 'Sửa', onClick: onAction, variant: 'outline' }]} />)
+    render(<AdminDataTable columns={columns} data={data} onSortChange={onSort} rowActions={[{ label: 'Sửa', onClick: onAction, variant: 'secondary' }]} />)
     expect(screen.getByText('Cà phê')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Sửa' }))
     expect(onAction).toHaveBeenCalledWith(data[0])

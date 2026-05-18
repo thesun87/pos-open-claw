@@ -1,8 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, type Resolver } from 'react-hook-form'
 import { z } from 'zod'
-import { Button } from '../../../../shared/components/ui/button'
-import { Input } from '../../../../shared/components/ui/input'
+import { AdminButton, AdminInput } from '../../../../shared/components/admin'
 
 const schema = z.object({
   name: z.string().trim().min(1, 'Vui lòng nhập tên danh mục').max(100, 'Tên danh mục tối đa 100 ký tự'),
@@ -30,21 +29,21 @@ export function CategoryForm({ defaultValues, submitLabel, isSubmitting = false,
   return (
     <form className="mt-4 space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
       <div className="space-y-2">
-        <label className="text-sm font-medium" htmlFor="category-name">Tên danh mục</label>
-        <Input id="category-name" aria-describedby={errors.name ? 'category-name-error' : undefined} {...register('name')} />
-        {errors.name ? <p id="category-name-error" className="text-sm text-danger">{errors.name.message}</p> : null}
+        <label className="text-sm font-medium text-admin-gray-700" htmlFor="category-name">Tên danh mục</label>
+        <AdminInput id="category-name" aria-describedby={errors.name ? 'category-name-error' : undefined} {...register('name')} />
+        {errors.name ? <p id="category-name-error" className="text-xs text-admin-error-600">{errors.name.message}</p> : null}
       </div>
       <div className="space-y-2">
-        <label className="text-sm font-medium" htmlFor="category-sort-order">Thứ tự hiển thị</label>
-        <Input id="category-sort-order" type="number" min={0} aria-describedby={errors.sortOrder ? 'category-sort-error' : undefined} {...register('sortOrder')} />
-        {errors.sortOrder ? <p id="category-sort-error" className="text-sm text-danger">{errors.sortOrder.message}</p> : null}
+        <label className="text-sm font-medium text-admin-gray-700" htmlFor="category-sort-order">Thứ tự hiển thị</label>
+        <AdminInput id="category-sort-order" type="number" min={0} aria-describedby={errors.sortOrder ? 'category-sort-error' : undefined} {...register('sortOrder')} />
+        {errors.sortOrder ? <p id="category-sort-error" className="text-xs text-admin-error-600">{errors.sortOrder.message}</p> : null}
       </div>
-      <label className="flex min-h-touch items-center justify-between gap-4 rounded-md border border-border p-3 text-sm font-medium" htmlFor="category-active">
+      <label className="flex min-h-touch items-center justify-between gap-4 rounded-md border border-admin-gray-200 p-3 text-sm font-medium text-admin-gray-700" htmlFor="category-active">
         <span>Trạng thái: {statusLabel}</span>
-        <input id="category-active" type="checkbox" className="h-5 w-5 accent-primary" {...register('isActive')} />
+        <input id="category-active" type="checkbox" className="h-5 w-5 accent-admin-brand-500" {...register('isActive')} />
       </label>
       <div className="flex justify-end gap-2 pt-2">
-        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Đang lưu...' : submitLabel}</Button>
+        <AdminButton type="submit" disabled={isSubmitting}>{isSubmitting ? 'Đang lưu...' : submitLabel}</AdminButton>
       </div>
     </form>
   )

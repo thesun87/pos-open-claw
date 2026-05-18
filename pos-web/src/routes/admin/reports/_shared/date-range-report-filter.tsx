@@ -143,7 +143,7 @@ export function DateRangeReportFilter({ value, onChange, error }: DateRangeRepor
               key={preset.id}
               type="button"
               aria-pressed={active}
-              className="min-h-touch rounded-full border border-border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-primary"
+              className="min-h-touch rounded-full border border-admin-gray-300 px-3 py-1.5 text-sm font-medium text-admin-gray-700 transition-colors hover:bg-admin-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-brand-500 aria-pressed:border-admin-brand-500 aria-pressed:bg-admin-brand-50 aria-pressed:text-admin-brand-600"
               onClick={() => handlePreset(preset.id)}
             >
               {preset.label}
@@ -155,7 +155,7 @@ export function DateRangeReportFilter({ value, onChange, error }: DateRangeRepor
       {/* Date inputs */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex flex-col gap-1">
-          <label htmlFor="report-date-from" className="text-sm font-medium text-text-primary">
+          <label htmlFor="report-date-from" className="text-sm font-medium text-admin-gray-700">
             Từ ngày
           </label>
           <button
@@ -165,7 +165,7 @@ export function DateRangeReportFilter({ value, onChange, error }: DateRangeRepor
             aria-describedby="report-tz-hint"
             aria-haspopup="dialog"
             aria-expanded={open}
-            className="flex min-h-touch items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="flex min-h-touch items-center gap-2 rounded-lg border border-admin-gray-300 bg-white px-3.5 py-2.5 text-sm text-admin-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-brand-500"
             onClick={() => setOpen((v) => !v)}
           >
             <Calendar size={14} aria-hidden="true" />
@@ -174,7 +174,7 @@ export function DateRangeReportFilter({ value, onChange, error }: DateRangeRepor
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="report-date-to" className="text-sm font-medium text-text-primary">
+          <label htmlFor="report-date-to" className="text-sm font-medium text-admin-gray-700">
             Đến ngày
           </label>
           <button
@@ -183,7 +183,7 @@ export function DateRangeReportFilter({ value, onChange, error }: DateRangeRepor
             aria-describedby="report-tz-hint"
             aria-haspopup="dialog"
             aria-expanded={open}
-            className="flex min-h-touch items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="flex min-h-touch items-center gap-2 rounded-lg border border-admin-gray-300 bg-white px-3.5 py-2.5 text-sm text-admin-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-brand-500"
             onClick={() => setOpen((v) => !v)}
           >
             <Calendar size={14} aria-hidden="true" />
@@ -193,13 +193,13 @@ export function DateRangeReportFilter({ value, onChange, error }: DateRangeRepor
       </div>
 
       {/* TZ hint */}
-      <span id="report-tz-hint" className="mt-1 block text-xs text-text-secondary">
+      <span id="report-tz-hint" className="mt-1 block text-xs text-admin-gray-500">
         Tính theo giờ Việt Nam (UTC+7)
       </span>
 
       {/* Inline error */}
       {error ? (
-        <p role="alert" className="mt-2 text-sm text-danger">
+        <p role="alert" className="mt-2 text-sm text-admin-error-600">
           {error}
         </p>
       ) : null}
@@ -209,7 +209,7 @@ export function DateRangeReportFilter({ value, onChange, error }: DateRangeRepor
         <div
           role="dialog"
           aria-label="Chọn khoảng ngày"
-          className="absolute left-0 top-full z-50 mt-2 overflow-auto rounded-lg border border-border bg-surface p-4 shadow-lg"
+          className="absolute left-0 top-full z-50 mt-2 overflow-auto rounded-2xl border border-admin-gray-200 bg-white p-4 shadow-lg"
         >
           <DayPicker
             mode="range"

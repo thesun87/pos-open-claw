@@ -6,9 +6,9 @@ const orderFormatter = new Intl.NumberFormat('vi-VN')
 const percentFormatter = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 })
 
 const PAYMENT_METHODS = [
-  { value: 'cash', label: 'Tiền mặt', color: 'var(--color-primary)' },
-  { value: 'transfer', label: 'Chuyển khoản', color: 'var(--color-accent)' },
-  { value: 'card', label: 'Thẻ', color: 'var(--color-secondary, #64748b)' },
+  { value: 'cash', label: 'Tiền mặt', barClassName: 'bg-admin-brand-500' },
+  { value: 'transfer', label: 'Chuyển khoản', barClassName: 'bg-admin-success-500' },
+  { value: 'card', label: 'Thẻ', barClassName: 'bg-admin-warning-500' },
 ] as const
 
 type RevenueByPaymentMethodProps = {
@@ -34,7 +34,7 @@ export function RevenueByPaymentMethod({ data, isUpdating = false }: RevenueByPa
   return (
     <div className="space-y-3" aria-label="Doanh thu theo phương thức thanh toán">
       {isUpdating ? (
-        <p className="text-xs font-medium text-primary" aria-live="polite">
+        <p className="text-xs font-medium text-admin-brand-600" aria-live="polite">
           Đang cập nhật
         </p>
       ) : null}
@@ -45,24 +45,24 @@ export function RevenueByPaymentMethod({ data, isUpdating = false }: RevenueByPa
           const percentageText = `${percentFormatter.format(percentage)}%`
 
           return (
-            <article key={row.value} className="rounded-lg border border-border bg-surface-muted p-3">
+            <article key={row.value} className="rounded-xl border border-admin-gray-200 bg-admin-gray-25 p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h3 className="text-sm font-semibold text-text-primary">{row.label}</h3>
-                  <p className="text-xs text-text-secondary">
+                  <h3 className="text-sm font-semibold text-admin-gray-800">{row.label}</h3>
+                  <p className="text-xs text-admin-gray-500">
                     {orderFormatter.format(row.orderCount)} đơn
                     {row.orderCount === 0 ? ' · Chưa có đơn' : ''}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-text-primary">{formatVnd(row.revenue)}</p>
-                  <p className="text-xs text-text-secondary">{percentageText}</p>
+                  <p className="text-sm font-semibold text-admin-gray-800">{formatVnd(row.revenue)}</p>
+                  <p className="text-xs text-admin-gray-500">{percentageText}</p>
                 </div>
               </div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface" aria-hidden="true">
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-admin-gray-100" aria-hidden="true">
                 <div
-                  className="h-full rounded-full"
-                  style={{ width: `${percentage}%`, backgroundColor: row.color }}
+                  className={`h-full rounded-full ${row.barClassName}`}
+                  style={{ width: `${percentage}%` }}
                 />
               </div>
             </article>
