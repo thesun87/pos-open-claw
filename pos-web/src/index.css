@@ -71,3 +71,92 @@
     page-break-inside: avoid;
   }
 }
+@utility menu-item {
+  @apply relative flex items-center w-full gap-3 px-3 py-2 font-medium rounded-lg text-sm;
+}
+
+@utility menu-item-active {
+  @apply bg-admin-brand-50 text-admin-brand-500 dark:bg-admin-brand-500/[0.12] dark:text-admin-brand-400;
+}
+
+@utility menu-item-inactive {
+  @apply text-admin-gray-700 hover:bg-admin-gray-100 group-hover:text-admin-gray-700 dark:text-admin-gray-300 dark:hover:bg-white/5 dark:hover:text-admin-gray-300;
+}
+
+@utility menu-item-icon {
+  @apply text-admin-gray-500 group-hover:text-admin-gray-700 dark:text-admin-gray-400;
+}
+
+@utility menu-item-icon-active {
+  @apply text-admin-brand-500 dark:text-admin-brand-400;
+}
+
+@utility menu-item-icon-size {
+  & svg {
+    @apply !size-6;
+  }
+}
+
+@utility menu-item-icon-inactive {
+  @apply text-admin-gray-500 group-hover:text-admin-gray-700 dark:text-admin-gray-400 dark:group-hover:text-admin-gray-300;
+}
+
+@utility menu-item-arrow {
+  @apply relative;
+}
+
+@utility menu-item-arrow-active {
+  @apply rotate-180 text-admin-brand-500 dark:text-admin-brand-400;
+}
+
+@utility menu-item-arrow-inactive {
+  @apply text-admin-gray-500 group-hover:text-admin-gray-700 dark:text-admin-gray-400 dark:group-hover:text-admin-gray-300;
+}
+
+@utility menu-dropdown-item {
+  @apply relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium;
+}
+
+@utility menu-dropdown-item-active {
+  @apply bg-admin-brand-50 text-admin-brand-500 dark:bg-admin-brand-500/[0.12] dark:text-admin-brand-400;
+}
+
+@utility menu-dropdown-item-inactive {
+  @apply text-admin-gray-700 hover:bg-admin-gray-100 dark:text-admin-gray-300 dark:hover:bg-white/5;
+}
+
+@utility menu-dropdown-badge {
+  @apply block rounded-full px-2.5 py-0.5 text-xs font-medium uppercase text-admin-brand-500 dark:text-admin-brand-400;
+}
+
+@utility menu-dropdown-badge-active {
+  @apply bg-admin-brand-100 dark:bg-admin-brand-500/20;
+}
+
+@utility menu-dropdown-badge-inactive {
+  @apply bg-admin-brand-50 group-hover:bg-admin-brand-100 dark:bg-admin-brand-500/15 dark:group-hover:bg-admin-brand-500/20;
+}
+@utility no-scrollbar {
+  /* Chrome, Safari and Opera */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+@utility custom-scrollbar {
+  &::-webkit-scrollbar {
+    @apply size-1.5;
+  }
+
+  &::-webkit-scrollbar-track {
+    @apply rounded-full;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    @apply bg-admin-gray-200 rounded-full dark:bg-admin-gray-700;
+  }
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #344054;
+}

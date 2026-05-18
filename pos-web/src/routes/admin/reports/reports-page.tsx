@@ -5,6 +5,7 @@ import { AxiosError, isAxiosError } from 'axios'
 import { ErrorState } from '../../../shared/components/ui/error-state'
 import { computePreset, formatYmdInVietnam } from '../../../shared/lib/date'
 import { fetchReportsAll, reportsQueryKey, type ReportsAllResponse } from '../../../features/admin/reports/api'
+import PageBreadcrumb from '../tailadmin/components/common/PageBreadCrumb'
 import { DateRangeReportFilter } from './_shared/date-range-report-filter'
 import { SectionCard } from './_shared/section-card'
 import { RevenueByDayChart } from './sections/revenue-by-day-chart'
@@ -119,10 +120,9 @@ export default function ReportsPage() {
   const isBackgroundUpdating = query.isFetching && !query.isLoading
 
   return (
-    <section className="space-y-6">
-      <header>
-        <h1 className="text-title-sm font-semibold text-admin-gray-800">Báo cáo</h1><p className="text-sm text-admin-gray-500">Theo dõi doanh thu, đơn hàng và sản phẩm bán chạy.</p>
-      </header>
+    <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
+      <PageBreadcrumb pageTitle="Báo cáo" />
+      <div className="mb-6"><p className="text-sm text-admin-gray-500">Theo dõi doanh thu, đơn hàng và sản phẩm bán chạy.</p></div>
 
       {/* Filter — sticky at top of content, always enabled even during loading */}
       <div className="sticky top-0 z-10 rounded-2xl border border-admin-gray-200 bg-white p-5 shadow-sm">
@@ -193,6 +193,6 @@ export default function ReportsPage() {
           </SectionCard>
         </div>
       )}
-    </section>
+    </div>
   )
 }

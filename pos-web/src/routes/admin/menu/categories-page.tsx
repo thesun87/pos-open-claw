@@ -5,6 +5,7 @@ import { AdminDataTable, type AdminDataTableColumn } from '../../../shared/compo
 import { AdminButton, AdminStatusBadge } from '../../../shared/components/admin'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../shared/components/ui/dialog'
 import { EmptyState } from '../../../shared/components/ui/empty-state'
+import PageBreadcrumb from '../tailadmin/components/common/PageBreadCrumb'
 import { createCategory, deleteCategory, fetchAdminMenu, fetchCategories, updateCategory, adminMenuQueryKey, categoriesQueryKey, type CategoryDto } from '../../../features/admin/categories/api'
 import { CategoryForm, type CategoryFormValues } from './_shared/category-form'
 
@@ -40,11 +41,15 @@ export default function CategoriesPage() {
     { key: 'isActive', label: 'Trạng thái', render: (row) => <div className="flex min-h-touch items-center gap-3"><AdminStatusBadge variant={row.isActive ? 'success' : 'neutral'} label={row.isActive ? 'Đang dùng' : 'Tạm ẩn'} /><button type="button" className="rounded-md border border-admin-gray-200 px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-brand-500" aria-label={`${row.isActive ? 'Tạm ẩn' : 'Bật'} danh mục ${row.name}`} disabled={categoriesQuery.isLoading || toggleMutation.isPending} onClick={() => toggleMutation.mutate({ id: row.id, isActive: !row.isActive })}>{row.isActive ? 'Tắt' : 'Bật'}</button></div> },
   ]
   return (
-    <section className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-title-sm font-semibold text-admin-gray-800">Danh mục sản phẩm</h1><p className="text-sm text-admin-gray-500">Quản lý danh mục, thứ tự hiển thị và trạng thái sử dụng.</p></div><AdminButton onClick={() => setDialog({ mode: 'create' })}>+ Tạo danh mục mới</AdminButton></div>
+    <div className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
+      <PageBreadcrumb pageTitle="Danh mục sản phẩm" />
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <p className="text-sm text-admin-gray-500">Quản lý danh mục, thứ tự hiển thị và trạng thái sử dụng.</p>
+        <AdminButton onClick={() => setDialog({ mode: 'create' })}>+ Tạo danh mục mới</AdminButton>
+      </div>
       {categoriesQuery.isError ? <div className="rounded-2xl border border-admin-error-200 bg-admin-error-50 p-6"><h2 className="font-semibold">Không tải được danh mục</h2><p className="mt-1 text-sm text-admin-gray-500">Vui lòng thử lại. Dữ liệu kỹ thuật đã được ẩn để bảo vệ hệ thống.</p><AdminButton className="mt-4" onClick={() => void categoriesQuery.refetch()}>Thử lại</AdminButton></div> : <AdminDataTable columns={columns} data={rows} loading={categoriesQuery.isLoading} emptyState={<EmptyState title="Chưa có danh mục nào. Tạo danh mục đầu tiên để bắt đầu." />} rowActions={[{ label: 'Sửa', disabled: categoriesQuery.isFetching, onClick: (category) => setDialog({ mode: 'edit', category }) }, { label: 'Xóa', variant: 'destructive', disabled: categoriesQuery.isFetching, onClick: (category) => setDialog({ mode: 'delete', category }) }]} />}
       <Dialog open={dialog?.mode === 'create' || dialog?.mode === 'edit'} onOpenChange={(open) => !open && setDialog(null)}><DialogContent className="rounded-2xl border border-admin-gray-200 bg-white p-6 shadow-xl"><DialogHeader><DialogTitle><span className="text-theme-xl font-semibold text-admin-gray-800">{dialog?.mode === 'edit' ? 'Sửa danh mục' : 'Tạo danh mục mới'}</span></DialogTitle><DialogDescription><span className="mt-1 text-sm text-admin-gray-500">Nhập tên, thứ tự hiển thị và trạng thái danh mục.</span></DialogDescription></DialogHeader><CategoryForm submitLabel={dialog?.mode === 'edit' ? 'Lưu thay đổi' : 'Tạo danh mục'} isSubmitting={saveMutation.isPending} defaultValues={dialog?.mode === 'edit' ? { name: dialog.category.name, sortOrder: dialog.category.sortOrder, isActive: dialog.category.isActive } : { name: '', sortOrder: defaultSortOrder, isActive: true }} onSubmit={(values) => saveMutation.mutate(values)} /></DialogContent></Dialog>
       <Dialog open={dialog?.mode === 'delete'} onOpenChange={(open) => !open && setDialog(null)}><DialogContent className="rounded-2xl border border-admin-gray-200 bg-white p-6 shadow-xl"><DialogHeader><DialogTitle><span className="text-theme-xl font-semibold text-admin-gray-800">Xóa danh mục này?</span></DialogTitle><DialogDescription><span className="mt-1 text-sm text-admin-gray-500">Không thể hoàn tác.</span></DialogDescription></DialogHeader><div className="flex justify-end gap-2"><AdminButton variant="ghost" onClick={() => setDialog(null)}>Hủy</AdminButton><AdminButton variant="destructive" disabled={deleteMutation.isPending} onClick={() => dialog?.mode === 'delete' && deleteMutation.mutate(dialog.category.id)}>{deleteMutation.isPending ? 'Đang xóa...' : 'Xóa'}</AdminButton></div></DialogContent></Dialog>
-    </section>
+    </div>
   )
 }

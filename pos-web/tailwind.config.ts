@@ -53,7 +53,14 @@ export default {
       spacing: { 1: '4px', 2: '8px', 3: '12px', 4: '16px', 6: '24px', 8: '32px' },
       minHeight: { touch: 'var(--touch-target-min)', cta: 'var(--touch-target-cta)' },
       minWidth: { touch: 'var(--touch-target-min)' },
-      boxShadow: { focus: '0 0 0 3px var(--focus-ring)' },
+      boxShadow: { 
+        focus: '0 0 0 3px var(--focus-ring)',
+        'theme-md': '0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06)',
+        'theme-lg': '0px 12px 16px -4px rgba(16, 24, 40, 0.08), 0px 4px 6px -2px rgba(16, 24, 40, 0.03)',
+        'theme-sm': '0px 1px 3px 0px rgba(16, 24, 40, 0.1), 0px 1px 2px 0px rgba(16, 24, 40, 0.06)',
+        'theme-xs': '0px 1px 2px 0px rgba(16, 24, 40, 0.05)',
+        'theme-xl': '0px 20px 24px -4px rgba(16, 24, 40, 0.08), 0px 8px 8px -4px rgba(16, 24, 40, 0.03)'
+      },
     },
   },
   plugins: [],
