@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, Outlet } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { SessionBootProvider } from '../features/auth/session-boot-provider'
 import { SyncRetryPanel } from '../features/sync/components/sync-retry-panel'
 import { ConnectivityIndicator } from '../shared/components/layout/connectivity-indicator'
@@ -10,6 +10,8 @@ import { MenuUpdatedToast } from '../features/menu/components/menu-updated-toast
 
 export function RootLayout() {
   const [isSyncPanelOpen, setIsSyncPanelOpen] = useState(false)
+  const location = useLocation()
+  const isPosRoute = location.pathname.startsWith('/pos')
 
   useEffect(() => {
     const openPanel = () => setIsSyncPanelOpen(true)
@@ -20,10 +22,12 @@ export function RootLayout() {
   return (
     <div className="min-h-screen bg-bg text-text-primary">
       <ConnectivityRegistrar />
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface px-4 py-4 sm:px-6">
-        <Link to="/pos" className="text-xl font-semibold text-primary">Café POS</Link>
-        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3"><ConnectivityIndicator /><PendingCounter /></div>
-      </header>
+      {!isPosRoute ? (
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface px-4 py-4 sm:px-6">
+          <Link to="/pos" className="text-xl font-semibold text-primary">Café POS</Link>
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3"><ConnectivityIndicator /><PendingCounter /></div>
+        </header>
+      ) : null}
       <main><SessionBootProvider><Outlet /></SessionBootProvider></main>
       <PwaUpdatePrompt />
       <MenuUpdatedToast />

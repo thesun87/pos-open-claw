@@ -85,7 +85,7 @@ afterEach(async () => {
 describe('PosShell product browsing', () => {
   it('selects first active sorted category by default and filters active products', async () => {
     await seedMenu(); renderPosShell()
-    expect(await screen.findByRole('button', { name: 'Trà' })).toHaveAttribute('aria-current', 'true')
+    expect((await screen.findAllByRole('button', { name: 'Trà' })).some((button) => button.getAttribute('aria-current') === 'page')).toBe(true)
     const grid = await screen.findByLabelText('Lưới sản phẩm')
     expect(within(grid).getByRole('button', { name: 'Trà đào, 45.000 ₫' })).toBeInTheDocument()
     expect(screen.queryByText('Ẩn product')).not.toBeInTheDocument()
@@ -94,7 +94,7 @@ describe('PosShell product browsing', () => {
   it('clicks category, sorts products, formats price, and shows option indicator', async () => {
     await seedMenu(); const user = userEvent.setup(); renderPosShell()
     await user.click(await screen.findByRole('button', { name: 'Cà phê' }))
-    expect(within(screen.getByLabelText('Lưới sản phẩm')).getAllByRole('button').map((tile) => tile.textContent)).toEqual(['Cà phê đen30.000 ₫', 'Bạc Xỉu35.000 ₫Có tùy chọn'])
+    expect(within(screen.getByLabelText('Lưới sản phẩm')).getAllByRole('button').map((tile) => tile.getAttribute('aria-label'))).toEqual(['Cà phê đen, 30.000 ₫', 'Bạc Xỉu, 35.000 ₫, có tùy chọn'])
   })
 
   it('debounces search for exactly 200ms deterministically', () => {
@@ -126,14 +126,14 @@ describe('PosShell product browsing', () => {
     const tile = screen.getByRole('button', { name: 'Bạc Xỉu, 35.000 ₫, có tùy chọn' })
     tile.focus(); await user.keyboard('{Enter}')
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Tùy chọn: Bạc Xỉu' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Bạc Xỉu' })).toBeInTheDocument()
   })
 
   it('validates groups, enforces max, previews price, note, roles, and stores cart snapshot', async () => {
     await seedMenu(); await seedOptions(); const user = userEvent.setup(); renderPosShell()
     await user.click(await screen.findByRole('button', { name: 'Cà phê' }))
     await user.click(screen.getByRole('button', { name: 'Bạc Xỉu, 35.000 ₫, có tùy chọn' }))
-    expect(await screen.findByRole('heading', { name: 'Tùy chọn: Bạc Xỉu' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Bạc Xỉu' })).toBeInTheDocument()
     expect((await screen.findAllByRole('group')).map((g) => g.getAttribute('aria-label'))).toEqual(['Size', 'Đường', 'Topping'])
     expect(screen.getByRole('radio', { name: /M/ })).toHaveAttribute('aria-checked', 'true')
     expect(screen.getByRole('button', { name: /Thêm vào giỏ/ })).toBeDisabled()
@@ -188,7 +188,7 @@ describe('PosShell product browsing', () => {
     await seedMenu(); const user = userEvent.setup(); const finalized = vi.fn(); window.addEventListener('order.finalized', finalized); renderPosShell()
     await user.click(await screen.findByRole('button', { name: 'Trà đào, 45.000 ₫' }))
     const checkout = screen.getByLabelText('Tóm tắt thanh toán')
-    expect(within(checkout).getByText('Tổng tiền')).toHaveClass('text-3xl')
+    expect(within(checkout).getByText('Tổng tiền')).toHaveClass('text-[28px]')
     expect(within(checkout).queryByRole('radio', { name: /Tiền mặt/ })).not.toBeInTheDocument()
     expect(useCheckoutStore.getState().paymentMethod).toBe('cash')
     await user.click(within(checkout).getByRole('button', { name: 'Hoàn tất đơn' }))

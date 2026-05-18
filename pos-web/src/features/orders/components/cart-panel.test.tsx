@@ -35,6 +35,31 @@ afterEach(async () => {
   db.close()
 })
 
+
+describe('CartPanel Obsidian layout', () => {
+  it('renders fixed cart panel header actions, option chips, summary actions, and checkout CTA', () => {
+    useCartStore.getState().addItem({
+      ...cartItem,
+      options: [{ optionId: 'o-l', labelSnapshot: 'L', priceDeltaSnapshot: 5000 }],
+      lineTotal: 40000,
+    })
+
+    render(<CartPanel />)
+
+    const panel = screen.getByLabelText('Giỏ hàng và thanh toán')
+    expect(panel).toHaveClass('fixed', 'right-0', 'top-16', 'w-[380px]')
+    expect(within(panel).getByRole('heading', { name: 'Đơn hiện tại' })).toBeInTheDocument()
+    expect(within(panel).getByRole('button', { name: 'Hủy đơn' })).toBeInTheDocument()
+    expect(within(panel).getByText('L +5.000 ₫')).toHaveClass('rounded-full', 'bg-surface-container-high')
+
+    const checkout = within(panel).getByLabelText('Tóm tắt thanh toán')
+    expect(within(checkout).getByText('Tổng tiền')).toBeInTheDocument()
+    expect(within(checkout).getByRole('button', { name: 'Print' })).toBeEnabled()
+    expect(within(checkout).getByRole('button', { name: 'Apply' })).toBeEnabled()
+    expect(within(checkout).getByRole('button', { name: 'Hoàn tất đơn' })).toHaveClass('bg-primary', 'text-on-primary')
+  })
+})
+
 describe('CartPanel checkout payment modal', () => {
   it('removes inline payment selector and opens modal without finalizing', async () => {
     const user = userEvent.setup()
