@@ -30,6 +30,8 @@ async function refreshBestEffort(setSessionFromRecord: ReturnType<typeof useSess
 export function SessionBootProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const locationRef = React.useRef(location)
+  React.useEffect(() => { locationRef.current = location })
   const setSessionFromRecord = useSessionStore((state) => state.setSessionFromRecord)
   const clearSessionState = useSessionStore((state) => state.clearSessionState)
   const currentUser = useSessionStore((state) => state.currentUser)
@@ -80,15 +82,15 @@ export function SessionBootProvider({ children }: { children: React.ReactNode })
   React.useEffect(() => {
     const onExpired = async () => {
       await expireSession({ clearSession, clearSessionState, message: AUTH_EXPIRED_MESSAGE })
-      if (location.pathname !== '/login') navigate('/login', { replace: true })
+      if (locationRef.current.pathname !== '/login') navigate('/login', { replace: true })
     }
     window.addEventListener('auth.expired', onExpired)
     return () => window.removeEventListener('auth.expired', onExpired)
-  }, [clearSessionState, location.pathname, navigate])
+  }, [clearSessionState, navigate])
 
   React.useEffect(() => {
     if (bootStatus !== 'ready' || !currentUser) return
-    return installMenuOnlineRecovery({ isAuthenticated: () => true })
+    return installMenuOnlineRecovery({ isAuthenticated: () => useSessionStore.getState().isAuthenticated })
   }, [bootStatus, currentUser])
 
   React.useEffect(() => {
