@@ -3,6 +3,9 @@ import { Link, useLocation } from "react-router";
 
 import { ChevronDown, LayoutDashboard, List, MoreHorizontal, PieChart } from 'lucide-react'
 import { useAdminUiStore } from "../../../../shared/stores/admin-ui.store";
+import logoDark from "../images/logo/logo-dark.svg";
+import logoIcon from "../images/logo/logo-icon.svg";
+import logo from "../images/logo/logo.svg";
 
 type NavItem = {
   name: string;
@@ -254,14 +257,14 @@ const AppSidebar: React.FC = () => {
             <>
               <img
                 className="dark:hidden"
-                src="/images/logo/logo.svg"
+                src={logo}
                 alt="Logo"
                 width={150}
                 height={40}
               />
               <img
                 className="hidden dark:block"
-                src="/images/logo/logo-dark.svg"
+                src={logoDark}
                 alt="Logo"
                 width={150}
                 height={40}
@@ -269,7 +272,7 @@ const AppSidebar: React.FC = () => {
             </>
           ) : (
             <img
-              src="/images/logo/logo-icon.svg"
+              src={logoIcon}
               alt="Logo"
               width={32}
               height={32}

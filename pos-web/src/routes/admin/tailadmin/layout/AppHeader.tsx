@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { useAdminUiStore } from "../../../../shared/stores/admin-ui.store";
 import UserDropdown from "../components/header/UserDropdown";
+import logoDark from "../images/logo/logo-dark.svg";
+import logo from "../images/logo/logo.svg";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
@@ -69,12 +71,12 @@ const AppHeader: React.FC = () => {
           <Link to="/" className="lg:hidden">
             <img
               className="dark:hidden"
-              src="./images/logo/logo.svg"
+              src={logo}
               alt="Logo"
             />
             <img
               className="hidden dark:block"
-              src="./images/logo/logo-dark.svg"
+              src={logoDark}
               alt="Logo"
             />
           </Link>
