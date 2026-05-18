@@ -1,5 +1,5 @@
 # generated: 2026-05-10T15:13:01+07:00
-# last_updated: 2026-05-16
+# last_updated: 2026-05-18
 # project: pos-bmad
 # project_key: NOKEY
 # tracking_system: file-system
@@ -22,7 +22,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-05-10T15:11:57+07:00"
-last_updated: "2026-05-17T16:07:00+07:00"
+last_updated: "2026-05-18T10:03:06+07:00"
 project: pos-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -57,6 +57,7 @@ development_status:
   2-13-backend-void-endpoint-frontend-void-synced-order-flow: done
   2-14-payment-method-modal-on-checkout: done
   2-15-redesign-pos-ui-obsidian-light-theme-menu-cart-option-modal: review
+  2-16-pos-discount-modal-remove-print-apply-buttons: done
   epic-2-retrospective: optional
   epic-3: in-progress
   3-1-admin-layout-sectioned-navigation-admindatatable-statusbadge-foundation: done

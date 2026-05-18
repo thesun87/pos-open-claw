@@ -177,6 +177,8 @@ describe('PosShell product browsing', () => {
     await user.type(screen.getByLabelText('Ghi chú món'), 'ít đá')
     await user.click(screen.getByRole('button', { name: 'Lưu ghi chú' }))
     expect(screen.getByText('Ghi chú: ít đá')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Giảm giá' }))
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
     await user.type(screen.getByLabelText('Giá trị giảm'), '10')
     await user.click(screen.getByRole('button', { name: 'Áp dụng' }))
     expect(screen.getByText('-10 ₫')).toBeInTheDocument()

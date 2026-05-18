@@ -54,8 +54,9 @@ describe('CartPanel Obsidian layout', () => {
 
     const checkout = within(panel).getByLabelText('Tóm tắt thanh toán')
     expect(within(checkout).getByText('Tổng tiền')).toBeInTheDocument()
-    expect(within(checkout).getByRole('button', { name: 'Print' })).toBeEnabled()
-    expect(within(checkout).getByRole('button', { name: 'Apply' })).toBeEnabled()
+    expect(within(checkout).queryByRole('button', { name: 'Print' })).not.toBeInTheDocument()
+    expect(within(checkout).queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument()
+    expect(within(checkout).getByRole('button', { name: /^Giảm giá/ })).toBeEnabled()
     expect(within(checkout).getByRole('button', { name: 'Hoàn tất đơn' })).toHaveClass('bg-primary', 'text-on-primary')
   })
 })
@@ -136,5 +137,144 @@ describe('CartPanel cart-level void', () => {
     await user.click(screen.getByRole('button', { name: 'Quay lại' }))
     await waitFor(() => expect(cancelButton).toHaveFocus())
     expect(useCartStore.getState().items).toHaveLength(1)
+  })
+})
+
+describe('CartPanel discount modal', () => {
+  it('opens discount modal and applies fixed discount', async () => {
+    const user = userEvent.setup()
+    useCartStore.getState().addItem(cartItem)
+
+    render(<CartPanel />)
+    const discountButton = screen.getByRole('button', { name: /^Giảm giá/ })
+    await user.click(discountButton)
+
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+    expect(screen.getByRole('heading', { name: 'Giảm giá đơn hàng' })).toBeInTheDocument()
+
+    const fixedRadio = screen.getByLabelText('Giảm tiền cố định')
+    expect(fixedRadio).toBeChecked()
+
+    const input = screen.getByLabelText('Giá trị giảm')
+    await user.clear(input)
+    await user.type(input, '10000')
+
+    await user.click(screen.getByRole('button', { name: 'Áp dụng' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(useCartStore.getState().discount).toEqual({ type: 'fixed', value: 10000 })
+    expect(screen.getByText('-10.000 ₫')).toBeInTheDocument()
+  })
+
+  it('opens discount modal with prefilled values when discount exists', async () => {
+    const user = userEvent.setup()
+    useCartStore.getState().addItem(cartItem)
+    useCartStore.getState().setDiscount({ type: 'percentage', value: 10 })
+
+    render(<CartPanel />)
+    const discountButton = screen.getByRole('button', { name: 'Giảm giá (10%)' })
+    await user.click(discountButton)
+
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+    const percentRadio = screen.getByLabelText('Giảm theo %')
+    expect(percentRadio).toBeChecked()
+    expect(screen.getByLabelText('Giá trị giảm')).toHaveValue('10')
+  })
+
+  it('Quay lại does not commit discount changes', async () => {
+    const user = userEvent.setup()
+    useCartStore.getState().addItem(cartItem)
+    useCartStore.getState().setDiscount({ type: 'fixed', value: 5000 })
+
+    render(<CartPanel />)
+    await user.click(screen.getByRole('button', { name: /Giảm giá/ }))
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+
+    const input = screen.getByLabelText('Giá trị giảm')
+    await user.clear(input)
+    await user.type(input, '9000')
+
+    await user.click(screen.getByRole('button', { name: 'Quay lại' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(useCartStore.getState().discount).toEqual({ type: 'fixed', value: 5000 })
+  })
+
+  it('ESC closes discount modal without commit', async () => {
+    const user = userEvent.setup()
+    useCartStore.getState().addItem(cartItem)
+    useCartStore.getState().setDiscount({ type: 'fixed', value: 5000 })
+
+    render(<CartPanel />)
+    await user.click(screen.getByRole('button', { name: /Giảm giá/ }))
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+
+    const input = screen.getByLabelText('Giá trị giảm')
+    await user.clear(input)
+    await user.type(input, '9000')
+
+    await user.keyboard('{Escape}')
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(useCartStore.getState().discount).toEqual({ type: 'fixed', value: 5000 })
+  })
+
+  it('Bỏ giảm giá button clears discount and closes modal', async () => {
+    const user = userEvent.setup()
+    useCartStore.getState().addItem(cartItem)
+    useCartStore.getState().setDiscount({ type: 'fixed', value: 5000 })
+
+    render(<CartPanel />)
+    await user.click(screen.getByRole('button', { name: /Giảm giá/ }))
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: 'Bỏ giảm giá' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(useCartStore.getState().discount).toBeNull()
+    expect(screen.getByRole('button', { name: 'Giảm giá' })).toBeInTheDocument()
+  })
+
+  it('Bỏ giảm giá button not visible when no discount yet', async () => {
+    const user = userEvent.setup()
+    useCartStore.getState().addItem(cartItem)
+
+    render(<CartPanel />)
+    await user.click(screen.getByRole('button', { name: 'Giảm giá' }))
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+
+    expect(screen.queryByRole('button', { name: 'Bỏ giảm giá' })).not.toBeInTheDocument()
+  })
+
+  it('Áp dụng disabled when value invalid', async () => {
+    const user = userEvent.setup()
+    useCartStore.getState().addItem(cartItem)
+
+    render(<CartPanel />)
+    await user.click(screen.getByRole('button', { name: 'Giảm giá' }))
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+
+    const input = screen.getByLabelText('Giá trị giảm')
+    await user.clear(input)
+    await user.type(input, '999999')
+
+    const applyButton = screen.getByRole('button', { name: 'Áp dụng' })
+    expect(applyButton).toBeDisabled()
+    expect(screen.getByText(/Giảm tiền phải từ 0 đến/)).toBeInTheDocument()
+  })
+
+  it('focus returns to trigger after close', async () => {
+    const user = userEvent.setup()
+    useCartStore.getState().addItem(cartItem)
+
+    render(<CartPanel />)
+    const discountButton = screen.getByRole('button', { name: 'Giảm giá' })
+    await user.click(discountButton)
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument())
+
+    expect(screen.getByRole('button', { name: 'Áp dụng' })).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    await waitFor(() => expect(discountButton).toHaveFocus())
   })
 })
