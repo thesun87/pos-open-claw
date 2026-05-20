@@ -25,7 +25,7 @@
     "prisma:format": "prisma format",
     "prisma:generate": "prisma generate",
     "migrate:dev": "prisma migrate dev",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node -r dotenv/config prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -99,6 +99,6 @@
     "testEnvironment": "node"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node -r dotenv/config prisma/seed.ts"
   }
 }
