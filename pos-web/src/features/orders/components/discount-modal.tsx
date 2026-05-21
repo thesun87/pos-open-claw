@@ -76,7 +76,7 @@ export function DiscountModal({ open, onOpenChange, subtotal, discount, onApply 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent aria-describedby="discount-modal-description">
+      <DialogContent className="pos-theme" aria-describedby="discount-modal-description">
         <DialogHeader>
           <DialogTitle>Giảm giá đơn hàng</DialogTitle>
           <DialogDescription id="discount-modal-description">

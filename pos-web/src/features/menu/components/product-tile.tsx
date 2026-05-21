@@ -14,12 +14,59 @@ export function ProductTile({ product, onSelect, variant = 'default' }: ProductT
   const price = formatVnd(product.priceVnd)
   const ariaLabel = `${product.name}, ${price}${hasOptions ? ', có tùy chọn' : ''}`
 
+  if (variant === 'compact') {
+    return (
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        onClick={onSelect}
+        className="group relative flex items-center gap-3 w-full p-3 rounded-xl bg-surface-container border border-outline-variant/30 hover:border-primary-container shadow-sm transition active:scale-[0.98] text-left"
+      >
+        <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-surface-container-low font-bold text-primary-container text-sm select-none">
+          {getTextInitials(product.name)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-on-surface truncate text-sm">{product.name}</div>
+          <span className="text-xs font-semibold text-primary-container">{price}</span>
+        </div>
+      </button>
+    )
+  }
+
   return (
-    <button type="button" aria-label={ariaLabel} onClick={onSelect} className={cn('group relative min-h-32 w-full overflow-hidden rounded-3xl border border-outline-variant/15 bg-surface-container text-left shadow-md shadow-on-surface/10 transition active:scale-[0.98] hover:border-primary/45 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary', variant === 'default' && 'aspect-[4/5]', variant === 'compact' && 'min-h-24')}>
-      <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-primary-container/75 via-surface-container-high to-surface-container"><span aria-hidden="true" className="text-5xl font-bold text-primary/35">{getTextInitials(product.name)}</span></div>
-      <div className="absolute inset-0 bg-gradient-to-t from-inverse-surface/85 via-inverse-surface/10 to-transparent" />
-      {hasOptions ? <span className="absolute right-3 top-3 rounded-full bg-surface/95 px-3 py-1 text-[10px] font-bold tracking-wide text-primary shadow-sm backdrop-blur-md">OPTIONS</span> : null}
-      <span className="absolute bottom-0 left-0 right-0 p-5 text-left"><span className="block text-lg font-bold leading-6 text-white">{product.name}</span><span className="price mt-1 block font-label-sm text-white/90">{price}</span></span>
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      onClick={onSelect}
+      className={cn(
+        'group relative overflow-hidden rounded-xl bg-surface-container border border-outline-variant/20 hover:border-primary-container shadow-[0_4px_8px_rgba(0,0,0,0.04)] transition-all active:scale-[0.98] text-left w-full flex flex-col justify-between focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary pb-4',
+        variant === 'default' && 'aspect-[4/5]'
+      )}
+    >
+      {/* Product Image Placeholder / Initials */}
+      <div className="aspect-[4/3] w-full bg-surface-container-low overflow-hidden flex items-center justify-center relative select-none shrink-0">
+        <span className="text-3xl font-bold text-primary/35 group-hover:scale-105 transition-transform duration-300">
+          {getTextInitials(product.name)}
+        </span>
+        {hasOptions && (
+          <span className="absolute right-3 top-3 rounded-full bg-surface/95 px-3 py-1 text-[10px] font-bold tracking-wide text-primary shadow-sm backdrop-blur-md">
+            OPTIONS
+          </span>
+        )}
+      </div>
+
+      {/* Card Info */}
+      <div className="px-4 pt-3 flex flex-col gap-1 w-full flex-1 justify-between">
+        <div className="font-semibold text-on-surface truncate text-sm" title={product.name}>
+          {product.name}
+        </div>
+        <div className="flex justify-between items-center mt-1">
+          <span className="font-bold text-primary-container text-sm">{price}</span>
+          <span className="px-3 py-1 border border-primary-container text-primary-container rounded-full text-xs font-medium group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+            Đặt món
+          </span>
+        </div>
+      </div>
     </button>
   )
 }

@@ -47,7 +47,7 @@ describe('CartPanel Obsidian layout', () => {
     render(<CartPanel />)
 
     const panel = screen.getByLabelText('Giỏ hàng và thanh toán')
-    expect(panel).toHaveClass('fixed', 'right-0', 'top-16', 'w-[380px]')
+    expect(panel).toHaveClass('fixed', 'right-0', 'top-16', 'w-[320px]')
     expect(within(panel).getByRole('heading', { name: 'Đơn hiện tại' })).toBeInTheDocument()
     expect(within(panel).getByRole('button', { name: 'Hủy đơn' })).toBeInTheDocument()
     expect(within(panel).getByText('L +5.000 ₫')).toHaveClass('rounded-full', 'bg-surface-container-high')

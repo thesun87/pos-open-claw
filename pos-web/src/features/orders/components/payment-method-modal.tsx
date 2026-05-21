@@ -57,7 +57,7 @@ export function PaymentMethodModal({ items, discount }: PaymentMethodModalProps)
 
   return (
     <Dialog open={isPaymentMethodModalOpen} onOpenChange={(open) => { if (!open && !isCheckingOut) handleCancel() }}>
-      <DialogContent onEscapeKeyDown={(e) => { if (isCheckingOut) e.preventDefault() }} onPointerDownOutside={(e) => { if (isCheckingOut) e.preventDefault() }} onInteractOutside={(e) => { if (isCheckingOut) e.preventDefault() }}>
+      <DialogContent className="pos-theme" onEscapeKeyDown={(e) => { if (isCheckingOut) e.preventDefault() }} onPointerDownOutside={(e) => { if (isCheckingOut) e.preventDefault() }} onInteractOutside={(e) => { if (isCheckingOut) e.preventDefault() }}>
         <DialogHeader>
           <DialogTitle>Chọn phương thức thanh toán</DialogTitle>
           <DialogDescription>Chọn phương thức thanh toán cho đơn hiện tại.</DialogDescription>

@@ -190,7 +190,7 @@ describe('PosShell product browsing', () => {
     await seedMenu(); const user = userEvent.setup(); const finalized = vi.fn(); window.addEventListener('order.finalized', finalized); renderPosShell()
     await user.click(await screen.findByRole('button', { name: 'Trà đào, 45.000 ₫' }))
     const checkout = screen.getByLabelText('Tóm tắt thanh toán')
-    expect(within(checkout).getByText('Tổng tiền')).toHaveClass('text-[28px]')
+    expect(within(checkout).getByText('Tổng tiền')).toHaveClass('text-xl')
     expect(within(checkout).queryByRole('radio', { name: /Tiền mặt/ })).not.toBeInTheDocument()
     expect(useCheckoutStore.getState().paymentMethod).toBe('cash')
     await user.click(within(checkout).getByRole('button', { name: 'Hoàn tất đơn' }))

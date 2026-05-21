@@ -54,7 +54,7 @@ export function VoidOrderDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent aria-describedby="void-order-description">
+      <DialogContent className="pos-theme" aria-describedby="void-order-description">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription id="void-order-description">{description}</DialogDescription>

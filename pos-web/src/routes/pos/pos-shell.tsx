@@ -9,7 +9,6 @@ import { OptionModal } from '../../features/menu/components/option-modal'
 import { ProductTile } from '../../features/menu/components/product-tile'
 import { useCategories, useDebouncedValue, useProducts } from '../../features/menu/hooks'
 import { EmptyState } from '../../shared/components/ui/empty-state'
-import { Input } from '../../shared/components/ui/input'
 import { PosCategorySidebar } from './pos-category-sidebar'
 import { PosTopAppBar } from './pos-top-app-bar'
 
@@ -28,7 +27,15 @@ export function PosShell() {
   const effectiveCategoryId = selectedCategoryId ?? activeCategories[0]?.id
   const hasLoadedCategories = categories !== undefined
   const isMenuEmpty = hasLoadedCategories && activeCategories.length === 0
-  const products = useProducts({ categoryId: effectiveCategoryId ?? '__no-selected-category__', ...(isMenuEmpty ? {} : { search: debouncedSearch }) })
+
+  const queryArgs: { categoryId?: string; search?: string } = {}
+  if (effectiveCategoryId && effectiveCategoryId !== 'all') {
+    queryArgs.categoryId = effectiveCategoryId
+  }
+  if (!isMenuEmpty && debouncedSearch) {
+    queryArgs.search = debouncedSearch
+  }
+  const products = useProducts(queryArgs)
   const [selectedProductForOptions, setSelectedProductForOptions] = useState<MenuProductRecord | null>(null)
   const addItem = useCartStore((state) => state.addItem)
   const lastFinalizedOrder = useCheckoutStore((state) => state.lastFinalizedOrder)
@@ -42,16 +49,15 @@ export function PosShell() {
   const gridProducts = (effectiveCategoryId ? products : []) ?? []
 
   return (
-    <section>
-      <PosTopAppBar />
+    <section className="pos-theme min-h-screen bg-bg">
+      <PosTopAppBar search={search} onSearchChange={setSearch} />
       {activeCategories.length > 0 ? <PosCategorySidebar categories={activeCategories} selectedCategoryId={effectiveCategoryId} onSelect={setSelectedCategoryId} /> : null}
       <div className="mt-16 rounded-2xl border border-warning bg-surface-container p-4 text-on-surface md:hidden">POS hoạt động tốt nhất ở màn hình ngang hoặc laptop/tablet</div>
-      <main className="mt-16 h-[calc(100vh-64px)] overflow-y-auto px-7 py-6 md:ml-24 md:mr-[380px]" aria-label="Khu vực sản phẩm">
+      <main className="mt-16 h-[calc(100vh-64px)] overflow-y-auto px-7 py-6 md:ml-24 md:mr-[320px]" aria-label="Khu vực sản phẩm">
         {routeMessage ? <p role="alert" className="mb-4 rounded-2xl border border-error/30 bg-error-container/20 px-3 py-2 text-sm text-on-error-container">{routeMessage}</p> : null}
-        <div className="mb-7 flex items-end justify-between gap-6">
-          <div><h1 className="text-[34px] font-semibold leading-10 text-on-surface">Menu sản phẩm</h1><p className="mt-1 text-on-surface-variant">Chọn món để thêm vào đơn</p></div>
-          <label htmlFor="product-search" className="sr-only">Tìm sản phẩm</label>
-          <div className="relative w-full max-w-sm"><span aria-hidden="true" className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span><Input id="product-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nhập tên món..." className="h-12 w-full rounded-2xl border-outline-variant/30 bg-surface-container-high pl-12" /></div>
+        <div className="mb-7">
+          <h1 className="text-[34px] font-semibold leading-10 text-on-surface">Menu sản phẩm</h1>
+          <p className="mt-1 text-on-surface-variant">Chọn món để thêm vào đơn</p>
         </div>
         {isLoading ? <LoadingProducts /> : isMenuEmpty ? <EmptyState title="Chưa có dữ liệu menu. Hãy kết nối mạng để tải menu." /> : gridProducts.length === 0 ? <EmptyState title="Không tìm thấy sản phẩm phù hợp." /> : <div className="grid grid-cols-2 gap-5 lg:grid-cols-3 xl:grid-cols-4" aria-label="Lưới sản phẩm">{gridProducts.map((product) => <ProductTile key={product.id} product={product} onSelect={() => handleSelectProduct(product)} />)}</div>}
       </main>

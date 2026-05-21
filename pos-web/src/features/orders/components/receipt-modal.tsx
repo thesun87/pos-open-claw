@@ -62,7 +62,7 @@ export function ReceiptModal({ order, open, onOpenChange }: ReceiptModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] w-[min(94vw,36rem)] overflow-y-auto">
+      <DialogContent className="pos-theme max-h-[90vh] w-[min(94vw,36rem)] overflow-y-auto">
         <article className="receipt-print-root space-y-5" data-print-receipt>
           <DialogHeader>
             <DialogTitle asChild><h2 className="text-2xl font-bold">Hóa đơn</h2></DialogTitle>
