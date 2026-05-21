@@ -15,3 +15,4 @@ Frontend PWA shell for the Café POS product.
 ## API client foundation
 
 `src/shared/lib/api-client.ts` uses `import.meta.env.VITE_API_BASE_URL` and maps `application/problem+json` responses through `errorMapper`. It intentionally does not read `localStorage` or `sessionStorage`; Story 1.8 will wire IndexedDB-backed auth tokens.
+
