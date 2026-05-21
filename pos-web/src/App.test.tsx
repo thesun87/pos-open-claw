@@ -1,10 +1,8 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import 'fake-indexeddb/auto'
 import App from './App'
-import AdminLayout, { AdminHome } from './routes/admin/_layout'
 import { STATUS_MENU_UPDATED, STATUS_OFFLINE, STATUS_ONLINE, STATUS_PENDING } from './shared/i18n/messages'
 import { useSessionStore } from './features/auth/session-store'
 import { db } from './db/dexie'
@@ -61,10 +59,8 @@ describe('frontend shell routes', () => {
 
   it('renders admin shell nav via route', async () => {
     await seedSession('admin')
-    const router = createMemoryRouter([{ path: '/admin', element: <AdminLayout />, children: [{ index: true, element: <AdminHome /> }] }], { initialEntries: ['/admin'] })
-    render(<RouterProvider router={router} />)
-    expect(await screen.findByRole('heading', { name: 'Admin' })).toBeInTheDocument()
-    expect(screen.getByRole('navigation', { name: 'Điều hướng Admin' })).toBeInTheDocument()
+    renderAt('/admin')
+    expect(await screen.findByRole('link', { name: /Đơn hàng/ })).toBeInTheDocument()
   })
 })
 

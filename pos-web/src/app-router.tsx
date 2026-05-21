@@ -25,6 +25,7 @@ export function createAppRouter() {
                 lazy: async () => { const m = await import('./routes/admin/_layout'); return { Component: m.default } },
                 children: [
                   { index: true, lazy: async () => { const m = await import('./routes/admin/_layout'); return { Component: m.AdminHome } } },
+                  { path: 'orders', lazy: async () => { const m = await import('./routes/admin/orders/orders-page'); return { Component: m.default } } },
                   { path: 'menu/categories', lazy: async () => { const m = await import('./routes/admin/menu/categories-page'); return { Component: m.default } } },
                   { path: 'menu/products', lazy: async () => { const m = await import('./routes/admin/menu/products-page'); return { Component: m.default } } },
                   { path: 'menu/option-groups', lazy: async () => { const m = await import('./routes/admin/menu/option-groups-page'); return { Component: m.default } } },

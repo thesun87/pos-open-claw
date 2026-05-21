@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 import { useAdminUiStore } from "../../../../shared/stores/admin-ui.store";
 import UserDropdown from "../components/header/UserDropdown";
 import logoDark from "../images/logo/logo-dark.svg";

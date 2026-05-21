@@ -2,12 +2,18 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PinoLogger } from 'nestjs-pino';
 import { TenantContext } from '../common/decorators/tenant-context.decorator';
 import { PROBLEM_TYPES } from '../common/errors/problem-types';
 import { isUuidV7 } from '../common/utils/trace-id';
+import {
+  AdminOrderDetail,
+  AdminOrderListItem,
+} from './dto/admin-order-response.dto';
+import { ListOrdersQueryDto } from './dto/list-orders-query.dto';
 import { SyncOrderDto } from './dto/sync-order.dto';
 import { VoidOrderDto } from './dto/void-order.dto';
 import { OrdersRepository } from './repositories/orders.repository';
@@ -23,6 +29,8 @@ export interface VoidOrderResponse {
   voidId: string;
   voidedAt: string;
 }
+
+const VIETNAM_TIMEZONE_OFFSET_MS = 7 * 60 * 60 * 1000;
 
 const IDEMPOTENCY_TARGETS = new Set([
   'uq_sync_log_tenant_store_device_client',
@@ -45,6 +53,23 @@ function isSyncLogIdempotencyConflict(error: unknown): boolean {
   return targetValues.some(
     (value) => typeof value === 'string' && IDEMPOTENCY_TARGETS.has(value),
   );
+}
+
+function vietnamDateBoundary(value: string, endOfDay: boolean): Date {
+  const [yearText, monthText, dayText] = value.split('-');
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const utcMs = Date.UTC(
+    year,
+    month - 1,
+    day,
+    endOfDay ? 23 : 0,
+    endOfDay ? 59 : 0,
+    endOfDay ? 59 : 0,
+    endOfDay ? 999 : 0,
+  );
+  return new Date(utcMs - VIETNAM_TIMEZONE_OFFSET_MS);
 }
 
 export function validateOrderTotals(body: SyncOrderDto): void {
@@ -84,6 +109,64 @@ export class OrdersService {
     private readonly logger: PinoLogger,
   ) {
     this.logger.setContext(OrdersService.name);
+  }
+
+  private assertTenantContext(
+    context: TenantContext | undefined,
+  ): asserts context is TenantContext {
+    if (!context?.tenantId || !context.storeId) {
+      throw new ForbiddenException('Missing tenant context');
+    }
+  }
+
+  async listOrders(
+    context: TenantContext | undefined,
+    query: ListOrdersQueryDto,
+  ): Promise<AdminOrderListItem[]> {
+    this.assertTenantContext(context);
+    const orderCode = (query.order_code ?? query.search)?.trim();
+    const from = query.from
+      ? vietnamDateBoundary(query.from, false)
+      : undefined;
+    const to = query.to ? vietnamDateBoundary(query.to, true) : undefined;
+    if (from && to && from > to) {
+      throw new BadRequestException({
+        type: PROBLEM_TYPES.validation,
+        title: 'Bad Request',
+        detail: 'Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc',
+      });
+    }
+    return this.ordersRepository.listOrders(context, {
+      ...(orderCode ? { orderCode } : {}),
+      ...(from ? { from } : {}),
+      ...(to ? { to } : {}),
+    });
+  }
+
+  async getOrderDetail(
+    context: TenantContext | undefined,
+    orderId: string,
+  ): Promise<AdminOrderDetail> {
+    this.assertTenantContext(context);
+    if (!isUuidV7(orderId)) {
+      throw new BadRequestException({
+        type: PROBLEM_TYPES.validation,
+        title: 'Bad Request',
+        detail: 'order id must be a UUID v7',
+      });
+    }
+    const detail = await this.ordersRepository.findOrderDetail(
+      context,
+      orderId,
+    );
+    if (!detail) {
+      throw new NotFoundException({
+        type: PROBLEM_TYPES.notFound,
+        title: 'Not Found',
+        detail: 'Order not found',
+      });
+    }
+    return detail;
   }
 
   async syncOrder(

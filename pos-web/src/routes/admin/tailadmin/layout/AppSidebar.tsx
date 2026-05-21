@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation } from "react-router-dom";
 
-import { ChevronDown, LayoutDashboard, List, MoreHorizontal, PieChart } from 'lucide-react'
+import { ChevronDown, LayoutDashboard, List, MoreHorizontal, PieChart, ReceiptText } from 'lucide-react'
 import { useAdminUiStore } from "../../../../shared/stores/admin-ui.store";
 import logoDark from "../images/logo/logo-dark.svg";
 import logoIcon from "../images/logo/logo-icon.svg";
@@ -19,6 +19,11 @@ const navItems: NavItem[] = [
     icon: <LayoutDashboard />,
     name: "Dashboard",
     path: "/admin",
+  },
+  {
+    icon: <ReceiptText />,
+    name: "Đơn hàng",
+    path: "/admin/orders",
   },
   {
     icon: <List />,
@@ -44,8 +49,9 @@ const AppSidebar: React.FC = () => {
   const isHovered = useAdminUiStore((state) => state.isHovered);
   const setIsHovered = useAdminUiStore((state) => state.setIsHovered);
   const location = useLocation();
+  const pathname = location.pathname;
 
-  const [openSubmenu, setOpenSubmenu] = useState<{
+  const [manualOpenSubmenu, setManualOpenSubmenu] = useState<{
     type: "main" | "others";
     index: number;
   } | null>(null);
@@ -56,33 +62,24 @@ const AppSidebar: React.FC = () => {
 
   // const isActive = (path: string) => location.pathname === path;
   const isActive = useCallback(
-    (path: string) => location.pathname === path,
-    [location.pathname]
+    (path: string) => pathname === path,
+    [pathname]
   );
 
-  useEffect(() => {
-    let submenuMatched = false;
-    ["main", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : othersItems;
-      items.forEach((nav, index) => {
-        if (nav.subItems) {
-          nav.subItems.forEach((subItem) => {
-            if (isActive(subItem.path)) {
-              setOpenSubmenu({
-                type: menuType as "main" | "others",
-                index,
-              });
-              submenuMatched = true;
-            }
-          });
-        }
-      });
-    });
+  let activeSubmenu: { type: "main" | "others"; index: number } | null = null;
+  for (const menuType of ["main", "others"] as const) {
+    const items = menuType === "main" ? navItems : othersItems;
+    const index = items.findIndex((nav) =>
+      nav.subItems?.some((subItem) => isActive(subItem.path))
+    );
 
-    if (!submenuMatched) {
-      setOpenSubmenu(null);
+    if (index >= 0) {
+      activeSubmenu = { type: menuType, index };
+      break;
     }
-  }, [location, isActive]);
+  }
+
+  const openSubmenu = manualOpenSubmenu ?? activeSubmenu;
 
   useEffect(() => {
     if (openSubmenu !== null) {
@@ -97,11 +94,12 @@ const AppSidebar: React.FC = () => {
   }, [openSubmenu]);
 
   const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
-    setOpenSubmenu((prevOpenSubmenu) => {
+    setManualOpenSubmenu((prevOpenSubmenu) => {
+      const currentOpenSubmenu = prevOpenSubmenu ?? activeSubmenu;
       if (
-        prevOpenSubmenu &&
-        prevOpenSubmenu.type === menuType &&
-        prevOpenSubmenu.index === index
+        currentOpenSubmenu &&
+        currentOpenSubmenu.type === menuType &&
+        currentOpenSubmenu.index === index
       ) {
         return null;
       }

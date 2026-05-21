@@ -3,12 +3,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod, Prisma } from '@prisma/client';
 import { v7 as uuidv7 } from 'uuid';
 import { TenantContext } from '../../common/decorators/tenant-context.decorator';
 import { PROBLEM_TYPES } from '../../common/errors/problem-types';
 import { runWithTenantContext } from '../../common/middleware/tenant-scope.middleware';
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  AdminOrderDetail,
+  AdminOrderListItem,
+  AdminPaymentMethod,
+} from '../dto/admin-order-response.dto';
 import { SyncOrderDto } from '../dto/sync-order.dto';
 
 export interface CreatedOrderResult {
@@ -27,6 +32,75 @@ const paymentMap = {
   card: PaymentMethod.Card,
 } as const;
 
+const apiPaymentMap: Record<PaymentMethod, AdminPaymentMethod> = {
+  [PaymentMethod.Cash]: 'cash',
+  [PaymentMethod.Transfer]: 'transfer',
+  [PaymentMethod.Card]: 'card',
+};
+
+export type ListOrdersFilters = {
+  orderCode?: string;
+  from?: Date;
+  to?: Date;
+};
+
+type OrderWithAdminRelations = Prisma.OrderGetPayload<{
+  include: {
+    cashier: { select: { email: true } };
+    items: { include: { options: true } };
+    voids: {
+      include: { user: { select: { email: true } } };
+      orderBy: { voidedAt: 'desc' };
+    };
+  };
+}>;
+
+function mapOrderListItem(order: OrderWithAdminRelations): AdminOrderListItem {
+  const latestVoid = order.voids[0];
+  return {
+    id: order.id,
+    orderCode: order.orderCode,
+    soldAt: order.soldAt.toISOString(),
+    syncedAt: order.syncedAt.toISOString(),
+    cashierName: order.cashier?.email ?? null,
+    paymentMethod: apiPaymentMap[order.paymentMethod],
+    discountAmount: order.discountAmount,
+    total: order.total,
+    itemLineCount: order.items.length,
+    itemQuantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
+    isVoided: order.voids.length > 0,
+    voidedAt: latestVoid?.voidedAt.toISOString() ?? null,
+  };
+}
+
+function mapOrderDetail(order: OrderWithAdminRelations): AdminOrderDetail {
+  return {
+    ...mapOrderListItem(order),
+    clientOrderId: order.clientOrderId,
+    deviceId: order.deviceId,
+    menuVersionAtSale: order.menuVersionAtSale,
+    voids: order.voids.map((orderVoid) => ({
+      id: orderVoid.id,
+      reason: orderVoid.reason,
+      voidedAt: orderVoid.voidedAt.toISOString(),
+      voidedByName: orderVoid.user?.email ?? null,
+    })),
+    items: order.items.map((item) => ({
+      id: item.id,
+      productNameSnapshot: item.productNameSnapshot,
+      unitPriceSnapshot: item.unitPriceSnapshot,
+      quantity: item.quantity,
+      note: item.note,
+      lineTotal: item.lineTotal,
+      options: item.options.map((option) => ({
+        id: option.id,
+        labelSnapshot: option.labelSnapshot,
+        priceDeltaSnapshot: option.priceDeltaSnapshot,
+      })),
+    })),
+  };
+}
+
 @Injectable()
 export class OrdersRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -37,6 +111,66 @@ export class OrdersRepository {
         select: { version: true },
       });
       return current?.version ?? 1;
+    });
+  }
+
+  listOrders(
+    context: TenantContext,
+    filters: ListOrdersFilters,
+  ): Promise<AdminOrderListItem[]> {
+    return runWithTenantContext(context, async () => {
+      const where: Prisma.OrderWhereInput = {
+        tenantId: context.tenantId,
+        storeId: context.storeId,
+      };
+      if (filters.orderCode) {
+        where.orderCode = { contains: filters.orderCode, mode: 'insensitive' };
+      }
+      if (filters.from || filters.to) {
+        where.soldAt = {
+          ...(filters.from ? { gte: filters.from } : {}),
+          ...(filters.to ? { lte: filters.to } : {}),
+        };
+      }
+
+      const orders = await this.prisma.order.findMany({
+        where,
+        orderBy: [{ soldAt: 'desc' }, { createdAt: 'desc' }],
+        take: 200,
+        include: {
+          cashier: { select: { email: true } },
+          items: { include: { options: true } },
+          voids: {
+            include: { user: { select: { email: true } } },
+            orderBy: { voidedAt: 'desc' },
+          },
+        },
+      });
+      return orders.map(mapOrderListItem);
+    });
+  }
+
+  findOrderDetail(
+    context: TenantContext,
+    orderId: string,
+  ): Promise<AdminOrderDetail | null> {
+    return runWithTenantContext(context, async () => {
+      const order = await this.prisma.order.findFirst({
+        where: {
+          id: orderId,
+          tenantId: context.tenantId,
+          storeId: context.storeId,
+        },
+        include: {
+          cashier: { select: { email: true } },
+          items: { include: { options: true }, orderBy: { createdAt: 'asc' } },
+          voids: {
+            include: { user: { select: { email: true } } },
+            orderBy: { voidedAt: 'desc' },
+          },
+        },
+      });
+      return order ? mapOrderDetail(order) : null;
     });
   }
 

@@ -4,8 +4,10 @@ import {
   Headers,
   HttpCode,
   HttpStatus,
+  Get,
   Param,
   Post,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -23,6 +25,7 @@ import { TenantContext } from '../common/decorators/tenant-context.decorator';
 import type { TenantContext as TenantContextType } from '../common/decorators/tenant-context.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { ListOrdersQueryDto } from './dto/list-orders-query.dto';
 import { SyncOrderDto, syncOrderExample } from './dto/sync-order.dto';
 import { VoidOrderDto, voidOrderExample } from './dto/void-order.dto';
 import { OrdersService } from './orders.service';
@@ -33,6 +36,28 @@ import { OrdersService } from './orders.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
+
+  @Get()
+  @Roles('admin')
+  @ApiResponse({ status: 200, description: 'Danh sách đơn hàng admin' })
+  list(
+    @TenantContext() context: TenantContextType | undefined,
+    @Query() query: ListOrdersQueryDto,
+  ) {
+    return this.ordersService.listOrders(context, query);
+  }
+
+  @Get(':id')
+  @Roles('admin')
+  @ApiParam({ name: 'id', example: '018f0000-0000-7000-8000-000000009999' })
+  @ApiResponse({ status: 200, description: 'Chi tiết đơn hàng admin' })
+  @ApiResponse({ status: 404, description: 'Order not found Problem Details' })
+  detail(
+    @TenantContext() context: TenantContextType | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.ordersService.getOrderDetail(context, id);
+  }
 
   @Post()
   @Roles('cashier', 'admin')

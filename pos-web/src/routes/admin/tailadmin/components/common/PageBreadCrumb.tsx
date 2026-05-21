@@ -1,4 +1,3 @@
-import { Link } from "react-router";
 
 interface BreadcrumbProps {
   pageTitle: string;
@@ -16,9 +15,9 @@ const PageBreadcrumb: React.FC<BreadcrumbProps> = ({ pageTitle }) => {
       <nav>
         <ol className="flex items-center gap-1.5">
           <li>
-            <Link
+            <a
               className="inline-flex items-center gap-1.5 text-sm text-admin-gray-500 dark:text-admin-gray-400"
-              to="/"
+              href="/"
             >
               Home
               <svg
@@ -37,7 +36,7 @@ const PageBreadcrumb: React.FC<BreadcrumbProps> = ({ pageTitle }) => {
                   strokeLinejoin="round"
                 />
               </svg>
-            </Link>
+            </a>
           </li>
           <li className="text-sm text-admin-gray-800 dark:text-white/90">
             {pageTitle}

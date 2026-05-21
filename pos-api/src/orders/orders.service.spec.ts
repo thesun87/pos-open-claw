@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
@@ -48,10 +52,16 @@ function service(
     menuVersion: number;
     createReject: unknown;
     voidResult: unknown;
+    listResult: unknown;
+    detailResult: unknown;
   }> = {},
 ) {
   const ordersRepository = {
     currentMenuVersion: jest.fn().mockResolvedValue(overrides.menuVersion ?? 1),
+    listOrders: jest.fn().mockResolvedValue(overrides.listResult ?? []),
+    findOrderDetail: jest
+      .fn()
+      .mockResolvedValue(overrides.detailResult ?? null),
     voidOrder: jest.fn().mockResolvedValue(
       overrides.voidResult ?? {
         voidId: '018f0000-0000-7000-8000-00000000v001',
@@ -188,6 +198,50 @@ describe('OrdersService', () => {
       p2002,
     );
     expect(syncLogRepository.findReplay).toHaveBeenCalledTimes(1);
+  });
+
+  it('lists orders with order code and Vietnam date boundaries', async () => {
+    const { svc, ordersRepository } = service({
+      listResult: [{ id: 'order-1' }],
+    });
+    await expect(
+      svc.listOrders(context, {
+        order_code: ' POS01 ',
+        from: '2026-05-01',
+        to: '2026-05-21',
+      }),
+    ).resolves.toEqual([{ id: 'order-1' }]);
+    expect(ordersRepository.listOrders).toHaveBeenCalledWith(context, {
+      orderCode: 'POS01',
+      from: new Date('2026-04-30T17:00:00.000Z'),
+      to: new Date('2026-05-21T16:59:59.999Z'),
+    });
+  });
+
+  it('rejects reversed list date ranges and missing list context', async () => {
+    const { svc, ordersRepository } = service();
+    await expect(
+      svc.listOrders(context, { from: '2026-05-22', to: '2026-05-21' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(svc.listOrders(undefined, {})).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(ordersRepository.listOrders).not.toHaveBeenCalled();
+  });
+
+  it('returns admin order detail and maps missing detail to not found', async () => {
+    const detail = {
+      id: '018f0000-0000-7000-8000-000000009999',
+      orderCode: 'POS01',
+    };
+    const { svc } = service({ detailResult: detail });
+    await expect(
+      svc.getOrderDetail(context, '018f0000-0000-7000-8000-000000009999'),
+    ).resolves.toBe(detail);
+    const empty = service();
+    await expect(
+      empty.svc.getOrderDetail(context, '018f0000-0000-7000-8000-000000009999'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('voids an order with trimmed reason and ISO timestamp', async () => {

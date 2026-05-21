@@ -22,7 +22,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-05-10T15:11:57+07:00"
-last_updated: "2026-05-18T21:12:00+07:00"
+last_updated: "2026-05-21T17:37:00+07:00"
 project: pos-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -77,3 +77,6 @@ development_status:
   4-3-fe-revenue-by-day-chart-total-orders-summary-card: done
   4-4-fe-revenue-by-payment-method-top-products-display: done
   epic-4-retrospective: optional
+  epic-5: in-progress
+  5-1-admin-orders-list-detail-search: done
+  epic-5-retrospective: optional
