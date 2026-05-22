@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useLogoutAction } from '../../features/auth/logout'
 import { useSessionStore } from '../../features/auth/session-store'
 import { ConnectivityIndicator } from '../../shared/components/layout/connectivity-indicator'
 import { PendingCounter } from '../../shared/components/layout/pending-counter'
@@ -16,6 +18,16 @@ export function PosTopAppBar({ search = '', onSearchChange }: Props) {
   const isAdmin = user?.role === 'admin'
   const userName = user?.email?.split('@')[0] ?? 'Nhân viên'
   const userRole = user?.role === 'admin' ? 'Quản trị viên' : 'Thu ngân 1'
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const logout = useLogoutAction()
+
+  async function handleLogout() {
+    if (isLoggingOut) return
+    setIsLoggingOut(true)
+    setIsUserMenuOpen(false)
+    await logout()
+  }
 
   return (
     <header data-testid="pos-top-app-bar" className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center justify-between border-b border-outline-variant/30 bg-surface/90 px-7 shadow-sm backdrop-blur-xl">
@@ -50,14 +62,23 @@ export function PosTopAppBar({ search = '', onSearchChange }: Props) {
           </Link>
         ) : null}
         
-        <div className="flex items-center gap-3 border-l border-outline-variant/30 pl-4 h-8 select-none">
-          <div aria-label="Người dùng hiện tại" className="grid h-8 w-8 place-items-center rounded-full bg-primary-container font-bold text-on-primary-container text-sm">
-            {initial}
-          </div>
-          <div className="hidden md:flex flex-col text-left">
-            <span className="text-sm font-semibold text-on-surface leading-none">{userName}</span>
-            <span className="text-[11px] text-on-surface-variant capitalize mt-0.5">{userRole}</span>
-          </div>
+        <div className="relative flex items-center gap-3 border-l border-outline-variant/30 pl-4 h-8 select-none">
+          <button type="button" aria-label="Mở menu người dùng" aria-expanded={isUserMenuOpen} onClick={() => setIsUserMenuOpen((open) => !open)} className="flex items-center gap-3 rounded-full text-left focus:outline-none focus:ring-2 focus:ring-primary-container">
+            <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-full bg-primary-container font-bold text-on-primary-container text-sm">
+              {initial}
+            </span>
+            <span className="hidden md:flex flex-col text-left">
+              <span className="text-sm font-semibold text-on-surface leading-none">{userName}</span>
+              <span className="text-[11px] text-on-surface-variant capitalize mt-0.5">{userRole}</span>
+            </span>
+          </button>
+          {isUserMenuOpen ? (
+            <div role="menu" className="absolute right-0 top-10 z-50 min-w-40 rounded-xl border border-outline-variant/30 bg-surface p-2 shadow-lg">
+              <button type="button" role="menuitem" disabled={isLoggingOut} onClick={handleLogout} className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-on-surface hover:bg-surface-container disabled:opacity-60">
+                {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </header>

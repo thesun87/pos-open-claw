@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { Link } from "react-router-dom";
+import { useLogoutAction } from "../../../../../features/auth/logout";
+import { useSessionStore } from "../../../../../features/auth/session-store";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const logout = useLogoutAction();
+  const user = useSessionStore((state) => state.currentUser);
+  const userName = user?.email?.split('@')[0] ?? 'Người dùng';
+  const userEmail = user?.email ?? 'Chưa có email';
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -12,6 +18,13 @@ export default function UserDropdown() {
 
   function closeDropdown() {
     setIsOpen(false);
+  }
+
+  async function handleLogout() {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    closeDropdown();
+    await logout();
   }
   return (
     <div className="relative">
@@ -23,7 +36,7 @@ export default function UserDropdown() {
           <img src="/images/user/owner.jpg" alt="User" />
         </span>
 
-        <span className="block mr-1 font-medium text-theme-sm">Musharof</span>
+        <span className="block mr-1 font-medium text-theme-sm">{userName}</span>
         <svg
           className={`stroke-admin-gray-500 dark:stroke-admin-gray-400 transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""
@@ -51,10 +64,10 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block font-medium text-admin-gray-700 text-theme-sm dark:text-admin-gray-400">
-            Musharof Chowdhury
+            {userName}
           </span>
           <span className="mt-0.5 block text-theme-xs text-admin-gray-500 dark:text-admin-gray-400">
-            randomuser@pimjo.com
+            {userEmail}
           </span>
         </div>
 
@@ -135,9 +148,11 @@ export default function UserDropdown() {
             </DropdownItem>
           </li>
         </ul>
-        <Link
-          to="/signin"
-          className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-admin-gray-700 rounded-lg group text-theme-sm hover:bg-admin-gray-100 hover:text-admin-gray-700 dark:text-admin-gray-400 dark:hover:bg-white/5 dark:hover:text-admin-gray-300"
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="flex w-full items-center gap-3 px-3 py-2 mt-3 font-medium text-admin-gray-700 rounded-lg group text-theme-sm hover:bg-admin-gray-100 hover:text-admin-gray-700 disabled:opacity-60 dark:text-admin-gray-400 dark:hover:bg-white/5 dark:hover:text-admin-gray-300"
         >
           <svg
             className="fill-admin-gray-500 group-hover:fill-admin-gray-700 dark:group-hover:fill-admin-gray-300"
@@ -154,8 +169,8 @@ export default function UserDropdown() {
               fill=""
             />
           </svg>
-          Sign out
-        </Link>
+          {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
+        </button>
       </Dropdown>
     </div>
   );

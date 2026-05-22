@@ -10,11 +10,18 @@ export async function login(email: string, password: string): Promise<LoginRespo
   return response.data
 }
 
-export async function refresh(): Promise<RefreshResponse> {
+function getCsrfConfig() {
   const csrfToken = getCookieValue('csrf_token')
-  const config = csrfToken
+  return csrfToken
     ? { withCredentials: true, headers: { 'X-CSRF-Token': csrfToken } }
     : { withCredentials: true }
-  const response = await apiClient.post<RefreshResponse>('/auth/refresh', undefined, config)
+}
+
+export async function refresh(): Promise<RefreshResponse> {
+  const response = await apiClient.post<RefreshResponse>('/auth/refresh', undefined, getCsrfConfig())
   return response.data
+}
+
+export async function logout(): Promise<void> {
+  await apiClient.post('/auth/logout', undefined, getCsrfConfig())
 }
