@@ -12,6 +12,8 @@ export const PROBLEM_TYPES = {
   optionGroupNameConflict:
     'https://pos.example/errors/option-group-name-conflict',
   productInUse: 'https://pos.example/errors/product-in-use',
+  cloudinaryNotConfigured: 'https://pos.example/errors/cloudinary-not-configured',
+  cloudinaryUploadFailed: 'https://pos.example/errors/cloudinary-upload-failed',
   alreadyVoided: 'https://pos.example/errors/already-voided',
   internal: 'https://pos.example/errors/internal',
   missingTenantContext: 'https://pos.example/errors/missing-tenant-context',

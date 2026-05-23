@@ -12,6 +12,7 @@ import { ProductsRepository } from './repositories/products.repository';
 import { MenuRepository } from './repositories/menu.repository';
 import { CategoriesService } from './services/categories.service';
 import { OptionGroupsService } from './services/option-groups.service';
+import { ProductImagesService } from './services/product-images.service';
 import { ProductsService } from './services/products.service';
 import { MenuVersionService } from './services/menu-version.service';
 
@@ -31,6 +32,7 @@ import { MenuVersionService } from './services/menu-version.service';
     OptionGroupsService,
     OptionGroupsRepository,
     ProductsService,
+    ProductImagesService,
     ProductsRepository,
     MenuVersionService,
   ],

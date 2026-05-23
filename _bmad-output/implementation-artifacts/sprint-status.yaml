@@ -71,6 +71,7 @@ development_status:
   3-9-fe-menu-auto-sync-engine-menuupdatedtoast-snapshot-preserved: done
   3-10-redesign-admin-ui-tailadmin-template: done
   3-11-logout-dropdown-pos-admin-api-clear-session-redirect: done
+  3-12-product-image-upload-cloudinary-admin-pos-display: done
   epic-3-retrospective: optional
   epic-4: in-progress
   4-1-be-reports-endpoint-voi-4-metric-aggregations-tz-asia-ho-chi-minh-void-exclusion: done

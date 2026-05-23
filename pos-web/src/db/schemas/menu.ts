@@ -12,6 +12,7 @@ export interface MenuProductRecord {
   name: string
   categoryId: string
   priceVnd: number
+  imageUrl?: string | null
   isActive: boolean
   sortOrder: number
   optionGroupIds: string[]

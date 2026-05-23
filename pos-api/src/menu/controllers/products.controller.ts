@@ -9,8 +9,11 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -28,6 +31,7 @@ import { CreateProductDto } from '../dto/create-product.dto';
 import { ListProductsQueryDto } from '../dto/list-products-query.dto';
 import { ToggleProductActiveDto } from '../dto/toggle-product-active.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
+import { ProductImagesService } from '../services/product-images.service';
 import { ProductsService } from '../services/products.service';
 
 const productExample = {
@@ -36,6 +40,7 @@ const productExample = {
   categoryId: '018f0000-0000-7000-8000-000000000001',
   category: { id: '018f0000-0000-7000-8000-000000000001', name: 'Cà phê' },
   priceVnd: 35000,
+  imageUrl: 'https://res.cloudinary.com/demo/image/upload/v123/products/bac-xiu.jpg',
   isActive: true,
   sortOrder: 10,
   optionGroupIds: ['018f0000-0000-7000-8000-000000000101'],
@@ -56,7 +61,10 @@ const productExample = {
 @Controller('products')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ProductsController {
-  constructor(private readonly service: ProductsService) {}
+  constructor(
+    private readonly service: ProductsService,
+    private readonly images: ProductImagesService,
+  ) {}
 
   @Get()
   @Roles('cashier', 'admin')
@@ -73,6 +81,15 @@ export class ProductsController {
     @Query() query: ListProductsQueryDto,
   ) {
     return this.service.list(context, query);
+  }
+
+  @Post('images')
+  @Roles('admin')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiBody({ description: 'Multipart form-data with image file field named `file`.' })
+  @ApiResponse({ status: 201, schema: { example: { imageUrl: productExample.imageUrl, publicId: 'pos/products/bac-xiu' } } })
+  uploadImage(@UploadedFile() file: Express.Multer.File | undefined) {
+    return this.images.upload(file);
   }
 
   @Post()

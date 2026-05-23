@@ -39,6 +39,7 @@ export class MenuRepository {
           name: true,
           categoryId: true,
           priceVnd: true,
+          imageUrl: true,
           isActive: true,
           sortOrder: true,
           productOptionGroups: {

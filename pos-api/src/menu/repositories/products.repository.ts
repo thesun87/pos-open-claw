@@ -32,6 +32,7 @@ const productSelect = {
   categoryId: true,
   category: { select: { id: true, name: true } },
   priceVnd: true,
+  imageUrl: true,
   isActive: true,
   sortOrder: true,
   productOptionGroups: {
@@ -56,6 +57,7 @@ export type ProductRecord = {
   categoryId: string;
   category: { id: string; name: string };
   priceVnd: number;
+  imageUrl: string | null;
   isActive: boolean;
   sortOrder: number;
   optionGroupIds: string[];
@@ -79,6 +81,7 @@ function mapProduct(product: ProductPayload): ProductRecord {
     categoryId: product.categoryId,
     category: product.category,
     priceVnd: product.priceVnd,
+    imageUrl: product.imageUrl,
     isActive: product.isActive,
     sortOrder: product.sortOrder,
     optionGroupIds: assignments.map((a) => a.optionGroupId),
@@ -160,6 +163,7 @@ export class ProductsRepository {
           name: dto.name,
           categoryId: dto.categoryId,
           priceVnd: dto.priceVnd,
+          imageUrl: dto.imageUrl ?? null,
           isActive: dto.isActive ?? true,
           sortOrder: dto.sortOrder,
           productOptionGroups: {
@@ -187,6 +191,7 @@ export class ProductsRepository {
             ? { categoryId: dto.categoryId }
             : {}),
           ...(dto.priceVnd !== undefined ? { priceVnd: dto.priceVnd } : {}),
+          ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
           ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
           ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
         },

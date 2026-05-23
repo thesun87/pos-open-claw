@@ -19,7 +19,8 @@ describe('ProductsController', () => {
     toggleActive: jest.fn(),
     delete: jest.fn(),
   };
-  const controller = new ProductsController(service as never);
+  const images = { upload: jest.fn() };
+  const controller = new ProductsController(service as never, images as never);
   const reflector = new Reflector();
 
   it('allows cashier/admin list and admin-only mutations', () => {
@@ -30,6 +31,7 @@ describe('ProductsController', () => {
       ),
     ).toEqual(['cashier', 'admin']);
     for (const method of [
+      'uploadImage',
       'create',
       'update',
       'toggleActive',
@@ -54,11 +56,13 @@ describe('ProductsController', () => {
       optionGroupIds: [uuid2],
     };
     await controller.list(ctx, { search: 'bạc' });
+    await controller.uploadImage({} as never);
     await controller.create(ctx, dto);
     await controller.update(ctx, 'p1', { priceVnd: 36000 });
     await controller.toggleActive(ctx, 'p1', { isActive: false });
     await controller.delete(ctx, 'p1');
     expect(service.list).toHaveBeenCalledWith(ctx, { search: 'bạc' });
+    expect(images.upload).toHaveBeenCalledWith({});
     expect(service.create).toHaveBeenCalledWith(ctx, dto);
     expect(service.update).toHaveBeenCalledWith(ctx, 'p1', { priceVnd: 36000 });
     expect(service.toggleActive).toHaveBeenCalledWith(ctx, 'p1', {

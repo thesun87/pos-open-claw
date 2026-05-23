@@ -4,7 +4,7 @@ import { formatVnd } from '../../../shared/lib/format-vnd'
 import { getTextInitials } from '../../../shared/lib/text-initials'
 
 type ProductTileProps = {
-  product: Pick<MenuProductRecord, 'name' | 'priceVnd' | 'optionGroupIds'>
+  product: Pick<MenuProductRecord, 'name' | 'priceVnd' | 'imageUrl' | 'optionGroupIds'>
   onSelect: () => void
   variant?: 'default' | 'compact'
 }
@@ -22,8 +22,8 @@ export function ProductTile({ product, onSelect, variant = 'default' }: ProductT
         onClick={onSelect}
         className="group relative flex items-center gap-3 w-full p-3 rounded-xl bg-surface-container border border-outline-variant/30 hover:border-primary-container shadow-sm transition active:scale-[0.98] text-left"
       >
-        <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-surface-container-low font-bold text-primary-container text-sm select-none">
-          {getTextInitials(product.name)}
+        <div className="w-12 h-12 flex items-center justify-center rounded-lg bg-surface-container-low font-bold text-primary-container text-sm select-none overflow-hidden">
+          {product.imageUrl ? <img src={product.imageUrl} alt="" className="h-full w-full object-cover" loading="lazy" /> : getTextInitials(product.name)}
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-bold text-on-surface truncate text-sm">{product.name}</div>
@@ -43,11 +43,11 @@ export function ProductTile({ product, onSelect, variant = 'default' }: ProductT
         variant === 'default' && 'aspect-[4/5]'
       )}
     >
-      {/* Product Image Placeholder / Initials */}
+      {/* Product Image / Initials */}
       <div className="aspect-[4/3] w-full bg-surface-container-low overflow-hidden flex items-center justify-center relative select-none shrink-0">
-        <span className="text-3xl font-bold text-primary/35 group-hover:scale-105 transition-transform duration-300">
+        {product.imageUrl ? <img src={product.imageUrl} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" /> : <span className="text-3xl font-bold text-primary/35 group-hover:scale-105 transition-transform duration-300">
           {getTextInitials(product.name)}
-        </span>
+        </span>}
         {hasOptions && (
           <span className="absolute right-3 top-3 rounded-full bg-surface/95 px-3 py-1 text-[10px] font-bold tracking-wide text-primary shadow-sm backdrop-blur-md">
             OPTIONS
