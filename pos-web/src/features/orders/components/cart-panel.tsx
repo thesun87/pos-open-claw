@@ -9,6 +9,8 @@ import { DiscountModal } from './discount-modal'
 import { PaymentMethodModal } from './payment-method-modal'
 import { VoidOrderDialog } from './void-order-dialog'
 import { getTextInitials } from '../../../shared/lib/text-initials'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { db } from '../../../db/dexie'
 
 type LineItemProps = { item: CartItem; onAskRemove: (item: CartItem) => void }
 
@@ -19,12 +21,18 @@ function CartLineItem({ item, onAskRemove }: LineItemProps) {
   const [isEditingNote, setIsEditingNote] = useState(false)
   const [noteDraft, setNoteDraft] = useState(item.note ?? '')
   function removeLine() { if (item.quantity > 1) onAskRemove(item); else removeItem(item.tempId) }
+  const product = useLiveQuery(() => db.products.get(item.productId), [item.productId])
+  const imageUrl = product?.imageUrl
   return (
     <article className="flex flex-col gap-2 p-3 bg-surface-container-lowest rounded-lg border border-outline-variant" aria-label={`Món ${item.productNameSnapshot}`}>
       <div className="flex gap-3">
         {/* Placeholder image / initials */}
-        <div className="w-12 h-12 rounded-md bg-surface-container-low flex items-center justify-center font-bold text-primary text-xs select-none shrink-0">
-          {getTextInitials(item.productNameSnapshot)}
+        <div className="w-12 h-12 rounded-md bg-surface-container-low flex items-center justify-center font-bold text-primary text-xs select-none shrink-0 overflow-hidden">
+          {imageUrl ? (
+            <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            getTextInitials(item.productNameSnapshot)
+          )}
         </div>
         <div className="flex-1 flex flex-col min-w-0">
           <h4 className="font-bold text-on-surface text-sm truncate">{item.productNameSnapshot}</h4>

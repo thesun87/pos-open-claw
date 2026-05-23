@@ -55,9 +55,9 @@ export function PosShell() {
       <div className="mt-16 rounded-2xl border border-warning bg-surface-container p-4 text-on-surface md:hidden">POS hoạt động tốt nhất ở màn hình ngang hoặc laptop/tablet</div>
       <main className="mt-16 h-[calc(100vh-64px)] overflow-y-auto px-7 py-6 md:ml-24 md:mr-[320px]" aria-label="Khu vực sản phẩm">
         {routeMessage ? <p role="alert" className="mb-4 rounded-2xl border border-error/30 bg-error-container/20 px-3 py-2 text-sm text-on-error-container">{routeMessage}</p> : null}
-        <div className="mb-7">
-          <h1 className="text-[34px] font-semibold leading-10 text-on-surface">Menu sản phẩm</h1>
-          <p className="mt-1 text-on-surface-variant">Chọn món để thêm vào đơn</p>
+        <div className="sr-only">
+          <h1>Menu sản phẩm</h1>
+          <p>Chọn món để thêm vào đơn</p>
         </div>
         {isLoading ? <LoadingProducts /> : isMenuEmpty ? <EmptyState title="Chưa có dữ liệu menu. Hãy kết nối mạng để tải menu." /> : gridProducts.length === 0 ? <EmptyState title="Không tìm thấy sản phẩm phù hợp." /> : <div className="grid grid-cols-2 gap-5 lg:grid-cols-3 xl:grid-cols-4" aria-label="Lưới sản phẩm">{gridProducts.map((product) => <ProductTile key={product.id} product={product} onSelect={() => handleSelectProduct(product)} />)}</div>}
       </main>

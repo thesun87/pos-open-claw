@@ -26,8 +26,8 @@ export function ProductTile({ product, onSelect, variant = 'default' }: ProductT
           {product.imageUrl ? <img src={product.imageUrl} alt="" className="h-full w-full object-cover" loading="lazy" /> : getTextInitials(product.name)}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-bold text-on-surface truncate text-sm">{product.name}</div>
-          <span className="text-xs font-semibold text-primary-container">{price}</span>
+          <div className="font-bold text-on-surface truncate text-base">{product.name}</div>
+          <span className="text-sm font-semibold text-primary-container">{price}</span>
         </div>
       </button>
     )
@@ -39,8 +39,8 @@ export function ProductTile({ product, onSelect, variant = 'default' }: ProductT
       aria-label={ariaLabel}
       onClick={onSelect}
       className={cn(
-        'group relative overflow-hidden rounded-xl bg-surface-container border border-outline-variant/20 hover:border-primary-container shadow-[0_4px_8px_rgba(0,0,0,0.04)] transition-all active:scale-[0.98] text-left w-full flex flex-col justify-between focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary pb-4',
-        variant === 'default' && 'aspect-[4/5]'
+        'group relative overflow-hidden rounded-xl bg-surface-container border border-outline-variant/20 hover:border-primary-container shadow-[0_4px_8px_rgba(0,0,0,0.04)] transition-all active:scale-[0.98] text-left w-full flex flex-col justify-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary pb-3',
+        variant === 'default' && 'aspect-[4/4.6]'
       )}
     >
       {/* Product Image / Initials */}
@@ -56,13 +56,13 @@ export function ProductTile({ product, onSelect, variant = 'default' }: ProductT
       </div>
 
       {/* Card Info */}
-      <div className="px-4 pt-3 flex flex-col gap-1 w-full flex-1 justify-between">
-        <div className="font-semibold text-on-surface truncate text-sm" title={product.name}>
+      <div className="px-4 pt-2.5 flex flex-col gap-0.5 w-full flex-1 justify-start">
+        <div className="font-semibold text-on-surface truncate text-base" title={product.name}>
           {product.name}
         </div>
-        <div className="flex justify-between items-center mt-1">
-          <span className="font-bold text-primary-container text-sm">{price}</span>
-          <span className="px-3 py-1 border border-primary-container text-primary-container rounded-full text-xs font-medium group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+        <div className="flex justify-between items-center">
+          <span className="font-bold text-primary-container text-base">{price}</span>
+          <span className="px-3 py-1 border border-primary-container text-primary-container rounded-full text-sm font-semibold group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
             Đặt món
           </span>
         </div>

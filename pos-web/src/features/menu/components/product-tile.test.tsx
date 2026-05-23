@@ -15,7 +15,7 @@ describe('ProductTile', () => {
     render(<ProductTile product={baseProduct} onSelect={vi.fn()} />)
 
     const tile = screen.getByRole('button', { name: 'Bạc Xỉu, 35.000 ₫' })
-    expect(tile).toHaveClass('aspect-[4/5]', 'bg-surface-container')
+    expect(tile).toHaveClass('aspect-[4/4.6]', 'bg-surface-container')
     expect(screen.getByText('BX')).toBeInTheDocument()
     expect(screen.queryByText('OPTIONS')).not.toBeInTheDocument()
   })
