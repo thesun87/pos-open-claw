@@ -30,7 +30,11 @@ export class CreateProductDto {
   @Min(0)
   priceVnd!: number;
 
-  @ApiPropertyOptional({ example: 'https://res.cloudinary.com/demo/image/upload/v123/products/bac-xiu.jpg', nullable: true })
+  @ApiPropertyOptional({
+    example:
+      'https://res.cloudinary.com/demo/image/upload/v123/products/bac-xiu.jpg',
+    nullable: true,
+  })
   @IsOptional()
   @IsUrl({ require_protocol: true })
   imageUrl?: string | null;

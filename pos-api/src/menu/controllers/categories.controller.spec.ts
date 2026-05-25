@@ -58,26 +58,13 @@ describe('CategoriesController', () => {
     });
     const updateDto = plainToInstance(UpdateCategoryDto, { isActive: 'yes' });
 
-    await expect(validate(createDto)).resolves.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          property: 'isActive',
-          constraints: expect.objectContaining({
-            isBoolean: expect.any(String),
-          }),
-        }),
-      ]),
-    );
-    await expect(validate(updateDto)).resolves.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          property: 'isActive',
-          constraints: expect.objectContaining({
-            isBoolean: expect.any(String),
-          }),
-        }),
-      ]),
-    );
+    const [createError] = await validate(createDto);
+    const [updateError] = await validate(updateDto);
+
+    expect(createError?.property).toBe('isActive');
+    expect(createError?.constraints).toHaveProperty('isBoolean');
+    expect(updateError?.property).toBe('isActive');
+    expect(updateError?.constraints).toHaveProperty('isBoolean');
   });
 
   it('delegates create/update/delete', async () => {

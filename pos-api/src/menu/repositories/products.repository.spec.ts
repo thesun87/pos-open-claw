@@ -2,6 +2,14 @@ import { MissingTenantContextError } from '../../common/errors/missing-tenant-co
 import { prismaTenantScopeTestUtils } from '../../prisma/tenant-scope.extension';
 import { ProductsRepository } from './products.repository';
 
+type ProductFindManyArgs = {
+  select: {
+    productOptionGroups: {
+      orderBy: unknown;
+    };
+  };
+};
+
 const context = {
   tenantId: '018f0000-0000-7000-8000-000000000001',
   storeId: '018f0000-0000-7000-8000-000000000002',
@@ -116,10 +124,10 @@ describe('ProductsRepository', () => {
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       }),
     );
-    expect(
-      prisma.product.findMany.mock.calls[0][0].select.productOptionGroups
-        .orderBy,
-    ).toEqual([
+    const [[findManyArgs]] = prisma.product.findMany.mock.calls as [
+      [ProductFindManyArgs],
+    ];
+    expect(findManyArgs.select.productOptionGroups.orderBy).toEqual([
       { sortOrder: 'asc' },
       { optionGroup: { sortOrder: 'asc' } },
       { optionGroup: { name: 'asc' } },
@@ -155,7 +163,7 @@ describe('ProductsRepository', () => {
               { optionGroupId: groupA, sortOrder: 20 },
             ],
           },
-        }),
+        }) as Record<string, unknown>,
       }),
     );
   });

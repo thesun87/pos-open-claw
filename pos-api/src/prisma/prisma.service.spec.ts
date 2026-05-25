@@ -24,6 +24,8 @@ describe('Prisma tenant scope helpers', () => {
     expect(prismaTenantScopeTestUtils.SCOPED_MODELS.has('Category')).toBe(true);
     expect(prismaTenantScopeTestUtils.SCOPED_MODELS.has('Order')).toBe(true);
     expect(prismaTenantScopeTestUtils.SCOPED_MODELS.has('SyncLog')).toBe(true);
+    expect(prismaTenantScopeTestUtils.SCOPED_MODELS.has('Area')).toBe(true);
+    expect(prismaTenantScopeTestUtils.SCOPED_MODELS.has('Table')).toBe(true);
     expect(prismaTenantScopeTestUtils.SCOPED_MODELS.has('User')).toBe(false);
     expect(
       prismaTenantScopeTestUtils.BLOCKED_RELATION_MODELS.has(

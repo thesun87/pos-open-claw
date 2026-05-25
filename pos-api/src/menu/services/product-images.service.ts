@@ -54,7 +54,8 @@ export class ProductImagesService {
     }
 
     this.configureCloudinary();
-    const folder = process.env.CLOUDINARY_PRODUCT_IMAGE_FOLDER ?? 'pos/products';
+    const folder =
+      process.env.CLOUDINARY_PRODUCT_IMAGE_FOLDER ?? 'pos/products';
 
     try {
       const result = await new Promise<{
@@ -70,7 +71,11 @@ export class ProductImagesService {
           },
           (error, uploadResult) => {
             if (error || !uploadResult?.secure_url || !uploadResult.public_id) {
-              reject(error ?? new Error('Invalid Cloudinary upload response'));
+              reject(
+                error instanceof Error
+                  ? error
+                  : new Error('Invalid Cloudinary upload response'),
+              );
               return;
             }
             resolve({
@@ -104,6 +109,10 @@ export class ProductImagesService {
       });
     }
 
-    cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
+    cloudinary.config({
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret,
+    });
   }
 }

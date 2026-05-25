@@ -10,6 +10,8 @@ const SCOPED_MODELS = new Set([
   'MenuVersion',
   'Order',
   'SyncLog',
+  'Area',
+  'Table',
 ]);
 const BLOCKED_RELATION_MODELS = new Set([
   'ProductOptionGroup',

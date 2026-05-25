@@ -25,6 +25,8 @@ model Tenant {
   menuVersions MenuVersion[]
   orders       Order[]
   syncLogs     SyncLog[]
+  areas        Area[]
+  tables       Table[]
 
   @@map("tenants")
 }
@@ -34,6 +36,7 @@ model Store {
   tenantId     String        @map("tenant_id") @db.Uuid
   name         String
   code         String
+  tableMode    Boolean       @default(false) @map("table_mode")
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   users        User[]
   categories   Category[]
@@ -43,12 +46,54 @@ model Store {
   menuVersions MenuVersion[]
   orders       Order[]
   syncLogs     SyncLog[]
+  areas        Area[]
+  tables       Table[]
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@unique([tenantId, code], map: "uq_stores_tenant_code")
   @@index([tenantId], map: "idx_stores_tenant_id")
   @@map("stores")
+}
+
+model Area {
+  id        String   @id @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  storeId   String   @map("store_id") @db.Uuid
+  name      String
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  tables    Table[]
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, storeId, name], map: "uq_areas_tenant_store_name")
+  @@index([tenantId, storeId], map: "idx_areas_tenant_store")
+  @@map("areas")
+}
+
+model Table {
+  id        String   @id @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  storeId   String   @map("store_id") @db.Uuid
+  areaId    String   @map("area_id") @db.Uuid
+  name      String
+  capacity  Int      @default(2)
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  area      Area     @relation(fields: [areaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  orders    Order[]
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, storeId, name], map: "uq_tables_tenant_store_name")
+  @@index([tenantId, storeId], map: "idx_tables_tenant_store")
+  @@index([areaId], map: "idx_tables_area_id")
+  @@map("tables")
 }
 
 model User {
@@ -211,6 +256,8 @@ model Order {
   orderCode         String        @map("order_code")
   deviceId          String        @map("device_id")
   cashierId         String        @map("cashier_id") @db.Uuid
+  tableId           String?       @map("table_id") @db.Uuid
+  tableNameSnapshot String?       @map("table_name_snapshot")
   soldAt            DateTime      @map("sold_at") @db.Timestamptz(6)
   syncedAt          DateTime      @default(now()) @map("synced_at") @db.Timestamptz(6)
   menuVersionAtSale Int           @map("menu_version_at_sale")
@@ -220,6 +267,7 @@ model Order {
   tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   store             Store         @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   cashier           User          @relation(fields: [cashierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  table             Table?        @relation(fields: [tableId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   items             OrderItem[]
   syncLog           SyncLog?
   voids             OrderVoid[]
@@ -230,6 +278,7 @@ model Order {
   @@index([soldAt], map: "idx_orders_sold_at")
   @@index([tenantId, storeId], map: "idx_orders_tenant_store")
   @@index([paymentMethod, soldAt], map: "idx_orders_payment_method_sold_at")
+  @@index([tableId], map: "idx_orders_table_id")
   @@map("orders")
 }
 

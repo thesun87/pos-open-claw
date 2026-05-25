@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { v7 as uuidv7 } from 'uuid';
 import { TenantContext } from '../../common/decorators/tenant-context.decorator';
 import { runWithTenantContext } from '../../common/middleware/tenant-scope.middleware';
@@ -30,7 +31,11 @@ const groupSelect = {
     select: optionSelect,
     orderBy: [{ sortOrder: 'asc' as const }, { name: 'asc' as const }],
   },
-};
+} satisfies Prisma.OptionGroupSelect;
+
+type OptionGroupPayload = Prisma.OptionGroupGetPayload<{
+  select: typeof groupSelect;
+}>;
 export type OptionGroupRecord = {
   id: string;
   name: string;
@@ -53,10 +58,15 @@ export class OptionChildNotFoundError extends Error {
   }
 }
 
-function mapGroup(g: any): OptionGroupRecord {
+function mapGroup(g: OptionGroupPayload): OptionGroupRecord {
   return {
-    ...g,
-    options: g.options.map((o: any) => ({
+    id: g.id,
+    name: g.name,
+    isRequired: g.isRequired,
+    minSelect: g.minSelect,
+    maxSelect: g.maxSelect,
+    sortOrder: g.sortOrder,
+    options: g.options.map((o) => ({
       id: o.id,
       label: o.name,
       priceDeltaVnd: o.priceDeltaVnd,
@@ -73,7 +83,7 @@ export class OptionGroupsRepository {
   list(context: TenantContext) {
     return runWithTenantContext(context, async () =>
       (
-        await tenantScopedClient(this.prisma as any).optionGroup.findMany({
+        await tenantScopedClient(this.prisma).optionGroup.findMany({
           select: groupSelect,
           orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
         })
@@ -82,7 +92,7 @@ export class OptionGroupsRepository {
   }
   findById(context: TenantContext, id: string, client: Client = this.prisma) {
     return runWithTenantContext(context, async () => {
-      const g = await tenantScopedClient(client as any).optionGroup.findFirst({
+      const g = await tenantScopedClient(client).optionGroup.findFirst({
         where: { id },
         select: groupSelect,
       });
@@ -96,7 +106,7 @@ export class OptionGroupsRepository {
   ) {
     return runWithTenantContext(context, async () => {
       const id = uuidv7();
-      await tenantScopedClient(client as any).optionGroup.create({
+      await tenantScopedClient(client).optionGroup.create({
         data: {
           id,
           tenantId: context.tenantId,
@@ -108,12 +118,16 @@ export class OptionGroupsRepository {
           sortOrder: dto.sortOrder,
           options: {
             create: dto.options.map((o) => {
-              const { optionGroupId, ...rest } = this.optionCreateData(
-                context,
-                id,
-                o,
-              );
-              return rest;
+              const option = this.optionCreateData(context, id, o);
+              return {
+                id: option.id,
+                tenantId: option.tenantId,
+                storeId: option.storeId,
+                name: option.name,
+                priceDeltaVnd: option.priceDeltaVnd,
+                isDefault: option.isDefault,
+                sortOrder: option.sortOrder,
+              };
             }),
           },
         },
@@ -179,7 +193,7 @@ export class OptionGroupsRepository {
   }
   countProductAssignments(context: TenantContext, id: string, client: Client) {
     return runWithTenantContext(context, () =>
-      tenantScopedClient(client as any).product.count({
+      tenantScopedClient(client).product.count({
         where: { productOptionGroups: { some: { optionGroupId: id } } },
       }),
     );
@@ -191,7 +205,7 @@ export class OptionGroupsRepository {
   ) {
     if (!optionIds.length) return Promise.resolve(0);
     return runWithTenantContext(context, () =>
-      tenantScopedClient(client as any).option.count({
+      tenantScopedClient(client).option.count({
         where: {
           id: { in: optionIds },
           orderItemOptions: { some: {} },

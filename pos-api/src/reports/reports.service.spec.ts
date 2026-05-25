@@ -355,14 +355,19 @@ describe('ReportsRepository source guards', () => {
   it('does NOT contain $queryRawUnsafe (AR4 security requirement)', () => {
     // Only allowed in comments (e.g. "NEVER use $queryRawUnsafe"); must not appear as actual code call
     const lines = repoSource.split('\n');
-    const codeLines = lines.filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*'));
+    const codeLines = lines.filter(
+      (l) => !l.trim().startsWith('//') && !l.trim().startsWith('*'),
+    );
     expect(codeLines.join('\n')).not.toContain('$queryRawUnsafe');
   });
 
   it('top-products query does NOT join the products table (AR24 snapshot immutability)', () => {
     // getTopProducts should only reference order_items for product data, never the products table
     const topProductsMethodStart = repoSource.indexOf('async getTopProducts');
-    const topProductsMethodEnd = repoSource.indexOf('async ', topProductsMethodStart + 1);
+    const topProductsMethodEnd = repoSource.indexOf(
+      'async ',
+      topProductsMethodStart + 1,
+    );
     const topProductsSource =
       topProductsMethodEnd > topProductsMethodStart
         ? repoSource.substring(topProductsMethodStart, topProductsMethodEnd)

@@ -67,7 +67,8 @@ export class MenuSyncController {
                   name: 'Latte',
                   categoryId: '018f0000-0000-7000-8000-000000000010',
                   priceVnd: 45000,
-                  imageUrl: 'https://res.cloudinary.com/demo/image/upload/v123/products/latte.jpg',
+                  imageUrl:
+                    'https://res.cloudinary.com/demo/image/upload/v123/products/latte.jpg',
                   isActive: true,
                   sortOrder: 10,
                   optionGroupIds: ['018f0000-0000-7000-8000-000000000030'],

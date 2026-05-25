@@ -40,7 +40,8 @@ const productExample = {
   categoryId: '018f0000-0000-7000-8000-000000000001',
   category: { id: '018f0000-0000-7000-8000-000000000001', name: 'Cà phê' },
   priceVnd: 35000,
-  imageUrl: 'https://res.cloudinary.com/demo/image/upload/v123/products/bac-xiu.jpg',
+  imageUrl:
+    'https://res.cloudinary.com/demo/image/upload/v123/products/bac-xiu.jpg',
   isActive: true,
   sortOrder: 10,
   optionGroupIds: ['018f0000-0000-7000-8000-000000000101'],
@@ -86,8 +87,18 @@ export class ProductsController {
   @Post('images')
   @Roles('admin')
   @UseInterceptors(FileInterceptor('file'))
-  @ApiBody({ description: 'Multipart form-data with image file field named `file`.' })
-  @ApiResponse({ status: 201, schema: { example: { imageUrl: productExample.imageUrl, publicId: 'pos/products/bac-xiu' } } })
+  @ApiBody({
+    description: 'Multipart form-data with image file field named `file`.',
+  })
+  @ApiResponse({
+    status: 201,
+    schema: {
+      example: {
+        imageUrl: productExample.imageUrl,
+        publicId: 'pos/products/bac-xiu',
+      },
+    },
+  })
   uploadImage(@UploadedFile() file: Express.Multer.File | undefined) {
     return this.images.upload(file);
   }
