@@ -9,6 +9,8 @@ export const PROBLEM_TYPES = {
   categoryNameConflict: 'https://pos.example/errors/category-name-conflict',
   areaHasTables: 'https://pos.example/errors/area-has-tables',
   areaNameConflict: 'https://pos.example/errors/area-name-conflict',
+  tableHasPendingOrder: 'https://pos.example/errors/table-has-pending-order',
+  tableNameConflict: 'https://pos.example/errors/table-name-conflict',
   optionGroupInUse: 'https://pos.example/errors/option-group-in-use',
   optionInUse: 'https://pos.example/errors/option-in-use',
   optionGroupNameConflict:

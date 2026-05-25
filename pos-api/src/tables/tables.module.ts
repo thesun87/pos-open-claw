@@ -4,10 +4,13 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { AreasController } from './areas.controller';
 import { AreasService } from './areas.service';
 import { AreasRepository } from './areas.repository';
+import { TablesController } from './tables.controller';
+import { TablesService } from './tables.service';
+import { TablesRepository } from './tables.repository';
 
 @Module({
   imports: [PrismaModule, AuthModule],
-  controllers: [AreasController],
-  providers: [AreasService, AreasRepository],
+  controllers: [AreasController, TablesController],
+  providers: [AreasService, AreasRepository, TablesService, TablesRepository],
 })
 export class TablesModule {}
