@@ -3,6 +3,7 @@ stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 inputDocuments:
   - "_bmad-output/planning-artifacts/prd.md"
   - "docs/product-requirement.md"
+  - "_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-25.md"
 workflowType: 'architecture'
 project_name: 'pos-bmad'
 user_name: 'Tuan.nguyen'
@@ -10,6 +11,11 @@ date: '2026-05-09'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-05-09'
+lastEdited: '2026-05-25'
+editHistory:
+  - date: '2026-05-25'
+    source: 'SCP-2026-05-25-table-mgmt (approved)'
+    changes: 'Thêm Area/Table models + stores.table_mode + orders.table_id/table_name_snapshot; thêm 4 endpoints (/areas, /tables, /tables/status, /stores/me); cập nhật sync payload + idempotency rules cho tableId; thêm Epic 6 vào trình tự implementation; mở rộng FR coverage (FR44-52) + NFR18 + HT5/HT5b'
 ---
 
 # Tài Liệu Quyết Định Kiến Trúc — Café POS MVP
@@ -147,13 +153,17 @@ Các lệnh khởi tạo trên là **story đầu tiên của sprint thực thi*
 
 **Schema chính (high-level):**
 
-- `tenants`, `stores`, `users` (với role, password_hash bcrypt)
+- `tenants`, `stores` (với `table_mode` boolean — FR44 mode toggle), `users` (với role, password_hash bcrypt)
 - `categories`, `products`, `option_groups`, `options`, `product_option_groups`
 - `menu_versions` (tăng đơn điệu mỗi lần admin sửa)
-- `orders` (append-only, snapshot tại thời điểm bán), `order_items` (snapshot tên/giá/options/notes)
+- `orders` (append-only, snapshot tại thời điểm bán, thêm `table_id` nullable FK + `table_name_snapshot` immutable AR24 — FR51), `order_items` (snapshot tên/giá/options/notes)
 - `order_voids` (bản ghi hủy riêng, không sửa lịch sử — FR26)
 - `refresh_tokens` (cho FR5 server revocation)
-- `sync_log` (idempotency dedup theo `tenant_id + store_id + device_id + client_order_id`)
+- `sync_log` (idempotency dedup theo `tenant_id + store_id + device_id + client_order_id`; **không** bao gồm `table_id` trong composite key)
+- **`areas`** (khu vực bàn, scoped `tenant_id + store_id`, unique `name` per store — FR45)
+- **`tables`** (thuộc `area`, fields: `name`, `capacity`, `sort_order`, `is_active`, scoped `tenant_id + store_id` — FR46)
+
+**Lưu ý table config:** không có version monotonic cho `areas`/`tables` (đơn giản hóa MVP — floor-plan đổi không thường xuyên). POS pull `GET /tables` mỗi lần focus tab; có thể nâng cấp `tableConfigVersion` sau nếu cần.
 
 ### Xác thực & Bảo mật
 
@@ -216,6 +226,7 @@ Các lệnh khởi tạo trên là **story đầu tiên của sprint thực thi*
 2. Server: Prisma schema → migration → seed → auth module → menu module → orders sync module → reports module
 3. Client: layout shell + PWA → auth (access token IndexedDB + refresh cookie) → Dexie schema + sync engine → POS UI → Admin UI → reports
 4. End-to-end smoke test offline + online
+5. **Table management (Epic 6, brownfield expansion):** schema `areas`/`tables` + `stores.table_mode` + `orders.table_id`/`table_name_snapshot` → CRUD admin (`/areas`, `/tables`) → `stores/me` + `tables/status` endpoint → POS Floor-plan view + table picker (entry point khi `tableMode=true`) → Quick-counter button (FR47b) → brownfield patch các story 2-4..2-8 + 3-1 để table-aware (snapshot, Dexie schema, receipt, admin nav) → mode toggle integration
 
 **Phụ thuộc giữa các quyết định:**
 
@@ -403,6 +414,8 @@ Idempotency-Key: a3f8b2c1-...
   "deviceId": "POS01",
   "soldAt": "2026-05-09T03:23:11.000Z",
   "menuVersionAtSale": 12,
+  "tableId": "uuid-or-null",
+  "tableNameSnapshot": "Bàn 4",
   "items": [
     {
       "productId": "...",
@@ -422,7 +435,14 @@ Idempotency-Key: a3f8b2c1-...
 }
 ```
 
-→ Tất cả field có hậu tố `Snapshot` là **bất biến** sau khi đơn được lưu (NFR14).
+→ Tất cả field có hậu tố `Snapshot` là **bất biến** sau khi đơn được lưu (NFR14) — bao gồm `tableNameSnapshot`.
+
+**Quy tắc table field trong payload (FR51):**
+
+- `tableId` và `tableNameSnapshot` là **optional/nullable**. Khi `tableId = null` (quick-counter sale hoặc store ở counter-service mode), `tableNameSnapshot` cũng phải là `null`.
+- `tableId` **KHÔNG** thuộc composite idempotency key `(tenant_id, store_id, device_id, client_order_id)`. Đổi bàn rồi resend cùng `clientOrderId` → server vẫn dedup, không tạo đơn thứ 2.
+- Server validate `tableId` (nếu non-null) phải thuộc cùng `tenant_id + store_id` của user; nếu sai → 400 với `type = .../validation`.
+- **Conflict offline (2 POS cùng chọn bàn 4):** MVP **chấp nhận** — cả 2 sync thành công, server log conflict qua `table_id` trùng với `synced_at` gần nhau, không lock realtime.
 
 ### Mẫu Quy trình
 
@@ -674,6 +694,21 @@ pos-api/
 │   │   ├── reports.controller.ts          # GET /api/v1/reports?from&to&metric
 │   │   ├── reports.service.ts             # raw SQL aggregation Prisma + materialized cache
 │   │   └── *.spec.ts
+│   ├── tables/                            # FR44–FR52 (Epic 6 — table management)
+│   │   ├── tables.module.ts
+│   │   ├── controllers/
+│   │   │   ├── areas.controller.ts        # /api/v1/areas
+│   │   │   ├── tables.controller.ts       # /api/v1/tables, /api/v1/tables/status
+│   │   │   └── stores.controller.ts       # /api/v1/stores/me (trả tableMode)
+│   │   ├── services/
+│   │   │   ├── areas.service.ts
+│   │   │   ├── tables.service.ts          # CRUD + occupancy derive từ orders
+│   │   │   └── store-config.service.ts    # toggle tableMode
+│   │   ├── repositories/
+│   │   │   ├── areas.repository.ts
+│   │   │   └── tables.repository.ts
+│   │   ├── dto/
+│   │   └── *.spec.ts
 │   └── health/
 │       ├── health.module.ts
 │       └── health.controller.ts           # GET /health (cho FE ping connectivity)
@@ -727,15 +762,20 @@ pos-web/
 │   │   │   ├── checkout-panel.tsx         # FR15–FR16
 │   │   │   └── receipt-modal.tsx          # FR18
 │   │   └── admin/
-│   │       ├── _layout.tsx
+│   │       ├── _layout.tsx                # FR50 nav gating (hiển thị "Quản lý bàn" khi tableMode=true)
 │   │       ├── menu/
 │   │       │   ├── categories-page.tsx    # FR27
 │   │       │   ├── products-page.tsx      # FR28, FR31, FR32, FR33
 │   │       │   ├── option-groups-page.tsx # FR29, FR30
 │   │       │   └── _shared/
-│   │       └── reports/
-│   │           ├── reports-page.tsx       # FR37–FR40
-│   │           └── date-range-picker.tsx
+│   │       ├── reports/
+│   │       │   ├── reports-page.tsx       # FR37–FR40
+│   │       │   └── date-range-picker.tsx
+│   │       ├── tables/                    # Epic 6 admin pages
+│   │       │   ├── areas-page.tsx         # FR45 (UX-DR-T6/T11)
+│   │       │   └── tables-page.tsx        # FR46 (UX-DR-T5/T11)
+│   │       └── store-config/
+│   │           └── store-config-page.tsx  # FR44 toggle tableMode (UX-DR-T8/T9/T10)
 │   ├── features/
 │   │   ├── auth/
 │   │   │   ├── api.ts                     # POST /auth/login, /refresh
@@ -759,9 +799,19 @@ pos-web/
 │   │   │   ├── retry.ts                   # exponential backoff
 │   │   │   ├── triggers.ts                # online event, visibilitychange, interval
 │   │   │   └── events.ts
-│   │   └── reports/
-│   │       ├── api.ts
-│   │       └── hooks.ts
+│   │   ├── reports/
+│   │   │   ├── api.ts
+│   │   │   └── hooks.ts
+│   │   └── tables/                        # FR44–FR52 (Epic 6 — table management)
+│   │       ├── api.ts                     # GET /areas, /tables, /tables/status, /stores/me
+│   │       ├── hooks.ts                   # useAreas, useTables, useTableStatus, useTableMode
+│   │       ├── store.ts                   # Zustand: selectedAreaId, selectedTableId (cart context)
+│   │       ├── components/
+│   │       │   ├── table-picker.tsx       # UX-DR-T1 modal/dropdown
+│   │       │   ├── floor-plan-view.tsx    # UX-DR-T2 grid by area, entry point khi tableMode=true
+│   │       │   ├── table-card.tsx         # UX-DR-T4 ô bàn với status badge
+│   │       │   └── area-tabs.tsx          # UX-DR-T3 tab khu vực
+│   │       └── types.ts
 │   ├── shared/
 │   │   ├── components/
 │   │   │   ├── ui/                        # shadcn copy-paste (button, dialog, input, etc.)
@@ -813,10 +863,12 @@ pos-web/
 | FR27–FR33 (Menu CRUD Admin) | `src/menu/` | `categories.controller.ts`, `products.controller.ts`, `option-groups.controller.ts` |
 | FR34–FR36 (Menu Sync POS←Server) | `src/menu/` | `menu-sync.controller.ts`, `menu-version.service.ts` |
 | FR37–FR40 (Reports) | `src/reports/` | `reports.controller.ts`, `reports.service.ts` |
-| FR41–FR43 (Local Demo) | `prisma/`, `docker-compose.yml`, `prisma/seed.ts` | `schema.prisma`, `seed.ts` |
+| FR41–FR43 (Local Demo) | `prisma/`, `docker-compose.yml`, `prisma/seed.ts` | `schema.prisma`, `seed.ts` (mở rộng: 1 store mode-off + 1 store mode-on + 2 areas + 8 tables) |
+| FR44–FR52 (Table Management) | `src/tables/`, `prisma/schema.prisma` | `areas.controller.ts`, `tables.controller.ts`, `stores.controller.ts` (`/stores/me`); models `Area`, `Table`; cột `stores.table_mode`, `orders.table_id`, `orders.table_name_snapshot` |
 | NFR7–NFR12 (Security) | `src/common/`, `src/auth/` | `jwt-auth.guard.ts`, `roles.guard.ts`, `problem-details.filter.ts` |
-| NFR13 (Idempotency) | `src/orders/` | `sync-log.repository.ts` (unique constraint) |
-| NFR14 (Snapshot immutability) | `src/orders/`, `prisma/schema.prisma` | snapshot fields + service không có UPDATE method cho `*_snapshot` |
+| NFR13 (Idempotency) | `src/orders/` | `sync-log.repository.ts` (unique constraint — không bao gồm `table_id`) |
+| NFR14 (Snapshot immutability) | `src/orders/`, `prisma/schema.prisma` | snapshot fields + service không có UPDATE method cho `*_snapshot` (gồm `table_name_snapshot`) |
+| NFR18 (Mode toggle no redeploy) | `src/tables/`, `features/auth/` | `store-config.service.ts` toggle DB; FE đọc `tableMode` qua `/stores/me` khi login/reload |
 
 #### Frontend (Vite + React) — FR Coverage
 
@@ -833,8 +885,15 @@ pos-web/
 | FR27–FR33 (Admin menu CRUD) | `routes/admin/menu/` | từng page CRUD |
 | FR34–FR36 (Pull menu) | `features/menu/sync.ts` | versioned pull, ghi Dexie |
 | FR37–FR40 (Reports) | `routes/admin/reports/` | `reports-page.tsx`, `date-range-picker.tsx` |
+| FR44 (Mode toggle) | `routes/admin/store-config/`, `features/auth/stores.ts` | toggle UI + cache `tableMode` từ `/stores/me` |
+| FR45, FR46 (CRUD area/bàn) | `routes/admin/tables/`, `features/tables/api.ts` | `areas-page.tsx`, `tables-page.tsx` (AdminDataTable + form dialog) |
+| FR47, FR47b, FR48 (POS dual-flow) | `routes/pos/`, `features/tables/store.ts` | floor-plan entry routing; quick-counter button; cart store mở rộng `tableId`/`tableNameSnapshot` |
+| FR49, FR50 (Table picker + floor-plan) | `features/tables/components/` | `table-picker.tsx`, `floor-plan-view.tsx`, `table-card.tsx`, `area-tabs.tsx` |
+| FR51 (Order snapshot table) | `features/orders/builder.ts`, `db/schemas/orders.ts` | `buildLocalOrder()` thêm `tableId` + `tableNameSnapshot`; Dexie schema thêm 2 field |
+| FR52 (Receipt hiển thị bàn) | `routes/pos/receipt-modal.tsx` | hiển thị "Bàn X" nếu `tableNameSnapshot` non-null |
 | NFR1, NFR5 (Performance) | `vite.config.ts`, `routes/admin/_layout.tsx` | code-split admin lazy |
 | NFR15 (Persist offline orders) | `db/dexie.ts`, `db/schemas/orders.ts` | Dexie persist |
+| NFR18 (Mode toggle no redeploy) | `features/tables/hooks.ts`, `routes/admin/store-config/` | `useTableMode()` đọc từ session store; toggle qua admin UI, áp dụng sau reload session |
 
 ### Ranh giới Kiến trúc
 
@@ -853,6 +912,10 @@ pos-web/
 | `/api/v1/orders` | POST | bearer + Idempotency-Key | orders | FR21–FR23, NFR13 |
 | `/api/v1/orders/:id/void` | POST | bearer + cashier/admin | orders | FR26 |
 | `/api/v1/reports` | GET (`?from&to&metric`) | bearer + admin | reports | FR37–FR40 |
+| `/api/v1/areas` | GET/POST/PATCH/DELETE | bearer + admin | tables | FR45 (CRUD khu vực) |
+| `/api/v1/tables` | GET/POST/PATCH/DELETE | bearer + admin | tables | FR46 (CRUD bàn, FK→area) |
+| `/api/v1/tables/status` | GET | bearer | tables | FR50 (occupancy derive từ `orders` chưa void trong ngày; polling 30s khi POS ở floor-plan view) |
+| `/api/v1/stores/me` | GET | bearer | stores | FR44 (FE đọc `tableMode` khi login/reload — NFR18) |
 | `/health` | GET | none | health | (connectivity) |
 | `/api/docs` | GET | none (dev) | swagger | DX |
 
@@ -1079,6 +1142,9 @@ Admin → /admin/reports → DateRangePicker (from, to)
 | Server thu hồi phiên (FR5/NFR10) nhưng access token offline còn hạn → trễ tới 7 ngày | **Mitigation:** server flag `users.is_revoked` được kiểm khi /refresh chạy; client sẽ mất quyền vào API ngay lần online tiếp theo. Trade-off: trong khoảng offline, người dùng đã bị thu hồi vẫn dùng được app cục bộ — chấp nhận vì PRD ưu tiên uptime offline |
 | shadcn không có DatePicker/DataTable/Toast → cần thêm package | **Mitigation:** đã liệt kê (TanStack Table, react-day-picker, sonner, date-fns) trong section Frontend Architecture |
 | Multi-tenant `$extends` middleware có thể bypass nếu dev raw query | **Mitigation:** quy tắc 5 trong "Hướng dẫn Bắt buộc Thi hành" cấm raw query không scope; review checklist |
+| 2 POS cùng chọn 1 bàn offline (FR47) tạo conflict | **Mitigation:** MVP **chấp nhận** — không lock realtime. Cả 2 đơn sync thành công với cùng `table_id`; server log conflict qua query `orders WHERE table_id = X AND synced_at gần nhau`; tài liệu ghi rõ trong "Known Limitations" SCP §6 |
+| Mode toggle `tableMode` đổi giữa ca → dữ liệu cart đang có item bị mâu thuẫn (cart có `tableId` nhưng store vừa tắt mode) | **Mitigation:** UX-DR-T13 confirm dialog khi user chuyển mode hoặc đổi bàn; cart store reset hoặc giữ tùy lựa chọn. `tableMode` cache vào session — chỉ áp dụng sau reload session (NFR18), tránh race condition giữa ca |
+| Floor-plan polling 30s tải nhiều khi store có nhiều bàn | **Mitigation:** `/tables/status` aggregate query 1 lần derive từ `orders` chưa void today; payload nhẹ (chỉ array `{ tableId, status }`); chỉ poll khi POS đang ở floor-plan view (không poll khi đã chọn bàn vào menu screen) |
 
 **Nhất quán mẫu:**
 
@@ -1094,7 +1160,7 @@ Admin → /admin/reports → DateRangePicker (from, to)
 
 ### Xác thực Độ phủ Yêu cầu ✅
 
-**Functional Requirements (43/43):**
+**Functional Requirements (52/52):**
 
 | FR | Vị trí kiến trúc | Trạng thái |
 |---|---|---|
@@ -1118,8 +1184,18 @@ Admin → /admin/reports → DateRangePicker (from, to)
 | FR34–FR36 (Menu sync versioned) | `menu-sync.controller.ts`, `menu-version.service.ts` | ✓ |
 | FR37–FR40 (Reports) | `reports` module + `routes/admin/reports/` | ✓ |
 | FR41–FR43 (Local demo) | `docker-compose.yml`, `prisma migrate`, `prisma/seed.ts` | ✓ |
+| FR44 (Mode toggle tableMode) | `stores.table_mode` column + `/stores/me` endpoint + admin store-config UI | ✓ |
+| FR45 (CRUD area) | `src/tables/areas.controller.ts` + admin areas page | ✓ |
+| FR46 (CRUD bàn) | `src/tables/tables.controller.ts` + admin tables page | ✓ |
+| FR47 (Table-first flow) | Floor-plan landing route khi `tableMode=true` → menu view với sticky "Bàn X" header | ✓ |
+| FR47b (Quick-counter button) | "Bán hàng nhanh" button trên floor-plan → re-use counter UI, order `tableId=null` | ✓ |
+| FR48 (Counter mode unchanged) | Khi `tableMode=false`, ẩn floor-plan + quick-counter; FR8–FR18 không đổi | ✓ |
+| FR49 (Table picker dual entry) | `table-picker.tsx` (dropdown) + `floor-plan-view.tsx` (click ô bàn) | ✓ |
+| FR50 (Floor-plan + status) | `floor-plan-view.tsx` + polling `/tables/status` 30s | ✓ |
+| FR51 (Order tableId + snapshot) | `orders.table_id` nullable + `orders.table_name_snapshot` immutable | ✓ |
+| FR52 (Receipt hiển thị bàn) | `receipt-modal.tsx` conditional render dựa trên `tableNameSnapshot` | ✓ |
 
-**Non-Functional Requirements (17/17):**
+**Non-Functional Requirements (18/18):**
 
 | NFR | Cơ chế kiến trúc | Trạng thái |
 |---|---|---|
@@ -1135,8 +1211,9 @@ Admin → /admin/reports → DateRangePicker (from, to)
 | NFR15 (persist Dexie reload) | Dexie là IndexedDB by design | ✓ |
 | NFR16 (retry sync no skip) | Exponential backoff + queue stay pending | ✓ |
 | NFR17 (offline đúng 7 ngày) | Access token JWT `exp = lastLoginAt + 7d`; client gate UX theo exp | ✓ |
+| NFR18 (mode toggle no redeploy) | `stores.table_mode` DB-driven; FE đọc qua `/stores/me`; áp dụng sau reload session, không cần build/deploy lại | ✓ |
 
-**Hành trình (4/4):** HT1 ✓ HT2 ✓ HT3 ✓ HT4 ✓
+**Hành trình (6/6):** HT1 ✓ HT2 ✓ HT3 ✓ HT4 ✓ HT5 ✓ HT5b ✓
 
 ### Xác thực Độ Sẵn sàng Implement ✅
 
@@ -1201,6 +1278,8 @@ Admin → /admin/reports → DateRangePicker (from, to)
 
 (16/16 checklist đạt; 0 critical gap; 7 important gaps có khuyến nghị giải.)
 
+**Cập nhật 2026-05-25 (SCP-2026-05-25-table-mgmt):** Mở rộng scope Epic 6 — table management dual-mode (counter + table-service). Schema bổ sung 2 model (`areas`, `tables`) + 3 cột (`stores.table_mode`, `orders.table_id`, `orders.table_name_snapshot`); 4 endpoint mới; trình tự implementation thêm step 5 (Epic 6 brownfield). Coverage cập nhật: 52/52 FR, 18/18 NFR, 6/6 hành trình.
+
 **Mức Tin cậy:** **High** (sau đơn giản hoá, ranh giới auth rõ ràng hơn, chỉ một loại token để tracking)
 
 **Điểm mạnh chính:**
@@ -1264,3 +1343,4 @@ npm install @tanstack/react-table react-day-picker sonner
 4. BE: orders endpoint + idempotency → reports
 5. FE: Admin UI + reports
 6. End-to-end smoke: HT1, HT2, HT3, HT4
+7. **Epic 6 (Table management brownfield):** BE schema/CRUD areas+tables+stores.tableMode+orders.tableId → BE stores/me + tables/status + orders DTO patch → FE admin areas/tables + store-config toggle → FE POS floor-plan view + routing → FE table-first flow + brownfield patches 2-4..2-8 + 3-1 → FE quick-counter button (FR47b) + mode transition confirms → e2e smoke: HT5, HT5b, mode toggle on/off

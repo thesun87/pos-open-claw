@@ -5,6 +5,7 @@ inputDocuments:
   - "_bmad-output/planning-artifacts/architecture.md"
   - "_bmad-output/project-context.md"
   - "docs/product-requirement.md"
+  - "_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-25.md"
 workflowType: 'ux-design'
 project_name: 'pos-bmad'
 user_name: 'Tuan.nguyen'
@@ -12,6 +13,11 @@ date: '2026-05-09'
 lastStep: 14
 status: 'complete'
 completedAt: '2026-05-09'
+lastEdited: '2026-05-25'
+editHistory:
+  - date: '2026-05-25'
+    source: 'SCP-2026-05-25-table-mgmt (approved)'
+    changes: 'Thêm 2 user journeys (HT5 table-first + HT5b quick-counter), 9 custom components (FloorPlanView/TableCard/AreaTabs/TablePicker/QuickCounterButton/TableContextHeader/TableModeBadge/StoreConfigToggle/ModeTransitionConfirmDialog), Phase 5 implementation roadmap, 6 patterns mới (sticky bàn header, mode transition, floor-plan touch, quick-counter button, table color semantics, table context language), và section "Table Service Mode — UX Design Requirements" với 13 UX-DR-T1..T13'
 ---
 
 # UX Design Specification pos-bmad
@@ -31,7 +37,7 @@ Café POS MVP là trải nghiệm bán hàng offline-first cho quán cà phê nh
 
 ### Target Users
 
-Người dùng chính là thu ngân làm việc tại quầy trên tablet landscape hoặc laptop nhỏ, cần thao tác nhanh, ít bước và nhìn rõ trạng thái hệ thống trong giờ cao điểm. Người dùng thứ hai là admin/chủ quán, cần quản lý sản phẩm, danh mục, tùy chọn và báo cáo doanh thu mà không cần kiến thức kỹ thuật. Ngoài ra, MVP cần hỗ trợ developer/demo user setup và trình diễn luồng offline-sync một cách rõ ràng.
+Người dùng chính là thu ngân làm việc tại quầy trên tablet landscape hoặc laptop nhỏ, cần thao tác nhanh, ít bước và nhìn rõ trạng thái hệ thống trong giờ cao điểm. Sản phẩm phục vụ **hai mô hình vận hành F&B**: (1) **counter-service** — thu ngân bán hàng tại quầy, khách mang đi; (2) **table-service** — thu ngân phục vụ khách tại bàn, mỗi order gắn với một bàn cụ thể. Một store có thể bật/tắt chế độ bàn qua `tableMode`, và ngay trong store có `tableMode=true` vẫn có thể bán hàng nhanh (mang đi) qua flow phụ. Người dùng thứ hai là admin/chủ quán, cần quản lý sản phẩm, danh mục, tùy chọn, **khu vực và bàn**, cấu hình mode store, và báo cáo doanh thu mà không cần kiến thức kỹ thuật. Ngoài ra, MVP cần hỗ trợ developer/demo user setup và trình diễn luồng offline-sync một cách rõ ràng.
 
 ### Key Design Challenges
 
@@ -40,6 +46,8 @@ Người dùng chính là thu ngân làm việc tại quầy trên tablet landsc
 - Tối ưu modal tùy chọn đồ uống để chọn size, đá, đường, topping nhanh mà vẫn tránh lỗi.
 - Giữ khu vực Admin đủ đơn giản cho chủ quán nhỏ nhưng vẫn hỗ trợ CRUD menu, sắp xếp, bật/tắt sản phẩm và báo cáo.
 - Đảm bảo receipt, mã đơn cục bộ và thông tin thanh toán rõ ràng cả khi offline.
+- **Dual-mode UX:** thiết kế floor-plan landing và sticky bàn header sao cho table-service cảm thấy là **mode mặc định** trong store F&B, nhưng quick-counter ("Bán hàng nhanh") luôn cách thu ngân một chạm để phục vụ khách mang đi.
+- **Mode toggle backward compatible:** store đang ở counter-service (`tableMode=false`) tuyệt đối không thấy bất kỳ floor-plan, table picker, hay sticky bàn header nào — UI giữ nguyên 100% như MVP hiện tại.
 
 ### Design Opportunities
 
@@ -47,6 +55,8 @@ Người dùng chính là thu ngân làm việc tại quầy trên tablet landsc
 - Tạo trải nghiệm POS chuyên biệt cho café thay vì dashboard generic: category rõ, sản phẩm dễ chạm, giỏ hàng nổi bật, checkout ít bước.
 - Dùng hierarchy, màu sắc và microcopy tiếng Việt để phân biệt trạng thái bình thường, cảnh báo, lỗi sync và hành động cần làm.
 - Biến demo offline-sync thành điểm mạnh sản phẩm: người xem có thể thấy đơn vẫn hoàn tất khi mất mạng và tự đồng bộ khi mạng trở lại.
+- **Floor-plan trở thành anchor cảm xúc trong table-service:** thu ngân không cảm thấy đang xử lý giao dịch trừu tượng mà đang phục vụ một bàn cụ thể với trạng thái thị giác rõ ràng (trống/đang phục vụ/chờ sync).
+- **Đưa snapshot tên bàn vào hóa đơn** như một dấu hiệu phục vụ chuyên nghiệp: khách nhận hóa đơn thấy “Bàn 3” tăng cảm giác được phục vụ chu đáo, đồng thời giảm nhầm lẫn khi mang đồ ra.
 
 ## Core User Experience
 
@@ -584,6 +594,63 @@ flowchart TD
 - Date range picker phải rõ, không làm admin hiểu nhầm timezone.
 - Empty/error state cần thân thiện, không trông như app hỏng.
 
+### Thu ngân bán hàng tại bàn (table-first flow)
+
+Journey này dành cho store F&B bật `tableMode`. Thu ngân không bắt đầu từ menu mà từ **sơ đồ bàn** — Linh thấy ngay bàn nào trống, bàn nào đang có order, rồi chọn bàn trước khi vào màn chọn món. Trải nghiệm phải làm Linh cảm thấy: "tôi đang phục vụ bàn này, không phải xử lý một giao dịch trừu tượng."
+
+```mermaid
+flowchart TD
+  A[Thu ngân mở POS] --> B[Landing: Floor Plan View]
+  B --> C[Tab khu vực hiển thị Quầy chính / Sân ngoài]
+  C --> D{Bàn nào trống / đang order?}
+  D --> E[Linh click bàn 3 trên grid]
+  E --> F[Vào màn chọn món, sticky header: 'Bàn 3' + Đổi bàn + Hủy]
+  F --> G[Chọn sản phẩm + option modal]
+  G --> H[Cart hiển thị item, header vẫn giữ Bàn 3]
+  H --> I[Hoàn tất đơn]
+  I --> J[Lưu IndexedDB với tableId + tableNameSnapshot]
+  J --> K[Sync ngay nếu online]
+  K --> L[Receipt in 'Bàn 3 — 20260525-POS01-0007']
+  L --> M[Floor plan refresh: Bàn 3 về trạng thái trống]
+```
+
+**UX notes:**
+
+- Floor plan là **entry point mặc định** khi `tableMode=true`. Linh không phải đi tìm — nó ở ngay landing screen.
+- Sticky bàn header trên màn chọn món là **anchor cảm xúc**: mỗi giây Linh nhìn xuống cart đều thấy mình đang phục vụ bàn nào. Không có cảm giác "đơn lạc bàn."
+- Trạng thái bàn (trống / đang order / chờ sync) **không được chỉ dựa vào màu** — luôn có icon + label phụ trong trường hợp người dùng có vấn đề thị lực.
+- Nút "Đổi bàn" và "Hủy chọn bàn" phải luôn visible khi cart đang có item — để Linh không bị kẹt nếu khách đổi ý.
+
+### Thu ngân quán F&B — Bán hàng nhanh trong table mode
+
+Journey này là **escape hatch** quan trọng: ngay cả khi store bật `tableMode`, vẫn có khách mua mang đi không ngồi bàn. Linh phải vào được counter UI **một chạm** từ floor plan, không phải tắt mode hay vào setting.
+
+```mermaid
+flowchart TD
+  A[Linh đang ở Floor Plan View] --> B[Bấm nút 'Bán hàng nhanh' ở header]
+  B --> C{Cart đang có item?}
+  C -- Không --> D[Vào thẳng counter UI]
+  C -- Có --> E[Confirm dialog: Giữ cart / Tạo cart mới / Hủy]
+  E --> F[Linh chọn 'Tạo cart mới']
+  F --> D
+  D --> G[Header POS đổi sang 'Bán hàng nhanh' + nút 'Về sơ đồ bàn']
+  G --> H[Chọn sản phẩm + option modal]
+  H --> I[Cart cập nhật, không có 'Bàn X' header]
+  I --> J[Hoàn tất đơn]
+  J --> K[Lưu order với tableId=null, tableNameSnapshot=null]
+  K --> L[Receipt KHÔNG in dòng 'Bàn']
+  L --> M{Quay lại sơ đồ bàn?}
+  M -- Có --> N[Click 'Về sơ đồ bàn'] --> A
+  M -- Không --> O[Tiếp tục bán mang đi]
+```
+
+**UX notes:**
+
+- "Bán hàng nhanh" là **secondary CTA** trên floor plan — không cạnh tranh visual với CTA chính (click vào ô bàn). Vị trí đề xuất: góc trên phải header floor plan, kích thước vừa, label rõ ràng.
+- Khi đã ở counter mode, header POS phải **đổi rõ ràng** sang trạng thái "Bán hàng nhanh" + nút "Về sơ đồ bàn" — để Linh không nhầm là đã tắt `tableMode` toàn store.
+- Mode transition confirm dialog chỉ xuất hiện khi cart đang có item — không hỏi khi cart rỗng (tránh ma sát thừa).
+- Receipt **không hiển thị dòng "Bàn"** khi `tableId=null`, không phải hiển thị "Bàn: —" hay "Bàn: không có". Ẩn hoàn toàn.
+
 ### Journey Patterns
 
 **Navigation Patterns**
@@ -723,6 +790,94 @@ Foundation components không nên dùng trực tiếp rải rác trong POS. Vớ
 **States:** success, warning, danger, neutral, accent.  
 **Accessibility:** luôn có text, không chỉ dùng màu.
 
+#### FloorPlanView
+
+**Purpose:** Cho thu ngân thấy ngay bàn nào trống, bàn nào đang phục vụ, và chọn bàn bằng một chạm. Đây là entry point mặc định của POS khi `tableMode=true`.  
+**Usage:** Landing screen trong route POS khi store bật `tableMode`. Cũng có thể truy cập qua nút "Về sơ đồ bàn" từ các flow phụ.  
+**Anatomy:** AreaTabs ở trên, grid TableCard bên dưới, "Bán hàng nhanh" button ở header, status legend nhỏ.  
+**States:** loading (đang fetch tables), empty (chưa có bàn cấu hình), polling (đang refresh status), error (không tải được).  
+**Variants:** standard tablet landscape ≥1024px (2–4 cột bàn), laptop nhỏ (3 cột).  
+**Accessibility:** mỗi TableCard là button có label đầy đủ ("Bàn 3, đang có order"); legend status có text + icon + màu; keyboard arrow keys điều hướng giữa các bàn.  
+**Interaction Behavior:** click TableCard trống → vào màn chọn món; click TableCard đang order → mở chi tiết order hiện tại (Phase 2 — out of MVP, chỉ hiển thị disabled state với label "Đang phục vụ"). Polling status mỗi 30s khi visible.
+
+#### TableCard
+
+**Purpose:** Biểu diễn một bàn trong floor plan với trạng thái rõ ràng.  
+**Usage:** Trong grid của FloorPlanView.  
+**Anatomy:** tên bàn (lớn, đậm), capacity (nhỏ), status badge (icon + màu + text phụ), area name (nếu cần context).  
+**States:** trống (xanh + icon ghế trống), đang có order (vàng + icon đang phục vụ), chờ sync (đỏ + icon đám mây), disabled/inactive (xám). Tất cả states có cả icon và text — không chỉ màu.  
+**Variants:** compact (4 cột grid), standard (2–3 cột grid).  
+**Accessibility:** touch target tối thiểu **56×56px** (đề xuất 64×64px cho tablet); aria-label đầy đủ; status không chỉ dùng màu.  
+**Interaction Behavior:** click/touch chọn bàn nếu trống; pressed state rõ ràng; disabled không bắt được click.
+
+#### AreaTabs
+
+**Purpose:** Điều hướng giữa các khu vực bàn (Quầy chính, Sân ngoài, Tầng 2…).  
+**Usage:** Trên cùng FloorPlanView khi store có nhiều khu vực.  
+**Anatomy:** horizontal tab list, mỗi tab có tên khu vực + số bàn trống / tổng.  
+**States:** default, active, hover/focus, scroll overflow (nếu nhiều khu vực).  
+**Variants:** standard (≤4 area), scrollable (>4 area).  
+**Accessibility:** role="tablist", arrow keys di chuyển, persist `selectedAreaId` qua session.  
+**Interaction Behavior:** click tab → grid bàn chuyển sang khu vực mới với transition nhẹ (≤150ms), không reload toàn page.
+
+#### TablePicker
+
+**Purpose:** Alternative entry point chọn bàn khi thu ngân thích dropdown/modal hơn floor plan (ví dụ laptop nhỏ, hoặc khi đã quen biết bàn nào trống).  
+**Usage:** Có thể trigger từ sticky header "Đổi bàn" hoặc từ menu phụ.  
+**Anatomy:** modal/dropdown với danh sách khu vực + bàn, search nhẹ, status indicator cho mỗi bàn.  
+**States:** default, có bàn được chọn, không có bàn trống, đang load.  
+**Variants:** modal (touch primary), dropdown (keyboard primary).  
+**Accessibility:** focus trap, keyboard navigation đầy đủ, Esc đóng.  
+**Interaction Behavior:** chọn bàn → đóng modal, set context bàn cho cart; cancel quay về trạng thái cũ.
+
+#### QuickCounterButton
+
+**Purpose:** Cho phép thu ngân vào counter UI (không bàn) ngay khi store đang ở `tableMode=true`. Là escape hatch quan trọng cho khách mua mang đi.  
+**Usage:** Header của FloorPlanView, vị trí góc trên phải.  
+**Anatomy:** icon + label "Bán hàng nhanh" + tooltip giải thích ngắn.  
+**States:** default, pressed, disabled (khi đang trong transition).  
+**Variants:** standard button (secondary CTA — không cạnh tranh với CTA chính là click ô bàn).  
+**Accessibility:** label đầy đủ; tooltip có thể đọc qua keyboard focus.  
+**Interaction Behavior:** click → nếu cart rỗng vào thẳng counter UI; nếu cart có item, mở Mode Transition Confirm dialog trước.
+
+#### TableContextHeader (Sticky Bàn Header)
+
+**Purpose:** Khi đang trong table-flow đã chọn bàn, header luôn hiển thị "Bàn X" để thu ngân không quên context.  
+**Usage:** Sticky top của màn chọn món khi vào từ floor plan / table picker.  
+**Anatomy:** "Bàn X" (lớn, đậm) + area name nhỏ + nút "Đổi bàn" + nút "Hủy chọn bàn".  
+**States:** default, đang đổi bàn (loading mini), confirm pending.  
+**Variants:** standard, condensed (khi cart đang focus).  
+**Accessibility:** role="banner" hoặc aria-region với label; nút action có label đầy đủ.  
+**Interaction Behavior:** "Đổi bàn" → mở TablePicker hoặc về FloorPlanView (tùy preference); "Hủy chọn bàn" → confirm dialog nếu cart có item.
+
+#### TableModeBadge
+
+**Purpose:** Cho thu ngân biết store đang ở mode nào, không phải đoán.  
+**Usage:** POS header cạnh SyncStatusBadge.  
+**Anatomy:** icon + label "Chế độ bàn: Bật" hoặc "Chế độ bàn: Tắt".  
+**States:** mode-on, mode-off.  
+**Accessibility:** label đầy đủ, read-only cho cashier (chỉ admin có quyền toggle).  
+**Interaction Behavior:** read-only cho cashier; có thể có tooltip "Liên hệ admin để đổi chế độ" khi cashier hover.
+
+#### StoreConfigToggle
+
+**Purpose:** Cho admin bật/tắt `tableMode` cho store với warning rõ ràng khi cần.  
+**Usage:** Trang admin store-config.  
+**Anatomy:** Switch + label trạng thái + cảnh báo phụ ("Đang có 2 bàn chứa order chờ thanh toán" nếu tắt khi đang có order active).  
+**States:** mode-on, mode-off, transitioning, blocked (có ràng buộc).  
+**Variants:** standard với warning expandable.  
+**Accessibility:** aria-checked, label rõ, warning có aria-live polite.  
+**Interaction Behavior:** toggle → confirm dialog nếu có order pending; áp dụng sau reload session (theo NFR18).
+
+#### ModeTransitionConfirmDialog
+
+**Purpose:** Xử lý ma sát khi thu ngân đổi context (đổi bàn / vào quick-counter / thoát quick-counter) trong lúc cart có item.  
+**Usage:** Trigger từ TableContextHeader, QuickCounterButton, hoặc nút "Về sơ đồ bàn".  
+**Anatomy:** title rõ ràng, body mô tả tình huống cụ thể ("Cart hiện có 3 món. Đổi bàn sẽ…"), 3 options: "Giữ cart", "Tạo cart mới", "Hủy".  
+**States:** default, processing (sau khi user chọn), error.  
+**Accessibility:** focus trap, Esc = Hủy, primary action highlighted.  
+**Interaction Behavior:** mỗi option có hậu quả rõ trong body text — không dùng "OK/Cancel" generic.
+
 ### Component Implementation Strategy
 
 - Bắt đầu từ shadcn primitives, sau đó bọc thành component domain-specific cho POS/Admin.
@@ -768,6 +923,19 @@ Foundation components không nên dùng trực tiếp rải rác trong POS. Vớ
 - MenuUpdatedToast
 - LoadingSkeleton
 - PrintReceiptLayout
+
+**Phase 5 — Table Service Mode (Epic 6, brownfield)**
+
+- FloorPlanView
+- TableCard
+- AreaTabs
+- TablePicker
+- QuickCounterButton
+- TableContextHeader (Sticky bàn header)
+- TableModeBadge (POS header)
+- StoreConfigToggle (admin)
+- ModeTransitionConfirmDialog
+- ReceiptModal — brownfield extension hiển thị `tableNameSnapshot` nếu non-null
 
 ## UX Consistency Patterns
 
@@ -927,6 +1095,50 @@ Date range là filter chính. Sau khi chọn khoảng ngày, fetch server data v
 
 Hiển thị VND theo format `45.000 ₫`. Không dùng decimal. Tổng tiền nổi bật hơn line item.
 
+**Table context language**
+
+- Bàn đã chọn: `Bàn 3` hoặc `Bàn 3 — Quầy chính` (nếu cần phân biệt area)
+- Trạng thái bàn trong floor plan: "Trống", "Đang phục vụ", "Chờ đồng bộ", "Tạm tắt"
+- Mode toggle: "Chế độ bàn: Bật" / "Chế độ bàn: Tắt"
+- Quick-counter mode: "Bán hàng nhanh" (không dùng "Counter mode" hay "Quick sale")
+- Sticky bàn header label trên màn chọn món: tên bàn đứng trước, action sau
+
+**Sticky bàn context header pattern**
+
+Khi thu ngân đã chọn bàn và đang ở màn chọn món, header sticky luôn hiển thị "Bàn X" + nút Đổi bàn + Hủy chọn bàn. Pattern này tránh "đơn lạc bàn" — Linh không bao giờ phải đoán đang phục vụ bàn nào.
+
+- Header chiếm tối đa **48px** chiều cao để không lấn vào product grid.
+- Nút "Đổi bàn" và "Hủy chọn bàn" có touch target ≥40px.
+- Khi cart có item, nhấn "Hủy chọn bàn" mở Mode Transition Confirm Dialog.
+
+**Mode transition confirm pattern**
+
+Khi user chuyển context giữa table-flow ↔ quick-counter ↔ đổi bàn trong lúc cart có item, **luôn** hiển thị confirm dialog với 3 options rõ ràng: "Giữ cart", "Tạo cart mới", "Hủy". Pattern này tránh mất dữ liệu vô tình mà không gây phiền nhiễu khi cart rỗng.
+
+- Confirm chỉ trigger khi cart có ít nhất 1 item — cart rỗng đi thẳng không hỏi.
+- Body dialog **phải** mô tả tình huống cụ thể, không dùng "Are you sure?" generic.
+- Primary action là "Giữ cart" (giữ data, đổi context bàn); destructive option là "Tạo cart mới".
+
+**Floor plan touch targets & polling**
+
+- Mỗi TableCard có touch target tối thiểu **56×56px** (đề xuất 64×64px tại tablet 1024px+).
+- Grid sử dụng 12–16px gap để Linh không chạm nhầm bàn lân cận trong lúc vội.
+- Status polling 30s khi floor plan visible; pause khi user đã vào màn chọn món để giảm tải mạng.
+
+**Quick-counter button positioning**
+
+- Nút "Bán hàng nhanh" đặt ở header floor plan, góc trên phải.
+- Secondary CTA — không cạnh tranh visual với CTA chính là click ô bàn.
+- Khi đã ở counter mode, nút đổi thành "Về sơ đồ bàn" — vị trí cố định tương đương.
+
+**Table service color semantics**
+
+- Bàn trống: xanh lá (#16a34a hoặc tương đương) + icon ghế trống.
+- Bàn đang có order: vàng amber (#d97706) + icon đang phục vụ.
+- Bàn chờ sync: đỏ (#dc2626) + icon đám mây.
+- Bàn disabled/inactive: xám (#94a3b8) + icon khóa.
+- **Bắt buộc:** mỗi state có cả icon + text phụ, không chỉ dựa vào màu (accessibility).
+
 **Date display**
 
 UI dùng `dd/MM/yyyy HH:mm`. Reports dùng khoảng ngày rõ ràng và tránh ambiguity timezone.
@@ -1048,3 +1260,181 @@ Mục tiêu accessibility là **WCAG 2.1 AA** cho các luồng chính: login, PO
 - Focus order phải theo flow visual.
 - Disabled button cần helper text nếu disabled vì thiếu input.
 - StatusBadge luôn có text label.
+
+## Table Service Mode — UX Design Requirements
+
+Phần này tập hợp **13 UX Design Requirements** (UX-DR-T1 → UX-DR-T13) bổ sung cho Epic 6 (Quản lý bàn F&B) — được mở rộng theo SCP-2026-05-25-table-mgmt. Mỗi UX-DR là một acceptance contract đo lường được, dùng làm input trực tiếp cho story implementation và QA.
+
+### Nguyên tắc thiết kế tổng (Dual-Mode Design Principles)
+
+Khi store bật `tableMode`, Linh không chỉ "bán hàng" — Linh đang phục vụ một bàn cụ thể. UX phải làm cảm giác đó trở thành nền tảng, không phải tính năng bổ sung. Đồng thời, **escape hatch** (quick-counter) phải luôn cách Linh một chạm — vì F&B không bao giờ chỉ có khách ngồi bàn.
+
+Ba ràng buộc xuyên suốt:
+
+1. **Floor plan là entry point** — không phải module phụ. Khi `tableMode=true`, Linh thấy bàn trước khi thấy menu.
+2. **Bàn context không bao giờ ẩn** — sticky bàn header luôn nhắc Linh đang phục vụ ai.
+3. **Mode toggle = backward compatible** — store counter-service hiện tại (`tableMode=false`) không thấy thay đổi UI nào. Floor plan, table picker, quick-counter, sticky bàn header — tất cả ẩn hoàn toàn.
+
+### UX-DR-T1: Table Picker (Modal/Dropdown)
+
+**Mục đích:** Alternative entry point chọn bàn ngoài floor plan, dùng khi laptop nhỏ hoặc thu ngân đã quen biết bàn.
+
+**Acceptance criteria:**
+
+- Trigger từ sticky "Đổi bàn" button hoặc menu phụ.
+- Danh sách bàn nhóm theo khu vực; mỗi bàn hiển thị status (trống/đang order).
+- Search input cho phép gõ tên bàn (≥1 ký tự).
+- Trên touch device hiển thị dạng modal full-screen friendly; trên laptop hiển thị dropdown.
+- Keyboard navigation: Tab giữa khu vực, Arrow giữa bàn, Enter chọn.
+- Esc đóng và quay về trạng thái trước.
+
+### UX-DR-T2: Floor Plan Grid View
+
+**Mục đích:** Entry point mặc định khi `tableMode=true`. Cho thu ngân thấy toàn cảnh trạng thái bàn trong store.
+
+**Acceptance criteria:**
+
+- Landing screen khi thu ngân vào POS với `tableMode=true`.
+- Grid bàn responsive: 2–4 cột tại ≥1024px landscape (tablet), 3 cột tại laptop nhỏ.
+- Touch target mỗi bàn ≥56×56px (đề xuất 64×64px).
+- Polling `GET /tables/status` mỗi 30s khi visible; pause khi user đã vào màn chọn món.
+- Loading state dùng skeleton; empty state hiển thị UX-DR-T9.
+
+### UX-DR-T3: Area Tabs Component
+
+**Mục đích:** Điều hướng giữa các khu vực bàn (Quầy chính, Sân ngoài…).
+
+**Acceptance criteria:**
+
+- Horizontal tab list trên cùng FloorPlanView.
+- Mỗi tab hiển thị tên khu vực + indicator số bàn trống / tổng (ví dụ "Quầy chính · 4/6").
+- Persist `selectedAreaId` qua session (Zustand store).
+- Scroll ngang nếu >4 khu vực, hiển thị scroll hint nhẹ.
+- Keyboard: arrow keys di chuyển giữa tabs, Enter chọn.
+
+### UX-DR-T4: Table Status Badge
+
+**Mục đích:** Chuẩn hóa biểu diễn trạng thái bàn đảm bảo accessibility.
+
+**Acceptance criteria:**
+
+- 4 states: trống (xanh + icon ghế), đang order (vàng + icon đang phục vụ), chờ sync (đỏ + icon đám mây), disabled/inactive (xám + icon khóa).
+- **Bắt buộc** mỗi state có cả icon, màu và text — không chỉ dùng màu (WCAG 2.1 AA).
+- Contrast ratio tối thiểu 4.5:1 cho text status; 3:1 cho icon.
+- Legend nhỏ ở góc floor plan giải thích status.
+
+### UX-DR-T5: Admin Table CRUD Form Dialog
+
+**Mục đích:** Admin tạo/sửa bàn trong store.
+
+**Acceptance criteria:**
+
+- Form dialog với fields: `name` (text, required, unique per store), `areaId` (dropdown, required), `capacity` (int, ≥1, default 2), `sortOrder` (int, default 0), `isActive` (switch, default true).
+- Validation inline ngay dưới field, theo Form Patterns chung.
+- Save action cố định ở cuối dialog; Cancel rõ ràng.
+- Confirm dialog khi xóa bàn đang có order chờ thanh toán.
+
+### UX-DR-T6: Admin Area CRUD Form Dialog
+
+**Mục đích:** Admin tạo/sửa khu vực bàn.
+
+**Acceptance criteria:**
+
+- Form dialog với fields: `name` (text, required, unique per store), `sortOrder` (int, default 0), `isActive` (switch, default true).
+- Khi xóa khu vực còn chứa bàn, warning: "Khu vực này có N bàn. Vui lòng chuyển bàn sang khu vực khác trước." (block delete).
+- Reuse Form Patterns chung.
+
+### UX-DR-T7: POS Layout Strategy (Table Mode)
+
+**Mục đích:** Định nghĩa layout POS khi `tableMode=true`.
+
+**Acceptance criteria:**
+
+- Landing route POS là FloorPlanView (UX-DR-T2).
+- Sau khi chọn bàn, vào màn chọn món với **sticky bàn header** (TableContextHeader): hiển thị "Bàn X" + nút "Đổi bàn" + nút "Hủy chọn bàn".
+- Layout 2-cột (menu trái, cart phải) **giữ nguyên** như MVP hiện tại — không thay đổi cấu trúc cart hoặc product grid.
+- Khi vào quick-counter (HT5b), sticky bàn header **không hiển thị**; thay vào đó là header "Bán hàng nhanh" + nút "Về sơ đồ bàn".
+
+### UX-DR-T8: Mode Toggle Header Indicator
+
+**Mục đích:** Cho thu ngân biết store đang ở mode nào.
+
+**Acceptance criteria:**
+
+- TableModeBadge hiển thị trong POS header, cạnh SyncStatusBadge.
+- Hai states: "Chế độ bàn: Bật" / "Chế độ bàn: Tắt".
+- Read-only cho cashier; admin có thể click để vào trang store-config.
+- Cashier hover → tooltip "Liên hệ admin để đổi chế độ".
+
+### UX-DR-T9: POS Empty State (Chưa cấu hình bàn)
+
+**Mục đích:** Hướng dẫn thu ngân khi store bật `tableMode` nhưng chưa có bàn nào.
+
+**Acceptance criteria:**
+
+- Hiển thị khi `tableMode=true` và `tables.length === 0`.
+- Message: "Chưa cấu hình bàn. Vui lòng liên hệ quản trị viên để thêm bàn cho store."
+- Có nút "Vào Bán hàng nhanh" để Linh không bị kẹt — vẫn bán mang đi được.
+- Không có button "Cấu hình bàn" trên POS (cashier không có quyền admin).
+
+### UX-DR-T10: Admin Empty State (Onboarding)
+
+**Mục đích:** Onboarding khi admin lần đầu vào trang quản lý bàn.
+
+**Acceptance criteria:**
+
+- Hiển thị khi `tables.length === 0`.
+- Message thân thiện: "Bắt đầu quản lý bàn cho store. Tạo khu vực đầu tiên (ví dụ Quầy chính) rồi thêm bàn vào khu vực đó."
+- 2 CTA: "Tạo khu vực" (primary) và "Tạo bàn mẫu" (secondary — tự tạo 1 area + 4 bàn demo).
+
+### UX-DR-T11: Admin Navigation Section
+
+**Mục đích:** Đưa "Quản lý bàn" vào admin nav cạnh "Quản lý Menu" và "Báo cáo".
+
+**Acceptance criteria:**
+
+- Nav section "Quản lý bàn" với sub-items "Khu vực" và "Bàn".
+- **Chỉ hiển thị khi `tableMode=true`** — store counter-service không thấy nav này.
+- Cũng thêm "Cấu hình store" cho admin toggle `tableMode`.
+
+### UX-DR-T12: Quick-Counter Button ("Bán hàng nhanh")
+
+**Mục đích:** Escape hatch cho khách mua mang đi tại store đang ở `tableMode=true`.
+
+**Acceptance criteria:**
+
+- QuickCounterButton hiển thị trên header FloorPlanView, vị trí góc trên phải.
+- Secondary CTA — không cạnh tranh visual với CTA chính (click ô bàn).
+- Click → nếu cart rỗng vào thẳng counter UI; nếu cart có item, mở ModeTransitionConfirmDialog trước (UX-DR-T13).
+- Khi đã trong counter mode, header POS đổi sang "Bán hàng nhanh" + nút "Về sơ đồ bàn".
+- Order tạo từ flow này có `tableId=null` và `tableNameSnapshot=null`.
+
+### UX-DR-T13: Mode Transition Affordance (Confirm Dialog)
+
+**Mục đích:** Tránh mất cart vô tình khi user chuyển context.
+
+**Acceptance criteria:**
+
+- Trigger khi thực hiện một trong: "Đổi bàn", "Hủy chọn bàn", "Bán hàng nhanh", "Về sơ đồ bàn" **trong khi cart có ≥1 item**.
+- Dialog hiển thị: title "Cart hiện có N món", body mô tả tình huống cụ thể (đổi bàn / vào quick-counter / thoát quick-counter).
+- 3 options: "Giữ cart" (primary), "Tạo cart mới" (destructive), "Hủy" (secondary, return to current).
+- Esc = "Hủy".
+- Không trigger khi cart rỗng (tránh ma sát thừa).
+
+### Tổng hợp matrix UX-DR → Component → Story
+
+| UX-DR | Component(s) chính | Story (Epic 6) |
+|---|---|---|
+| T1 | TablePicker | 6-8 (table-first flow) |
+| T2 | FloorPlanView, AreaTabs | 6-7 (floor-plan view + routing) |
+| T3 | AreaTabs | 6-7 |
+| T4 | TableCard, StatusBadge | 6-7 |
+| T5 | AdminDataTable, form dialog | 6-5 (admin tables page) |
+| T6 | AdminDataTable, form dialog | 6-5 (admin areas page) |
+| T7 | TableContextHeader, POS layout | 6-8 |
+| T8 | TableModeBadge | 6-7 / 6-8 |
+| T9 | EmptyState (POS variant) | 6-7 |
+| T10 | EmptyState (Admin variant) | 6-5 |
+| T11 | Admin nav section | 6-5 (brownfield 3-1 patch) |
+| T12 | QuickCounterButton | 6-9 (quick-counter flow) |
+| T13 | ModeTransitionConfirmDialog | 6-8, 6-9 |

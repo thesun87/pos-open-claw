@@ -5,6 +5,7 @@ inputDocuments:
   - "_bmad-output/planning-artifacts/architecture.md"
   - "_bmad-output/planning-artifacts/ux-design-specification.md"
   - "_bmad-output/project-context.md"
+  - "_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-25.md"
 project_name: 'pos-bmad'
 user_name: 'Tuan.nguyen'
 date: '2026-05-09'
@@ -12,6 +13,11 @@ workflowType: 'epics-and-stories'
 status: 'complete'
 lastStep: 4
 completedAt: '2026-05-09'
+lastEdited: '2026-05-25'
+editHistory:
+  - date: '2026-05-25'
+    source: 'SCP-2026-05-25-table-mgmt (approved)'
+    changes: 'Thêm Epic 6 (Quản lý Bàn F&B) với 9 stories — brownfield expansion để hỗ trợ table-service dual-mode. Cập nhật Overview để phản ánh 52 FR + 18 NFR. Brownfield patches embedded trong Story 6-1 (seed 1.4), Story 6-5 (admin nav 3.1), Story 6-8 (orders 2.4-2.8) thay vì re-open Epic 2/3.'
 ---
 
 # pos-bmad - Epic Breakdown
@@ -20,7 +26,9 @@ completedAt: '2026-05-09'
 
 This document provides the complete epic and story breakdown for **Café POS MVP (`pos-bmad`)**, decomposing the requirements from the PRD, UX Design Specification, and Architecture into implementable stories.
 
-Tài liệu này phá vỡ 43 FR + 17 NFR + các yêu cầu kỹ thuật/UX bổ sung thành các epics có thể giao cho Developer agent thực thi tuần tự, mỗi story đi kèm acceptance criteria có thể test được.
+Tài liệu này phá vỡ **52 FR + 18 NFR** (sau SCP-2026-05-25-table-mgmt: thêm FR44-FR52 + NFR18) + các yêu cầu kỹ thuật/UX bổ sung thành các epics có thể giao cho Developer agent thực thi tuần tự, mỗi story đi kèm acceptance criteria có thể test được.
+
+**Epic 6 (Quản lý Bàn F&B)** được thêm 2026-05-25 qua brownfield expansion — không re-open Epic 2/3 đã done, mà embed brownfield patches trong Story 6-8/6-5/6-1.
 
 ## Requirements Inventory
 
@@ -380,6 +388,24 @@ Yêu cầu UX từ UX Design Specification — mỗi UX-DR đủ specific để 
 **Key ARs enforced:** AR4 (multi-tenant aggregations), AR21 (date input `YYYY-MM-DD`, server convert TZ Asia/Ho_Chi_Minh), AR22 (VND integer trong sum), AR31 (admin code-split chunk)
 
 **Dependency:** Builds on Epic 1 (auth + admin role) và Epic 2 (synced orders data). Standalone deliverable: business reporting capability.
+
+---
+
+### Epic 6: Quản lý Bàn F&B (Table Service Mode) — Brownfield Expansion
+
+**Mục tiêu Epic:** Mở rộng MVP sang **dual-mode F&B**: mỗi store có thể bật/tắt `tableMode` để vận hành theo counter-service (như trước) hoặc table-service (gắn order với bàn cụ thể). Khi `tableMode=true`, floor-plan view trở thành entry point POS — thu ngân chọn bàn trước khi vào menu; order lưu kèm `tableId` + `tableNameSnapshot` immutable; hóa đơn in tên bàn. **Quick-counter ("Bán hàng nhanh")** vẫn truy cập một chạm từ floor-plan để phục vụ khách mua mang đi tại quán F&B. Sau Epic này, **store F&B vận hành table-service đầy đủ** với 2 khu vực và ~8 bàn demo; **store counter-service hiện hữu KHÔNG thấy bất kỳ thay đổi UI nào** (backward compatible qua `tableMode=false`).
+
+**FRs covered:** FR44, FR45, FR46, FR47, FR47b, FR48, FR49, FR50, FR51, FR52
+
+**NFRs covered:** NFR18 (mode toggle không cần redeploy)
+
+**UX-DRs covered:** UX-DR-T1 (TablePicker), UX-DR-T2 (FloorPlanView), UX-DR-T3 (AreaTabs), UX-DR-T4 (TableStatusBadge), UX-DR-T5 (Admin Table Form), UX-DR-T6 (Admin Area Form), UX-DR-T7 (POS Layout sticky bàn), UX-DR-T8 (TableModeBadge), UX-DR-T9 (POS Empty State), UX-DR-T10 (Admin Empty State), UX-DR-T11 (Admin Navigation), UX-DR-T12 (Quick-Counter Button), UX-DR-T13 (Mode Transition Affordance)
+
+**Key ARs enforced:** AR4 (multi-tenant scope cho `areas`/`tables`; server validate `tableId` thuộc store), AR8 (Idempotency-Key dedup — `tableId` KHÔNG vào composite key), AR24 (snapshot immutability cho `tableNameSnapshot`), AR25 (append-only order; `table_id` nullable FK), AR27 (Zustand cart store mở rộng `tableId`/`tableNameSnapshot`), AR33 (sync engine không đổi FSM/retry policy — payload thêm field optional)
+
+**Dependency:** Builds on Epic 1 (auth, multi-tenant, seed framework), Epic 2 (orders schema + sync engine + cart/checkout/receipt) và Epic 3 (admin nav + AdminDataTable foundation). Brownfield patch nội bộ trong Story 6-8 sửa Story 2-4..2-8 và 3-1 để table-aware mà KHÔNG re-open Epic 2/3 done state.
+
+**Mode toggle safety net:** Store mới mặc định `tableMode=false`; existing store counter-service không thay đổi behavior. Demo seed bổ sung 1 store `tableMode=true` để verify cả 2 paths.
 
 ---
 
@@ -2155,6 +2181,379 @@ So that tôi biết khách hay trả bằng cách nào và món nào đang hot.
   - 4.1 (BE endpoint với 4 metrics)
   - 4.2 (FE page + DateRangeFilter foundation) → 4.3 (revenue by day + totals) → 4.4 (payment method + top products)
 - **Deliverable Epic 4:** Admin chọn khoảng ngày bất kỳ trong 90 ngày và thấy 4 metric trong <5s; báo cáo loại trừ đơn voided; top products dùng snapshot name; TZ Asia/Ho_Chi_Minh đúng
+
+---
+
+## Epic 6: Quản lý Bàn F&B (Table Service Mode)
+
+> **Brownfield expansion** — added 2026-05-25 via Sprint Change Proposal `SCP-2026-05-25-table-mgmt` (approved). Khác Epic 1-4 (greenfield), Epic 6 mở rộng MVP scope đã done; sửa nhẹ một số story đã closed thông qua brownfield patches trong Story 6-8 thay vì re-open Epic 2/3.
+
+### Story 6.1: BE — Schema Areas/Tables + Stores.tableMode + Orders.tableId/tableNameSnapshot
+
+**As a** developer
+**I want** schema database mở rộng để hỗ trợ table-service mode
+**So that** các story BE và FE sau có thể CRUD `areas`/`tables`, lưu order kèm bàn, và toggle mode theo store
+
+**Acceptance Criteria:**
+
+**Given** schema Prisma cập nhật
+**When** chạy `npx prisma migrate dev --name epic6-table-management`
+**Then** migration mới tạo:
+- Bảng `areas` (`id`, `tenant_id`, `store_id`, `name`, `sort_order`, `is_active`, `created_at`, `updated_at`); unique `(tenant_id, store_id, name)`
+- Bảng `tables` (`id`, `tenant_id`, `store_id`, `area_id` FK, `name`, `capacity` int ≥1 default 2, `sort_order`, `is_active`, timestamps); unique `(tenant_id, store_id, name)`; index `(area_id)`
+- Cột `stores.table_mode` boolean default `false`
+- Cột `orders.table_id` UUID nullable FK → `tables.id`; index `(table_id)`
+- Cột `orders.table_name_snapshot` text nullable; immutable sau insert (enforce ở service layer)
+
+**Given** Prisma model TypeScript đã sinh
+**When** import vào code
+**Then** có `Area`, `Table` models PascalCase singular; field camelCase (`tableId`, `tableNameSnapshot`, `tableMode`, `areaId`, `sortOrder`)
+
+**Given** seed `prisma/seed.ts` mở rộng (brownfield patch Story 1.4)
+**When** chạy `npx prisma db seed`
+**Then** seed idempotent (qua `prisma.upsert`):
+- Store hiện hữu giữ `tableMode=false` (counter-service)
+- Tạo **store thứ 2** với `tableMode=true`, 2 areas ("Quầy chính", "Sân ngoài"), 8 tables (4 mỗi area, capacity 2-4 random)
+- Tạo 2-3 sample orders với `tableId` non-null trong store thứ 2 để demo
+
+**Given** test e2e `seed.e2e-spec.ts`
+**When** chạy `npm run test:e2e -- seed`
+**Then** verify đếm areas/tables; verify cross-tenant isolation (store 1 không thấy tables của store 2)
+
+**Dependencies:** None (foundation story Epic 6).
+**Files touched:** `prisma/schema.prisma`, `prisma/migrations/`, `prisma/seed.ts` (brownfield patch).
+**Estimate:** 4-6h.
+
+---
+
+### Story 6.2: BE — Areas CRUD Endpoints
+
+**As an** admin
+**I want** CRUD endpoints cho khu vực bàn
+**So that** tôi có thể tạo, sửa, xóa, sắp xếp các khu vực trong store F&B của mình
+
+**Acceptance Criteria:**
+
+**Given** `/api/v1/areas` controller (tables module mới `src/tables/`)
+**When** authenticated admin gọi
+**Then** support 4 methods:
+- `GET /api/v1/areas` → list areas của store hiện tại, scoped tenant+store qua `$extends`; sort theo `sortOrder` rồi `name`
+- `POST /api/v1/areas` → tạo mới với DTO `{ name, sortOrder?, isActive? }`; validate name unique trong store; trả 201 + entity
+- `PATCH /api/v1/areas/:id` → update partial; validate name unique nếu đổi; trả 200 + entity
+- `DELETE /api/v1/areas/:id` → soft block nếu còn `tables` thuộc area (trả 409 với `type=.../area-has-tables`, kèm `tableCount`)
+
+**Given** non-admin gọi
+**When** cashier thử POST/PATCH/DELETE
+**Then** 403 với `type=.../forbidden`
+
+**Given** cross-tenant attempt
+**When** admin store A gọi `PATCH /api/v1/areas/<id-store-B>`
+**Then** 404 (multi-tenant scope auto-filter; không leak existence)
+
+**Given** unit tests `areas.service.spec.ts` và `areas.controller.spec.ts`
+**When** run
+**Then** coverage ≥70%; test cases gồm CRUD happy path, validation errors, 409 area-has-tables, RBAC, cross-tenant
+
+**Dependencies:** Story 6.1 (schema).
+**Files touched:** `src/tables/{areas.controller,areas.service,areas.repository}.ts`, `src/tables/dto/{create-area.dto,update-area.dto}.ts`, `src/tables/tables.module.ts`, `src/common/errors/problem-types.ts` (thêm URI `area-has-tables`).
+**Estimate:** 4-6h.
+
+---
+
+### Story 6.3: BE — Tables CRUD Endpoints
+
+**As an** admin
+**I want** CRUD endpoints cho bàn
+**So that** tôi có thể quản lý bàn trong từng khu vực, set capacity và bật/tắt trạng thái
+
+**Acceptance Criteria:**
+
+**Given** `/api/v1/tables` controller
+**When** authenticated admin gọi
+**Then** support:
+- `GET /api/v1/tables` → list bàn scoped store; query `?areaId=<id>` filter theo area; sort `sortOrder`
+- `POST /api/v1/tables` → DTO `{ name, areaId, capacity?, sortOrder?, isActive? }`; validate name unique trong store, areaId thuộc store, capacity ≥1
+- `PATCH /api/v1/tables/:id` → update partial
+- `DELETE /api/v1/tables/:id` → soft block nếu có order chờ thanh toán (status `pending_sync` hoặc `synced` với `synced_at >= today_open`) — trả 409 `type=.../table-has-pending-order`
+
+**Given** payload có `areaId` cross-tenant
+**When** validate
+**Then** 400 `type=.../validation` với `detail: "Area không thuộc store"`
+
+**Given** unit tests
+**When** run
+**Then** coverage ≥70%; cover happy path + validation + 409 table-has-pending-order + RBAC + cross-tenant
+
+**Dependencies:** Story 6.1 (schema), Story 6.2 (areas — vì tables FK area).
+**Files touched:** `src/tables/{tables.controller,tables.service,tables.repository}.ts`, `src/tables/dto/{create-table.dto,update-table.dto}.ts`, `src/common/errors/problem-types.ts` (thêm URI `table-has-pending-order`).
+**Estimate:** 4-6h.
+
+---
+
+### Story 6.4: BE — Stores/Me + Tables/Status + Orders DTO Patch
+
+**As a** cashier / admin
+**I want** endpoint để biết store đang ở mode nào, và endpoint để xem trạng thái bàn realtime
+**So that** FE quyết định render floor-plan hay counter UI; floor-plan refresh trạng thái mỗi 30s
+
+**Acceptance Criteria:**
+
+**Given** `GET /api/v1/stores/me`
+**When** authenticated user gọi (cashier hoặc admin)
+**Then** trả `{ id, name, tableMode: boolean, ... }` của store hiện tại; FE cache vào session store
+
+**Given** `GET /api/v1/tables/status`
+**When** authenticated user gọi
+**Then** trả array `[{ tableId, status: 'empty'|'occupied'|'pending_sync', activeOrderCount }]`:
+- `empty` = không có order với `table_id = X AND status != 'voided' AND synced_at >= today_open`
+- `occupied` = có ≥1 synced order trong ngày
+- `pending_sync` = có order `pendingSync` (POS thiết bị khác đã sync nhưng server chưa nhận)
+- Aggregate query 1 lần, payload nhẹ (<5KB cho 50 bàn)
+
+**Given** orders DTO mở rộng (brownfield patch Story 2.6)
+**When** `POST /api/v1/orders` payload có `tableId` non-null
+**Then** server validate `tableId` thuộc store hiện tại (`tables.tenant_id + store_id` khớp user); cross-tenant → 400 `type=.../validation`. `tableNameSnapshot` cũng được persist nguyên văn từ payload (không re-query DB — đảm bảo immutability AR24)
+
+**Given** `tableId` và `tableNameSnapshot` cùng null hoặc cùng non-null
+**When** validate
+**Then** payload có exact một trong hai non-null → 400 `type=.../validation` với `detail: "tableId và tableNameSnapshot phải cùng null hoặc cùng non-null"`
+
+**Given** idempotent replay
+**When** resend cùng `clientOrderId` với `tableId` khác
+**Then** server giữ data lần đầu (composite key không bao gồm `tableId`); trả `idempotent_replay: true` với data nguyên gốc
+
+**Dependencies:** Story 6.1 (schema), Story 6.3 (tables — vì status query reference).
+**Files touched:** `src/tables/stores.controller.ts`, `src/tables/tables.controller.ts` (thêm endpoint status), `src/tables/services/table-status.service.ts`, `src/orders/dto/sync-order.dto.ts` (brownfield: thêm `tableId?`, `tableNameSnapshot?`), `src/orders/orders.service.ts` (brownfield: validate + persist).
+**Estimate:** 5-7h.
+
+---
+
+### Story 6.5: FE — Admin Areas + Tables Management Pages
+
+**As an** admin
+**I want** trang quản lý khu vực và bàn trong admin UI
+**So that** tôi có thể CRUD areas/tables qua giao diện thân thiện như các trang menu
+
+**Acceptance Criteria:**
+
+**Given** route `/admin/tables/areas` + `/admin/tables/tables` (hoặc cấu trúc tương đương)
+**When** admin navigate
+**Then** mỗi route render:
+- `AdminDataTable` foundation (UX-DR-T11) với cột: name, sortOrder, isActive, actions
+- Form dialog tạo/sửa (UX-DR-T5/T6) với fields theo schema; validation inline RHF+Zod
+- Empty state UX-DR-T10 khi `count===0`: "Bắt đầu quản lý bàn — Tạo khu vực đầu tiên..." + 2 CTAs
+- Switch `isActive` toggle trực tiếp ở row, ghi optimistic
+
+**Given** xóa area còn tables
+**When** click delete
+**Then** server trả 409 `area-has-tables`; UI hiển thị error mapper toast "Khu vực này có N bàn. Vui lòng chuyển bàn sang khu vực khác trước." (block delete)
+
+**Given** xóa bàn đang có order
+**When** click delete
+**Then** server trả 409 `table-has-pending-order`; UI toast "Bàn này đang có N đơn. Vui lòng xử lý đơn trước khi xóa."
+
+**Given** admin nav cập nhật (brownfield Story 3.1)
+**When** `tableMode=true` (đọc từ `/stores/me`)
+**Then** hiển thị section "Quản lý bàn" với sub-items "Khu vực", "Bàn" cạnh "Quản lý Menu" + "Báo cáo"; khi `tableMode=false` → ẩn hoàn toàn (UX-DR-T11)
+
+**Dependencies:** Story 6.2, 6.3 (BE endpoints), Story 6.4 (`/stores/me` để check tableMode), Story 3.1 (AdminDataTable foundation — brownfield patch nav).
+**Files touched:** `routes/admin/tables/{areas-page,tables-page}.tsx`, `features/tables/{api,hooks,types}.ts`, `routes/admin/_layout.tsx` (brownfield: nav gating).
+**Estimate:** 8-12h.
+
+---
+
+### Story 6.6: FE — Admin Store-Config Toggle tableMode
+
+**As an** admin
+**I want** trang cấu hình store cho phép toggle `tableMode`
+**So that** tôi có thể chuyển store giữa counter-service và table-service mà không cần liên hệ kỹ thuật
+
+**Acceptance Criteria:**
+
+**Given** route `/admin/store-config`
+**When** admin mở
+**Then** hiển thị `StoreConfigToggle` (UX-DR-T8): switch `tableMode` + label "Chế độ bàn: Bật/Tắt"; mô tả ngắn về implication của mỗi mode
+
+**Given** admin toggle ON khi store đang có 0 bàn
+**When** save
+**Then** server cập nhật `stores.table_mode = true`; UI báo "Đã bật. Vui lòng tạo khu vực và bàn để thu ngân có thể bắt đầu phục vụ bàn."
+
+**Given** admin toggle OFF khi đang có bàn occupied (`activeOrderCount > 0` qua `/tables/status`)
+**When** click toggle
+**Then** confirm dialog: "Đang có N bàn chứa order chờ thanh toán. Tắt chế độ bàn sẽ ẩn floor-plan trên POS — đơn đó vẫn truy cập được qua danh sách đơn admin. Tiếp tục?" + 2 options "Tiếp tục" / "Hủy"
+
+**Given** mode đã đổi
+**When** thu ngân đang ở POS
+**Then** mode mới chỉ áp dụng sau khi POS reload session (NFR18 — không live update; tránh race condition giữa ca)
+
+**Given** nav admin
+**When** `tableMode=true`
+**Then** "Cấu hình store" hiển thị; khi `tableMode=false` vẫn hiển thị (admin cần truy cập để bật mode)
+
+**Dependencies:** Story 6.4 (`/stores/me` + endpoint cập nhật `tableMode`).
+**Files touched:** `routes/admin/store-config/store-config-page.tsx`, `features/tables/hooks.ts` (`useTableMode`, `useUpdateTableMode`).
+**Estimate:** 3-5h.
+
+---
+
+### Story 6.7: FE — POS Floor Plan View + Polling + Entry Routing
+
+**As a** cashier
+**I want** floor-plan view là landing screen của POS khi store ở `tableMode=true`
+**So that** tôi thấy ngay bàn nào trống/đang phục vụ và chọn bàn trước khi vào menu
+
+**Acceptance Criteria:**
+
+**Given** route POS với `tableMode=true`
+**When** cashier mở `/pos`
+**Then** landing là `FloorPlanView` (UX-DR-T2) thay vì product grid; sticky `TableModeBadge` "Chế độ bàn: Bật" trong POS header (UX-DR-T8)
+
+**Given** floor-plan visible
+**When** poll `/api/v1/tables/status`
+**Then** polling mỗi 30s (UX-DR-T4); pause polling khi user đã click bàn vào menu screen; resume khi quay lại floor-plan
+
+**Given** floor-plan grid
+**When** render
+**Then** layout responsive 2-4 cột tại ≥1024px; mỗi `TableCard` (UX-DR-T4) hiển thị name + capacity + status badge (icon + màu + text — không chỉ màu); touch target ≥56×56px (đề xuất 64px)
+
+**Given** AreaTabs (UX-DR-T3)
+**When** click tab khu vực
+**Then** grid bàn chuyển khu vực với transition ≤150ms; persist `selectedAreaId` vào Zustand store; tab hiển thị "Quầy chính · 4/6" (số trống / tổng)
+
+**Given** store `tableMode=true` nhưng 0 bàn
+**When** render
+**Then** UX-DR-T9 empty state: "Chưa cấu hình bàn. Vui lòng liên hệ quản trị viên." + nút "Vào Bán hàng nhanh" (không bị kẹt)
+
+**Given** route POS với `tableMode=false`
+**When** mở `/pos`
+**Then** **không** hiển thị floor-plan / TableModeBadge / nav "Quản lý bàn" / "Bán hàng nhanh" button — UI giữ nguyên 100% MVP hiện tại (UX-DR-T7 backward compat clause)
+
+**Dependencies:** Story 6.4 (`/tables/status` + `/stores/me`), Story 6.3 (tables list).
+**Files touched:** `features/tables/{components/floor-plan-view,components/table-card,components/area-tabs,store,hooks}.tsx`, `routes/pos/pos-page.tsx` (brownfield: routing logic), `routes/_layout.tsx` (TableModeBadge).
+**Estimate:** 8-12h.
+
+---
+
+### Story 6.8: FE — POS Table-First Flow + Brownfield Orders Integration
+
+**As a** cashier
+**I want** khi click bàn ở floor-plan, vào màn chọn món với sticky bàn header
+**So that** tôi không quên đang phục vụ bàn nào; order auto-gắn `tableId` khi finalize
+
+**Acceptance Criteria:**
+
+**Given** floor-plan visible
+**When** click `TableCard` trạng thái empty
+**Then** chuyển vào màn chọn món; sticky `TableContextHeader` (UX-DR-T7) hiển thị "Bàn X" + area name + 2 nút "Đổi bàn"/"Hủy chọn bàn"; layout 2-cột menu+cart giữ nguyên Epic 2
+
+**Given** cart store mở rộng (brownfield Story 2.4)
+**When** chọn món
+**Then** `cartStore.tableId` và `cartStore.tableNameSnapshot` set khi click bàn; clear khi "Hủy chọn bàn" hoặc finalize order
+
+**Given** `buildLocalOrder()` mở rộng (brownfield Story 2.5)
+**When** finalize
+**Then** payload `POST /api/v1/orders` chứa `tableId` và `tableNameSnapshot` (copy từ cart store); Dexie `db.orders` schema thêm 2 field này (brownfield Story 2.7)
+
+**Given** receipt modal (brownfield Story 2.8)
+**When** order finalized với `tableNameSnapshot` non-null
+**Then** receipt hiển thị dòng "Bàn 3" (UX-DR / FR52); cả screen view và print CSS; ẩn dòng nếu `tableNameSnapshot=null`
+
+**Given** click "Đổi bàn" hoặc "Hủy chọn bàn" khi cart có ≥1 item
+**When** trigger
+**Then** mở `ModeTransitionConfirmDialog` (UX-DR-T13): 3 options "Giữ cart" / "Tạo cart mới" / "Hủy"; Esc = Hủy; body mô tả tình huống cụ thể, không dùng "Are you sure?" generic
+
+**Given** click "Đổi bàn" khi cart rỗng
+**When** trigger
+**Then** đi thẳng về floor-plan / mở TablePicker không hỏi (tránh ma sát thừa)
+
+**Given** unit test `builder.test.ts` (brownfield Story 2.5)
+**When** test cases
+**Then** verify: snapshot pair (null/null hoặc cùng non-null), `tableNameSnapshot` immutable sau khi build, cart reset đúng khi confirm "Tạo cart mới"
+
+**Dependencies:** Story 6.7 (floor-plan entry), Story 6.4 (orders DTO accept tableId), Stories 2.4-2.8 (foundation cart/order/receipt — brownfield patches embedded here, KHÔNG re-open Epic 2).
+**Files touched:**
+- `features/orders/builder.ts` (brownfield Story 2.5 patch — `buildLocalOrder` thêm `tableId` + `tableNameSnapshot`)
+- `db/schemas/orders.ts` (brownfield Story 2.7 patch — Dexie schema)
+- `routes/pos/cart-panel.tsx` (brownfield Story 2.4 patch — cart store extension)
+- `routes/pos/receipt-modal.tsx` (brownfield Story 2.8 patch — hiển thị bàn)
+- `features/tables/components/{table-context-header,mode-transition-confirm-dialog}.tsx`
+- `features/tables/store.ts` (cart context bàn)
+
+**Estimate:** 10-14h. Brownfield patches lớn nhất Epic 6 — cần regression test toàn bộ Epic 2 flow để đảm bảo counter mode unchanged.
+
+---
+
+### Story 6.9: FE — POS Quick-Counter Button + Mode Transitions
+
+**As a** cashier
+**I want** nút "Bán hàng nhanh" trên floor-plan để vào counter UI bán mang đi
+**So that** trong store `tableMode=true`, tôi vẫn phục vụ được khách không ngồi bàn mà không cần admin tắt mode
+
+**Acceptance Criteria:**
+
+**Given** floor-plan view (`tableMode=true`)
+**When** render
+**Then** `QuickCounterButton` (UX-DR-T12) hiển thị góc trên phải header; secondary CTA không cạnh tranh visual với CTA chính (click ô bàn); icon + label "Bán hàng nhanh"
+
+**Given** click "Bán hàng nhanh" khi cart rỗng
+**When** trigger
+**Then** vào thẳng counter UI giống Epic 2 (re-use components: product-grid, cart-panel, checkout-panel — không hiển thị TableContextHeader); POS header đổi sang "Bán hàng nhanh" + nút "Về sơ đồ bàn"
+
+**Given** click "Bán hàng nhanh" khi cart có ≥1 item (đang trong table-flow)
+**When** trigger
+**Then** mở `ModeTransitionConfirmDialog` (UX-DR-T13) trước; tương tự khi đang ở counter mode bấm "Về sơ đồ bàn" với cart có item
+
+**Given** finalize order từ quick-counter flow
+**When** sync
+**Then** payload có `tableId=null` và `tableNameSnapshot=null`; receipt KHÔNG hiển thị dòng "Bàn" (ẩn hoàn toàn — không hiển thị "Bàn: —")
+
+**Given** click "Về sơ đồ bàn"
+**When** trigger (cart rỗng hoặc đã confirm)
+**Then** quay về floor-plan view; header POS đổi lại trạng thái table-mode; polling resume
+
+**Given** e2e test `pos-dual-flow.e2e.ts` (Vitest + Playwright nếu có)
+**When** test cases
+**Then** cover: HT5 happy path, HT5b happy path, đổi qua lại table-flow ↔ quick-counter với cart có item (3 options confirm), mode toggle on/off persistence sau reload
+
+**Dependencies:** Story 6.7 (floor-plan), Story 6.8 (mode transition dialog component, cart store).
+**Files touched:**
+- `features/tables/components/quick-counter-button.tsx`
+- `routes/pos/pos-page.tsx` (brownfield Story 6.7 patch — flow mode state: `floor-plan` | `table-menu` | `quick-counter`)
+- `routes/_layout.tsx` (brownfield — header transitions)
+- `tests/pos-dual-flow.e2e.ts` (new e2e)
+
+**Estimate:** 4-6h.
+
+---
+
+### Epic 6 Summary
+
+- **9 stories** covering FR44–FR52 (gồm FR47b); NFR18 (mode toggle no redeploy); UX-DR-T1..T13 (13 design requirements)
+- **Dependency graph:**
+  - 6.1 (BE schema foundation) — chặn tất cả
+  - 6.1 → 6.2, 6.3 (BE CRUD areas/tables) song song
+  - 6.2 + 6.3 → 6.4 (BE stores/me + tables/status + orders DTO)
+  - 6.4 → 6.5, 6.6 (FE admin) song song
+  - 6.4 → 6.7 (FE floor-plan)
+  - 6.7 → 6.8 (FE table-first + brownfield 2-4..2-8 + 3-1)
+  - 6.8 → 6.9 (FE quick-counter)
+- **Brownfield patches embedded** (KHÔNG re-open Epic 2/3):
+  - Story 1.4 (seed) trong Story 6.1
+  - Story 2.4 (cart-panel), 2.5 (checkout-summary/buildLocalOrder), 2.6 (orders DTO), 2.7 (Dexie schema), 2.8 (receipt) trong Story 6.8
+  - Story 3.1 (admin nav) trong Story 6.5
+- **Effort estimate tổng:** ~60-90h (~2-3 sprint developer-week tại 1 dev intermediate, theo SCP §3)
+- **Deliverable Epic 6:**
+  - Store F&B vận hành table-service đầy đủ: cashier mở POS → floor-plan → chọn bàn → menu (sticky bàn) → finalize → receipt in tên bàn → floor-plan refresh
+  - "Bán hàng nhanh" cách 1 chạm cho khách mang đi trong cùng store F&B
+  - Admin CRUD areas/tables qua AdminDataTable + toggle `tableMode`
+  - Mode toggle bật/tắt không cần redeploy (NFR18)
+  - Store counter-service hiện hữu KHÔNG thấy bất kỳ thay đổi UI nào (backward compat verified qua regression)
+- **Demo verification:** seed có 1 store mode-off + 1 store mode-on; e2e test cả 2 paths (HT5 + HT5b)
+- **Known limitations** (per SCP §6, ghi rõ trong "Out of Scope" Epic 6):
+  - No split/merge bill · no transfer table · no reservation · no KOT/kitchen display
+  - Table status không realtime (polling 30s; 2 POS chọn cùng 1 bàn offline có thể conflict — sync engine vẫn idempotent, log conflict)
+  - Floor-plan không visual editor
+  - Reports Epic 4 không break down theo bàn (quick-counter và table sales aggregate chung)
 
 ---
 

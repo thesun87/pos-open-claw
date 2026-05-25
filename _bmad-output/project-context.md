@@ -5,6 +5,11 @@ date: '2026-05-09'
 sections_completed: ['technology_stack', 'critical_rules', 'naming', 'structure', 'patterns', 'boundaries']
 existing_patterns_found: 6
 source_of_truth: '_bmad-output/planning-artifacts/architecture.md'
+lastEdited: '2026-05-25'
+editHistory:
+  - date: '2026-05-25'
+    source: 'SCP-2026-05-25-table-mgmt (approved)'
+    changes: 'Thêm areas/tables vào naming examples (§3); thêm src/tables/ + features/tables/ + admin/{tables,store-config}/ vào cấu trúc thư mục (§4); cập nhật RULE 4 (snapshot tableNameSnapshot) + RULE 5 (multi-tenant cho areas/tables, validate tableId thuộc store) trong §2; bổ sung sync payload với tableId/tableNameSnapshot + idempotency rules (§5.A); thêm 6 bounded constants cho table mode (§7); thêm 4 endpoints /areas, /tables, /tables/status, /stores/me (§8)'
 ---
 
 # Project Context for AI Agents — Café POS MVP (`pos-bmad`)
@@ -65,8 +70,8 @@ npx @nestjs/cli@latest new pos-api
 1. **Naming convention** ở 4 boundary (DB / Prisma / API / TS code) phải đúng — không tự đổi (xem §3).
 2. **Đặt code vào đúng feature module** (`auth`, `menu`, `orders`, `reports`, `users`, `health`) — KHÔNG để business logic vào `common/`.
 3. **Test cùng commit** với code mới (unit tối thiểu cho service + controller + filter; coverage ≥ 70% services/filters BE; ≥ 80% theo rule chung).
-4. **Snapshot immutability:** mọi field có hậu tố `Snapshot` (TS) hoặc cột DB `*_snapshot` là **bất biến sau insert**. KHÔNG có method UPDATE cho fields này. Bao gồm: `productNameSnapshot`, `unitPriceSnapshot`, `priceDeltaSnapshot`, `labelSnapshot`, `menuVersionAtSale`. (NFR14)
-5. **Multi-tenant scope:** mọi truy vấn DB business **PHẢI qua Prisma `$extends` middleware** auto-scope `tenant_id` + `store_id`. CẤM `prisma.$queryRaw`/`$executeRaw` không có scope.
+4. **Snapshot immutability:** mọi field có hậu tố `Snapshot` (TS) hoặc cột DB `*_snapshot` là **bất biến sau insert**. KHÔNG có method UPDATE cho fields này. Bao gồm: `productNameSnapshot`, `unitPriceSnapshot`, `priceDeltaSnapshot`, `labelSnapshot`, `menuVersionAtSale`, `tableNameSnapshot` (FR51, NFR14).
+5. **Multi-tenant scope:** mọi truy vấn DB business **PHẢI qua Prisma `$extends` middleware** auto-scope `tenant_id` + `store_id`. Áp dụng cho cả `areas`, `tables`, `orders.table_id`. CẤM `prisma.$queryRaw`/`$executeRaw` không có scope. Server validate `tableId` (nếu non-null trong order payload) phải thuộc đúng tenant+store; cross-tenant table reference → 400 với `type=.../validation`.
 6. **Error response:** mọi response lỗi đi qua `ProblemDetailsFilter` (RFC 7807, content-type `application/problem+json`). CẤM trả `{ success, message, code }` thuần. Lỗi PHẢI có field `type` (URI), `title`, `status`, `detail`, `instance`, `traceId`.
 7. **Format chuẩn:** date trong API là **ISO 8601 UTC** (`YYYY-MM-DDTHH:mm:ss.sssZ`); tiền VND là **integer (đồng)**, KHÔNG float, KHÔNG đơn vị nhỏ hơn.
 8. **Token storage:** FE **TUYỆT ĐỐI** không lưu token vào `localStorage` hoặc `sessionStorage`. Chỉ:
@@ -81,8 +86,8 @@ npx @nestjs/cli@latest new pos-api
 
 | Đối tượng | Quy tắc | Ví dụ |
 |---|---|---|
-| Tên bảng | `snake_case`, **số nhiều** | `users`, `order_items`, `option_groups`, `sync_log`, `refresh_tokens`, `order_voids`, `menu_versions` |
-| Tên cột | `snake_case` | `tenant_id`, `created_at`, `client_order_id`, `unit_price_snapshot` |
+| Tên bảng | `snake_case`, **số nhiều** | `users`, `order_items`, `option_groups`, `sync_log`, `refresh_tokens`, `order_voids`, `menu_versions`, `areas`, `tables` |
+| Tên cột | `snake_case` | `tenant_id`, `created_at`, `client_order_id`, `unit_price_snapshot`, `table_id`, `table_name_snapshot`, `table_mode`, `sort_order`, `area_id` |
 | PK | luôn `id`, kiểu UUID v7 | `id UUID PRIMARY KEY` |
 | FK | `<bảng_singular>_id` | `tenant_id`, `product_id` |
 | Index | `idx_<bảng>_<cột>` | `idx_orders_client_order_id` |
@@ -94,15 +99,15 @@ npx @nestjs/cli@latest new pos-api
 
 | Đối tượng | Quy tắc | Ví dụ |
 |---|---|---|
-| Model | `PascalCase`, **số ít** | `User`, `OrderItem`, `OptionGroup`, `SyncLog` |
-| Field | `camelCase` | `tenantId`, `clientOrderId`, `createdAt` |
+| Model | `PascalCase`, **số ít** | `User`, `OrderItem`, `OptionGroup`, `SyncLog`, `Area`, `Table` |
+| Field | `camelCase` | `tenantId`, `clientOrderId`, `createdAt`, `tableId`, `tableNameSnapshot`, `tableMode`, `sortOrder`, `areaId` |
 | Enum | `PascalCase` cho enum + member | `OrderStatus.Pending` |
 
 ### C. API REST
 
 | Đối tượng | Quy tắc | Ví dụ |
 |---|---|---|
-| Path resource | `kebab-case`, **số nhiều** | `/api/v1/orders`, `/api/v1/option-groups` |
+| Path resource | `kebab-case`, **số nhiều** | `/api/v1/orders`, `/api/v1/option-groups`, `/api/v1/areas`, `/api/v1/tables`, `/api/v1/tables/status`, `/api/v1/stores/me` |
 | Versioning | `/api/v1/...` (URL prefix) | bắt buộc |
 | Path param | `:id` UUID v7 | `/api/v1/orders/:id` |
 | Query param | `snake_case` | `?since_version=10&from=2026-05-01` |
@@ -169,6 +174,7 @@ src/
 ├── menu/        # FR27–FR36 (categories, products, option-groups, menu-sync, menu-version)
 ├── orders/      # FR19–FR26, NFR13/14 (orders, sync-log, void)
 ├── reports/     # FR37–FR40, NFR6
+├── tables/      # FR44–FR52 — areas/tables CRUD + stores/me + tables/status
 └── health/      # GET /health (FE ping connectivity)
 prisma/
 ├── schema.prisma                   # SOURCE OF TRUTH cho schema
@@ -200,14 +206,15 @@ src/
 ├── routes/
 │   ├── _layout.tsx                 # shell + connectivity-indicator + pending-counter (FR24)
 │   ├── login/                      # FR1
-│   ├── pos/                        # /pos cashier (FR8–FR18)
-│   └── admin/{menu,reports}/       # FR27–FR40
+│   ├── pos/                        # /pos cashier (FR8–FR18), floor-plan entry khi tableMode=true (FR50)
+│   └── admin/{menu,reports,tables,store-config}/  # FR27–FR40 + FR44–FR46 (Quản lý bàn admin)
 ├── features/
 │   ├── auth/                       # api, stores (zustand), hooks, token-store (IndexedDB), interceptor, types
 │   ├── menu/                       # api, sync (versioned pull), hooks, types
 │   ├── orders/                     # builder (snapshot), api (Idempotency-Key), hooks, types
 │   ├── sync/                       # engine (FSM), retry (exponential), triggers, events
-│   └── reports/                    # api, hooks
+│   ├── reports/                    # api, hooks
+│   └── tables/                     # FR44–FR52 — api (/areas, /tables, /tables/status, /stores/me), hooks (useTableMode, useTableStatus), store (selectedAreaId/tableId), components (floor-plan-view, table-card, area-tabs, table-picker, quick-counter-button), types
 ├── shared/
 │   ├── components/{ui,layout}/    # ui = shadcn copy-paste; layout = role-gate, indicators
 │   ├── lib/{api-client,error-mapper,format-vnd,date,uuid,order-code}.ts
@@ -215,7 +222,7 @@ src/
 │   └── stores/{connectivity,ui}.store.ts
 ├── db/
 │   ├── dexie.ts                   # Dexie instance, version migration
-│   └── schemas/{orders,menu,session}.ts
+│   └── schemas/{orders,menu,session}.ts    # orders schema thêm tableId/tableNameSnapshot khi Epic 6 done
 ├── styles/{globals,tailwind}.css
 └── types/api.ts                   # shared type với BE (copy hoặc shared package)
 public/{icons,manifest}/
@@ -237,6 +244,8 @@ Content-Type: application/json
   "deviceId": "POS01",
   "soldAt": "2026-05-09T03:23:11.000Z",     // ISO 8601 UTC, FROM CLIENT
   "menuVersionAtSale": 12,
+  "tableId": "<UUID v7> | null",            // FR51 nullable; null = quick-counter / counter-mode store
+  "tableNameSnapshot": "Bàn 3" | null,      // immutable AR24/NFR14; pair với tableId (cùng null hoặc cùng non-null)
   "items": [{
     "productId": "...",
     "productNameSnapshot": "Bạc Xỉu",       // immutable sau insert
@@ -258,6 +267,9 @@ Content-Type: application/json
 
 - Server dedup theo `(tenant_id, store_id, device_id, client_order_id)`; replay trả `200 OK` với `idempotent_replay: true`.
 - Server thêm `synced_at` (server timestamp) — KHÔNG sửa `soldAt`.
+- `tableId` **KHÔNG** thuộc composite idempotency key — đổi bàn rồi resend cùng `clientOrderId` vẫn dedup, không tạo đơn thứ 2.
+- Server validate `tableId` (nếu non-null) phải thuộc đúng tenant+store; sai → 400 `type=.../validation`.
+- `tableNameSnapshot` **immutable AR24** — copy lúc finalize từ `tables.name`, không cập nhật khi admin đổi tên bàn sau này.
 
 ### B. Error response (RFC 7807 — luôn dùng)
 
@@ -408,6 +420,12 @@ await prisma.orderItem.update({ where: { id }, data: { unitPriceSnapshot: 99 } }
 | Idempotency-Key value | = `clientOrderId` (UUID v7) | dedup key BE |
 | Test coverage tối thiểu | 70% (services, filters BE), 80% chung | CI gate |
 | File size limit | <800 lines, function <50 lines, nesting <4 | Coding standards |
+| `stores.tableMode` default | `false` | FR48 — store mới khởi tạo ở counter-service mode; backward compatible |
+| Floor-plan polling interval | `30s` khi POS ở floor-plan view; pause khi đã chọn bàn | UX-DR-T4 status refresh, giảm tải khi không cần |
+| Table touch target | min `56×56px`, đề xuất `64×64px` tại tablet 1024px+ | UX-DR-T2/T4 accessibility |
+| Snapshot field cho table | `tableNameSnapshot` immutable AR24/NFR14 | FR51 — đồng nhất nguyên tắc snapshot |
+| Quick-counter `tableId` | `null` (cùng store `tableMode=true`) | FR47b — phân biệt qua null check, không cần flag riêng |
+| Capacity default cho bàn | `2` (có thể override khi tạo) | FR46 — quán cà phê nhỏ trung bình 2 chỗ/bàn |
 
 ## 8. Boundary Tổng hợp (memorize)
 
@@ -453,6 +471,10 @@ await prisma.orderItem.update({ where: { id }, data: { unitPriceSnapshot: 99 } }
 | `/api/v1/orders` | POST | bearer + `Idempotency-Key` | sync POS, NFR13 |
 | `/api/v1/orders/:id/void` | POST | bearer + cashier/admin | FR26 |
 | `/api/v1/reports?from&to&metric` | GET | bearer + admin | FR37–FR40 |
+| `/api/v1/areas` | GET/POST/PATCH/DELETE | bearer + admin | FR45 — CRUD khu vực |
+| `/api/v1/tables` | GET/POST/PATCH/DELETE | bearer + admin | FR46 — CRUD bàn (FK→area) |
+| `/api/v1/tables/status` | GET | bearer | FR50 — derive từ orders chưa void today; polling 30s khi POS ở floor-plan |
+| `/api/v1/stores/me` | GET | bearer | FR44 — trả store + `tableMode`; FE đọc khi login/reload (NFR18) |
 | `/health` | GET | none | connectivity ping |
 
 ## 9. Workflow Pre-commit & CI
@@ -477,5 +499,7 @@ await prisma.orderItem.update({ where: { id }, data: { unitPriceSnapshot: 99 } }
 
 **References:**
 - `_bmad-output/planning-artifacts/architecture.md` — nguồn cuối cùng cho mọi quyết định
-- `_bmad-output/planning-artifacts/prd.md` — yêu cầu sản phẩm (43 FR + 17 NFR)
+- `_bmad-output/planning-artifacts/prd.md` — yêu cầu sản phẩm (**52 FR + 18 NFR** sau SCP-2026-05-25)
+- `_bmad-output/planning-artifacts/ux-design-specification.md` — UX spec đầy đủ + Table Service Mode (UX-DR-T1..T13)
+- `_bmad-output/planning-artifacts/sprint-change-proposal-2026-05-25.md` — SCP table management (đã approve)
 - `docs/product-requirement.md` — tài liệu input ban đầu

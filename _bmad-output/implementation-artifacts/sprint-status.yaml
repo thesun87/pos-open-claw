@@ -22,7 +22,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-05-10T15:11:57+07:00"
-last_updated: "2026-05-22T23:08:00+07:00"
+last_updated: "2026-05-25T00:00:00+07:00"
 project: pos-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -82,3 +82,15 @@ development_status:
   epic-5: in-progress
   5-1-admin-orders-list-detail-search: done
   epic-5-retrospective: optional
+  # Epic 6 added 2026-05-25 via Sprint Change Proposal SCP-2026-05-25-table-mgmt
+  epic-6: backlog
+  6-1-be-schema-areas-tables-stores-tablemode-orders-tableid: backlog
+  6-2-be-areas-crud-endpoints: backlog
+  6-3-be-tables-crud-endpoints: backlog
+  6-4-be-stores-me-tables-status-orders-dto-patch: backlog
+  6-5-fe-admin-areas-tables-management-pages: backlog
+  6-6-fe-admin-store-config-tablemode-toggle: backlog
+  6-7-fe-pos-floor-plan-view-polling-entry-routing: backlog
+  6-8-fe-pos-table-first-flow-brownfield-orders-integration: backlog
+  6-9-fe-pos-quick-counter-button-mode-transitions: backlog
+  epic-6-retrospective: optional
