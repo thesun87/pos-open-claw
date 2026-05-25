@@ -113,6 +113,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     this.adapterHost.httpAdapter.reply(
       response,
       {
+        ...(explicitProblem ?? {}),
         type: typeFor(status, exception),
         title: explicitProblem?.title ?? TITLES[status] ?? 'Error',
         status,

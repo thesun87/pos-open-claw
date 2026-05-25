@@ -7,6 +7,8 @@ export const PROBLEM_TYPES = {
   conflict: 'https://pos.example/errors/conflict',
   categoryHasProducts: 'https://pos.example/errors/category-has-products',
   categoryNameConflict: 'https://pos.example/errors/category-name-conflict',
+  areaHasTables: 'https://pos.example/errors/area-has-tables',
+  areaNameConflict: 'https://pos.example/errors/area-name-conflict',
   optionGroupInUse: 'https://pos.example/errors/option-group-in-use',
   optionInUse: 'https://pos.example/errors/option-in-use',
   optionGroupNameConflict:
