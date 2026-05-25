@@ -27,6 +27,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { CreateTableDto } from './dto/create-table.dto';
 import { ListTablesQueryDto } from './dto/list-tables-query.dto';
 import { UpdateTableDto } from './dto/update-table.dto';
+import { TableStatusService } from './table-status.service';
 import { TablesService } from './tables.service';
 
 const tableExample = {
@@ -45,7 +46,28 @@ const tableExample = {
 @Controller('tables')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class TablesController {
-  constructor(private readonly service: TablesService) {}
+  constructor(
+    private readonly service: TablesService,
+    private readonly tableStatusService: TableStatusService,
+  ) {}
+
+  @Get('status')
+  @Roles('cashier', 'admin')
+  @ApiResponse({
+    status: 200,
+    schema: {
+      example: [
+        {
+          tableId: tableExample.id,
+          status: 'occupied',
+          activeOrderCount: 1,
+        },
+      ],
+    },
+  })
+  listStatus(@TenantContext() context: TenantContextType | undefined) {
+    return this.tableStatusService.listStatus(context);
+  }
 
   @Get()
   @Roles('cashier', 'admin')

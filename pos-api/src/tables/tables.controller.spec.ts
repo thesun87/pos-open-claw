@@ -14,7 +14,11 @@ describe('TablesController', () => {
     update: jest.fn(),
     delete: jest.fn(),
   };
-  const controller = new TablesController(service as never);
+  const tableStatusService = { listStatus: jest.fn() };
+  const controller = new TablesController(
+    service as never,
+    tableStatusService as never,
+  );
   const reflector = new Reflector();
 
   it('delegates list/create/update/delete with context', async () => {
@@ -41,6 +45,23 @@ describe('TablesController', () => {
     });
     expect(service.update).toHaveBeenCalledWith(ctx, 'tbl1', { capacity: 4 });
     expect(service.delete).toHaveBeenCalledWith(ctx, 'tbl1');
+  });
+
+  it('delegates status with cashier/admin roles', async () => {
+    const ctx = { tenantId: 't1', storeId: 's1' };
+    tableStatusService.listStatus.mockResolvedValue([
+      { tableId: 'tbl1', status: 'empty', activeOrderCount: 0 },
+    ]);
+    await expect(controller.listStatus(ctx)).resolves.toEqual([
+      { tableId: 'tbl1', status: 'empty', activeOrderCount: 0 },
+    ]);
+    expect(tableStatusService.listStatus).toHaveBeenCalledWith(ctx);
+    expect(
+      reflector.get(
+        ROLES_KEY,
+        Reflect.get(TablesController.prototype, 'listStatus'),
+      ),
+    ).toEqual(['cashier', 'admin']);
   });
 
   it('has cashier/admin roles for GET list', () => {

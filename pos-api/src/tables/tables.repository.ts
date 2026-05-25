@@ -7,6 +7,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateTableDto } from './dto/create-table.dto';
 import { UpdateTableDto } from './dto/update-table.dto';
 
+export type TableStatusCountRecord = {
+  tableId: string;
+  activeOrderCount: number;
+};
+
 export type TableRecord = {
   id: string;
   areaId: string;
@@ -137,6 +142,45 @@ export class TablesRepository {
       if (!existing) return null;
       await tenantScopedClient(client).table.deleteMany({ where: { id } });
       return existing;
+    });
+  }
+
+  listActiveTableOrderCounts(
+    context: TenantContext,
+    todayStartUtc: Date,
+  ): Promise<TableStatusCountRecord[]> {
+    return runWithTenantContext(context, async () => {
+      const tables = await this.prisma.table.findMany({
+        where: {
+          isActive: true,
+          tenantId: context.tenantId,
+          storeId: context.storeId,
+        },
+        select: { id: true },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      });
+      const tableIds = tables.map((table) => table.id);
+      if (tableIds.length === 0) return [];
+      const counts = await this.prisma.order.groupBy({
+        by: ['tableId'],
+        where: {
+          tenantId: context.tenantId,
+          storeId: context.storeId,
+          tableId: { in: tableIds },
+          syncedAt: { gte: todayStartUtc },
+          voids: { none: {} },
+        },
+        _count: { _all: true },
+      });
+      const countByTableId = new Map(
+        counts
+          .filter((count) => count.tableId !== null)
+          .map((count) => [count.tableId!, count._count._all]),
+      );
+      return tables.map((table) => ({
+        tableId: table.id,
+        activeOrderCount: countByTableId.get(table.id) ?? 0,
+      }));
     });
   }
 

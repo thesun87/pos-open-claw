@@ -169,6 +169,19 @@ export class OrdersService {
     return detail;
   }
 
+  private validateTablePair(body: SyncOrderDto): void {
+    const tableId = body.tableId ?? null;
+    const tableNameSnapshot = body.tableNameSnapshot ?? null;
+    if ((tableId === null) !== (tableNameSnapshot === null)) {
+      throw new BadRequestException({
+        type: PROBLEM_TYPES.validation,
+        title: 'Bad Request',
+        detail:
+          'tableId và tableNameSnapshot phải cùng null hoặc cùng non-null',
+      });
+    }
+  }
+
   async syncOrder(
     context: TenantContext | undefined,
     idempotencyKey: string | undefined,
@@ -192,6 +205,21 @@ export class OrdersService {
       body.clientOrderId,
     );
     if (replay) return { orderId: replay.orderId, idempotent_replay: true };
+
+    this.validateTablePair(body);
+    if (body.tableId !== null && body.tableId !== undefined) {
+      const tableExists = await this.ordersRepository.tableExists(
+        context,
+        body.tableId,
+      );
+      if (!tableExists) {
+        throw new BadRequestException({
+          type: PROBLEM_TYPES.validation,
+          title: 'Bad Request',
+          detail: 'Table không thuộc store',
+        });
+      }
+    }
 
     const serverMenuVersion =
       await this.ordersRepository.currentMenuVersion(context);

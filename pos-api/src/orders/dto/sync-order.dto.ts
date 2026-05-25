@@ -7,6 +7,8 @@ import {
   IsInt,
   IsISO8601,
   IsNotEmpty,
+  MaxLength,
+  ValidateIf,
   IsOptional,
   IsString,
   IsUUID,
@@ -39,6 +41,8 @@ export const syncOrderExample = {
   ],
   discountAmount: 0,
   total: 40000,
+  tableId: '018f0000-0000-7000-8000-0000000000b1',
+  tableNameSnapshot: 'Bàn 01',
   paymentMethod: 'cash',
 } as const;
 
@@ -132,6 +136,18 @@ export class SyncOrderDto {
   @IsInt()
   @Min(0)
   total!: number;
+
+  @ApiPropertyOptional({ format: 'uuid', nullable: true })
+  @ValidateIf((_, value) => value !== null && value !== undefined)
+  @IsUUID()
+  tableId?: string | null;
+
+  @ApiPropertyOptional({ example: 'Bàn 01', nullable: true, maxLength: 100 })
+  @ValidateIf((_, value) => value !== null && value !== undefined)
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  tableNameSnapshot?: string | null;
 
   @ApiProperty({ enum: ['cash', 'transfer', 'card'] })
   @IsIn(['cash', 'transfer', 'card'])

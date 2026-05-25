@@ -105,6 +105,21 @@ function mapOrderDetail(order: OrderWithAdminRelations): AdminOrderDetail {
 export class OrdersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  tableExists(context: TenantContext, tableId: string): Promise<boolean> {
+    return runWithTenantContext(context, async () => {
+      const table = await this.prisma.table.findFirst({
+        where: {
+          id: tableId,
+          tenantId: context.tenantId,
+          storeId: context.storeId,
+          isActive: true,
+        },
+        select: { id: true },
+      });
+      return Boolean(table);
+    });
+  }
+
   currentMenuVersion(context: TenantContext): Promise<number> {
     return runWithTenantContext(context, async () => {
       const current = await this.prisma.menuVersion.findFirst({
@@ -190,6 +205,8 @@ export class OrdersRepository {
             orderCode: body.orderCode,
             deviceId: body.deviceId,
             cashierId: context.userId!,
+            tableId: body.tableId ?? null,
+            tableNameSnapshot: body.tableNameSnapshot ?? null,
             soldAt: new Date(body.soldAt),
             syncedAt,
             menuVersionAtSale: body.menuVersionAtSale,

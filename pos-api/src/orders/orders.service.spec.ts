@@ -51,6 +51,7 @@ function service(
     create: unknown;
     menuVersion: number;
     createReject: unknown;
+    tableExists: boolean;
     voidResult: unknown;
     listResult: unknown;
     detailResult: unknown;
@@ -58,6 +59,7 @@ function service(
 ) {
   const ordersRepository = {
     currentMenuVersion: jest.fn().mockResolvedValue(overrides.menuVersion ?? 1),
+    tableExists: jest.fn().mockResolvedValue(overrides.tableExists ?? true),
     listOrders: jest.fn().mockResolvedValue(overrides.listResult ?? []),
     findOrderDetail: jest
       .fn()
@@ -274,6 +276,83 @@ describe('OrdersService', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(ordersRepository.voidOrder).not.toHaveBeenCalled();
+  });
+
+  it('validates nullable table DTO fields', async () => {
+    const valid = plainToInstance(SyncOrderDto, {
+      ...body,
+      tableId: null,
+      tableNameSnapshot: null,
+    });
+    await expect(validate(valid)).resolves.toHaveLength(0);
+
+    const invalid = plainToInstance(SyncOrderDto, {
+      ...body,
+      tableId: 'bad',
+      tableNameSnapshot: 'x'.repeat(101),
+    });
+    const errors = await validate(invalid);
+    expect(JSON.stringify(errors)).toContain('tableId');
+    expect(JSON.stringify(errors)).toContain('tableNameSnapshot');
+  });
+
+  it('rejects table pair mismatch with validation Problem Details', async () => {
+    const { svc } = service();
+    await expect(
+      svc.syncOrder(context, body.clientOrderId, {
+        ...body,
+        tableId: body.clientOrderId,
+      }),
+    ).rejects.toMatchObject({
+      response: {
+        type: 'https://pos.example/errors/validation',
+        detail:
+          'tableId và tableNameSnapshot phải cùng null hoặc cùng non-null',
+      },
+    });
+  });
+
+  it('validates table ownership after replay miss', async () => {
+    const { svc, ordersRepository } = service({ tableExists: false });
+    await expect(
+      svc.syncOrder(context, body.clientOrderId, {
+        ...body,
+        tableId: '018f0000-0000-7000-8000-0000000000b1',
+        tableNameSnapshot: 'Bàn 01',
+      }),
+    ).rejects.toMatchObject({
+      response: { type: 'https://pos.example/errors/validation' },
+    });
+    expect(ordersRepository.tableExists).toHaveBeenCalledWith(
+      context,
+      '018f0000-0000-7000-8000-0000000000b1',
+    );
+  });
+
+  it('allows quick-counter nullable table fields without lookup', async () => {
+    const { svc, ordersRepository } = service();
+    await svc.syncOrder(context, body.clientOrderId, {
+      ...body,
+      tableId: null,
+      tableNameSnapshot: null,
+    });
+    expect(ordersRepository.tableExists).not.toHaveBeenCalled();
+    expect(ordersRepository.createOrderWithSyncLog).toHaveBeenCalledWith(
+      context,
+      expect.objectContaining({ tableId: null, tableNameSnapshot: null }),
+    );
+  });
+
+  it('returns replay before table pair and ownership validation', async () => {
+    const { svc, ordersRepository } = service({
+      replay: { orderId: 'existing' },
+      tableExists: false,
+    });
+    await expect(
+      svc.syncOrder(context, body.clientOrderId, { ...body, tableId: 'bad' }),
+    ).resolves.toEqual({ orderId: 'existing', idempotent_replay: true });
+    expect(ordersRepository.tableExists).not.toHaveBeenCalled();
+    expect(ordersRepository.createOrderWithSyncLog).not.toHaveBeenCalled();
   });
 
   it('rejects empty product and option snapshot strings in DTO validation', async () => {
