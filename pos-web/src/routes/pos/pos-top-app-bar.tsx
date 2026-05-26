@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLogoutAction } from '../../features/auth/logout'
 import { useSessionStore } from '../../features/auth/session-store'
+import { TableModeBadge } from '../../features/tables/components/table-mode-badge'
 import { ConnectivityIndicator } from '../../shared/components/layout/connectivity-indicator'
 import { PendingCounter } from '../../shared/components/layout/pending-counter'
 
@@ -51,6 +52,7 @@ export function PosTopAppBar({ search = '', onSearchChange }: Props) {
         </div>
       </div>
       <div className="flex items-center gap-3">
+        <TableModeBadge />
         <ConnectivityIndicator />
         <PendingCounter />
         <button type="button" aria-label="Mở bảng đồng bộ" onClick={openSyncPanel} className="grid h-10 w-10 place-items-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">

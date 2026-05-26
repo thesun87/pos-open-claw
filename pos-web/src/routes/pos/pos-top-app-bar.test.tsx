@@ -13,6 +13,13 @@ vi.mock('../../features/auth/token-store', () => ({ clearSession: vi.fn() }))
 vi.mock('../../shared/components/layout/connectivity-indicator', () => ({ ConnectivityIndicator: () => <span /> }))
 vi.mock('../../shared/components/layout/pending-counter', () => ({ PendingCounter: () => <span /> }))
 
+// Mock TableModeBadge to control rendering in these tests
+vi.mock('../../features/tables/components/table-mode-badge', () => ({
+  TableModeBadge: vi.fn(() => null),
+}))
+
+import { TableModeBadge } from '../../features/tables/components/table-mode-badge'
+
 function LocationProbe() {
   const location = useLocation()
   return <output data-testid="location">{location.pathname}</output>
@@ -53,5 +60,20 @@ describe('PosTopAppBar logout menu', () => {
     await waitFor(() => expect(clearSession).toHaveBeenCalledTimes(1))
     expect(useSessionStore.getState().isAuthenticated).toBe(false)
     expect(screen.getByTestId('location')).toHaveTextContent('/login')
+  })
+})
+
+// Story 6.7: TableModeBadge integration in PosTopAppBar
+describe('PosTopAppBar TableModeBadge integration (Story 6.7)', () => {
+  it('renders TableModeBadge in the header when tableMode=true', () => {
+    vi.mocked(TableModeBadge).mockReturnValue(<span data-testid="table-mode-badge">Chế độ bàn: Bật</span>)
+    renderBar()
+    expect(screen.getByTestId('table-mode-badge')).toBeInTheDocument()
+  })
+
+  it('renders null badge when tableMode=false', () => {
+    vi.mocked(TableModeBadge).mockReturnValue(null)
+    renderBar()
+    expect(screen.queryByTestId('table-mode-badge')).not.toBeInTheDocument()
   })
 })

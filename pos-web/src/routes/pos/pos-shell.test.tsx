@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto'
 import '@testing-library/jest-dom/vitest'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
@@ -9,9 +10,39 @@ import { useDebouncedValue } from '../../features/menu/hooks'
 import { useCartStore } from '../../features/orders/cart-store'
 import { useCheckoutStore } from '../../features/orders/checkout-store'
 import { syncEngine } from '../../features/sync/engine'
+import { useTableMode } from '../../features/tables/hooks'
+import { usePosTableContextStore } from '../../features/tables/store'
 import { PosShell } from './pos-shell'
 
 vi.mock('../../features/sync/engine', () => ({ syncEngine: { kick: vi.fn() } }))
+
+// Mock features/tables hooks so existing counter-mode tests remain unaffected (tableMode=false default)
+vi.mock('../../features/tables/hooks', () => ({
+  useTableMode: vi.fn(() => ({ tableMode: false, isLoading: false, isError: false })),
+  useStoreMe: vi.fn(() => ({ data: undefined, isLoading: false, isError: false })),
+  useAreas: vi.fn(() => ({ data: [], isLoading: false, isError: false })),
+  useTables: vi.fn(() => ({ data: [], isLoading: false, isError: false })),
+  useTableStatus: vi.fn(() => ({ data: [], isLoading: false, isError: false, refetch: vi.fn() })),
+}))
+
+// Mock FloorPlanView to keep it simple in shell tests (floor-plan-view has its own tests)
+vi.mock('../../features/tables/components/floor-plan-view', () => ({
+  FloorPlanView: () => <div data-testid="floor-plan-view">Sơ đồ bàn mock</div>,
+}))
+
+// Mock TableModeBadge for simplicity (has its own tests)
+vi.mock('../../features/tables/components/table-mode-badge', () => ({
+  TableModeBadge: () => null,
+}))
+
+function createWrapper() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  return ({ children }: { children: React.ReactNode }) => (
+    <MemoryRouter>
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    </MemoryRouter>
+  )
+}
 
 const categories = [
   { id: 'cat-coffee', name: 'Cà phê', sortOrder: 2, isActive: true },
@@ -54,7 +85,7 @@ async function seedOptions() {
 }
 
 function renderPosShell() {
-  return render(<MemoryRouter><PosShell /></MemoryRouter>)
+  return render(<PosShell />, { wrapper: createWrapper() })
 }
 
 beforeEach(async () => {
@@ -67,7 +98,10 @@ beforeEach(async () => {
   await db.orders.clear()
   useCartStore.getState().resetCart()
   useCheckoutStore.getState().resetCheckoutState()
+  usePosTableContextStore.getState().reset()
   vi.mocked(syncEngine.kick).mockReset()
+  // Default: tableMode=false so existing tests are unaffected
+  vi.mocked(useTableMode).mockReturnValue({ tableMode: false, isLoading: false, isError: false })
 })
 
 afterEach(async () => {
@@ -79,6 +113,7 @@ afterEach(async () => {
   await db.orders.clear()
   useCartStore.getState().resetCart()
   useCheckoutStore.getState().resetCheckoutState()
+  usePosTableContextStore.getState().reset()
   db.close()
 })
 
@@ -244,5 +279,59 @@ describe('PosShell product browsing', () => {
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Xóa dòng' }))
     await waitFor(() => expect(screen.getByText('Chọn món để bắt đầu đơn.')).toBeInTheDocument())
+  })
+})
+
+// Story 6.7: Table mode routing tests
+describe('PosShell table mode routing (Story 6.7)', () => {
+  it('renders product grid when tableMode=false (counter-mode regression)', async () => {
+    vi.mocked(useTableMode).mockReturnValue({ tableMode: false, isLoading: false, isError: false })
+    await seedMenu()
+    renderPosShell()
+    // Product grid should appear; no floor plan
+    await screen.findByLabelText('Lưới sản phẩm')
+    expect(screen.queryByTestId('floor-plan-view')).not.toBeInTheDocument()
+  })
+
+  it('renders FloorPlanView when tableMode=true and no table selected', async () => {
+    vi.mocked(useTableMode).mockReturnValue({ tableMode: true, isLoading: false, isError: false })
+    // selectedTableId is null by default
+    renderPosShell()
+    await waitFor(() => expect(screen.getByTestId('floor-plan-view')).toBeInTheDocument())
+    expect(screen.queryByLabelText('Lưới sản phẩm')).not.toBeInTheDocument()
+  })
+
+  it('renders product grid when tableMode=true and table IS selected', async () => {
+    vi.mocked(useTableMode).mockReturnValue({ tableMode: true, isLoading: false, isError: false })
+    usePosTableContextStore.getState().setSelectedTable({ id: 'tbl-1', name: 'Bàn 1' })
+    await seedMenu()
+    renderPosShell()
+    await screen.findByLabelText('Lưới sản phẩm')
+    expect(screen.queryByTestId('floor-plan-view')).not.toBeInTheDocument()
+  })
+
+  it('renders product grid when tableMode=true but quickCounterMode=true', async () => {
+    vi.mocked(useTableMode).mockReturnValue({ tableMode: true, isLoading: false, isError: false })
+    usePosTableContextStore.getState().setQuickCounterMode(true)
+    await seedMenu()
+    renderPosShell()
+    await screen.findByLabelText('Lưới sản phẩm')
+    expect(screen.queryByTestId('floor-plan-view')).not.toBeInTheDocument()
+  })
+
+  it('renders product grid (safe default) when useStoreMe is loading', async () => {
+    vi.mocked(useTableMode).mockReturnValue({ tableMode: false, isLoading: true, isError: false })
+    await seedMenu()
+    renderPosShell()
+    await screen.findByLabelText('Lưới sản phẩm')
+    expect(screen.queryByTestId('floor-plan-view')).not.toBeInTheDocument()
+  })
+
+  it('renders product grid (safe default) when useStoreMe has error', async () => {
+    vi.mocked(useTableMode).mockReturnValue({ tableMode: false, isLoading: false, isError: true })
+    await seedMenu()
+    renderPosShell()
+    await screen.findByLabelText('Lưới sản phẩm')
+    expect(screen.queryByTestId('floor-plan-view')).not.toBeInTheDocument()
   })
 })
