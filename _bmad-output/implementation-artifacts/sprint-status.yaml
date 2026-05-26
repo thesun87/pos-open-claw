@@ -88,7 +88,7 @@ development_status:
   6-2-be-areas-crud-endpoints: done
   6-3-be-tables-crud-endpoints: done
   6-4-be-stores-me-tables-status-orders-dto-patch: done
-  6-5-fe-admin-areas-tables-management-pages: ready-for-dev
+  6-5-fe-admin-areas-tables-management-pages: done
   6-6-fe-admin-store-config-tablemode-toggle: ready-for-dev
   6-7-fe-pos-floor-plan-view-polling-entry-routing: ready-for-dev
   6-8-fe-pos-table-first-flow-brownfield-orders-integration: ready-for-dev

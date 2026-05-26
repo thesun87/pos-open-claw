@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
-import { ChevronDown, LayoutDashboard, List, MoreHorizontal, PieChart, ReceiptText } from 'lucide-react'
+import { Armchair, ChevronDown, LayoutDashboard, List, MoreHorizontal, PieChart, ReceiptText } from 'lucide-react'
 import { useAdminUiStore } from "../../../../shared/stores/admin-ui.store";
+import { useStoreMe } from '../../../../features/admin/tables/hooks'
 import logoDark from "../images/logo/logo-dark.svg";
 import logoIcon from "../images/logo/logo-icon.svg";
 import logo from "../images/logo/logo.svg";
@@ -14,7 +15,7 @@ type NavItem = {
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
 };
 
-const navItems: NavItem[] = [
+const baseNavItems: NavItem[] = [
   {
     icon: <LayoutDashboard />,
     name: "Dashboard",
@@ -50,6 +51,19 @@ const AppSidebar: React.FC = () => {
   const setIsHovered = useAdminUiStore((state) => state.setIsHovered);
   const location = useLocation();
   const pathname = location.pathname;
+  const storeMeQuery = useStoreMe();
+  const navItems = storeMeQuery.data?.tableMode === true ? [
+    ...baseNavItems.slice(0, 3),
+    {
+      icon: <Armchair />,
+      name: "Quản lý bàn",
+      subItems: [
+        { name: "Khu vực", path: "/admin/tables/areas" },
+        { name: "Bàn", path: "/admin/tables/tables" },
+      ],
+    },
+    ...baseNavItems.slice(3),
+  ] : baseNavItems;
 
   const [manualOpenSubmenu, setManualOpenSubmenu] = useState<{
     type: "main" | "others";
