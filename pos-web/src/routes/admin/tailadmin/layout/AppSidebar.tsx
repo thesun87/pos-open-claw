@@ -109,7 +109,7 @@ const AppSidebar: React.FC = () => {
         }));
       }
     }
-  }, [openSubmenu]);
+  }, [openSubmenu?.type, openSubmenu?.index]);
 
   const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
     setManualOpenSubmenu((prevOpenSubmenu) => {
