@@ -33,4 +33,21 @@ export class StoresRepository {
       }),
     );
   }
+
+  updateCurrentStoreTableMode(
+    context: TenantContext,
+    tableMode: boolean,
+  ): Promise<CurrentStoreRecord | null> {
+    return runWithTenantContext(context, async () => {
+      const result = await this.prisma.store.updateMany({
+        where: { id: context.storeId, tenantId: context.tenantId },
+        data: { tableMode },
+      });
+      if (result.count === 0) return null;
+      return this.prisma.store.findFirst({
+        where: { id: context.storeId, tenantId: context.tenantId },
+        select: selectCurrentStore,
+      });
+    });
+  }
 }

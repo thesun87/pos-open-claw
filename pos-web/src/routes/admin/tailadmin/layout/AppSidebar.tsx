@@ -52,16 +52,20 @@ const AppSidebar: React.FC = () => {
   const location = useLocation();
   const pathname = location.pathname;
   const storeMeQuery = useStoreMe();
-  const navItems = storeMeQuery.data?.tableMode === true ? [
-    ...baseNavItems.slice(0, 3),
-    {
-      icon: <Armchair />,
-      name: "Quản lý bàn",
-      subItems: [
+  const tableMgmtGroup = storeMeQuery.data ? {
+    icon: <Armchair />,
+    name: "Quản lý bàn",
+    subItems: [
+      ...(storeMeQuery.data.tableMode === true ? [
         { name: "Khu vực", path: "/admin/tables/areas" },
         { name: "Bàn", path: "/admin/tables/tables" },
-      ],
-    },
+      ] : []),
+      { name: "Cấu hình store", path: "/admin/store-config" },
+    ],
+  } : null;
+  const navItems = tableMgmtGroup ? [
+    ...baseNavItems.slice(0, 3),
+    tableMgmtGroup,
     ...baseNavItems.slice(3),
   ] : baseNavItems;
 

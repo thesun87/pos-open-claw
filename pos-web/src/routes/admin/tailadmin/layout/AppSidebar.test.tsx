@@ -15,6 +15,37 @@ function renderSidebar() { const client = new QueryClient({ defaultOptions: { qu
 
 describe('AppSidebar table mode navigation', () => {
   beforeEach(() => vi.resetAllMocks())
-  it('shows table management nav when tableMode is true', async () => { mockedApi.get.mockResolvedValue({ data: { id: 's1', name: 'Store', code: 'S1', tableMode: true, createdAt: '', updatedAt: '' } }); renderSidebar(); expect(await screen.findByText('Quản lý bàn')).toBeInTheDocument(); expect(screen.getByText('Khu vực')).toBeInTheDocument(); expect(screen.getByText('Bàn')).toBeInTheDocument() })
-  it('hides table management nav when tableMode is false', async () => { mockedApi.get.mockResolvedValue({ data: { id: 's1', name: 'Store', code: 'S1', tableMode: false, createdAt: '', updatedAt: '' } }); renderSidebar(); expect((await screen.findAllByText('Menu')).length).toBeGreaterThan(0); await waitFor(() => expect(mockedApi.get).toHaveBeenCalled()); expect(screen.queryByText('Quản lý bàn')).not.toBeInTheDocument(); expect(screen.queryByText('Khu vực')).not.toBeInTheDocument() })
+
+  it('shows table management nav with three sub-items when tableMode is true', async () => {
+    mockedApi.get.mockResolvedValue({ data: { id: 's1', name: 'Store', code: 'S1', tableMode: true, createdAt: '', updatedAt: '' } })
+    renderSidebar()
+    expect(await screen.findByText('Quản lý bàn')).toBeInTheDocument()
+    expect(screen.getByText('Khu vực')).toBeInTheDocument()
+    expect(screen.getByText('Bàn')).toBeInTheDocument()
+    expect(screen.getByText('Cấu hình store')).toBeInTheDocument()
+  })
+
+  it('shows only store config under table management when tableMode is false', async () => {
+    mockedApi.get.mockResolvedValue({ data: { id: 's1', name: 'Store', code: 'S1', tableMode: false, createdAt: '', updatedAt: '' } })
+    renderSidebar()
+    expect(await screen.findByText('Quản lý bàn')).toBeInTheDocument()
+    expect(screen.getByText('Cấu hình store')).toBeInTheDocument()
+    expect(screen.queryByText('Khu vực')).not.toBeInTheDocument()
+    expect(screen.queryByText('Bàn')).not.toBeInTheDocument()
+  })
+
+  it('hides table management nav while stores/me is loading', () => {
+    mockedApi.get.mockImplementation(() => new Promise(() => undefined))
+    renderSidebar()
+    expect(screen.queryByText('Quản lý bàn')).not.toBeInTheDocument()
+    expect(screen.queryByText('Cấu hình store')).not.toBeInTheDocument()
+  })
+
+  it('hides table management nav when stores/me fails', async () => {
+    mockedApi.get.mockRejectedValue(new Error('network'))
+    renderSidebar()
+    await waitFor(() => expect(mockedApi.get).toHaveBeenCalled())
+    expect(screen.queryByText('Quản lý bàn')).not.toBeInTheDocument()
+    expect(screen.queryByText('Cấu hình store')).not.toBeInTheDocument()
+  })
 })

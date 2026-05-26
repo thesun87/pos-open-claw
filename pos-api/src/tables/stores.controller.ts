@@ -1,10 +1,11 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator';
 import { TenantContext } from '../common/decorators/tenant-context.decorator';
 import type { TenantContext as TenantContextType } from '../common/decorators/tenant-context.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { UpdateCurrentStoreDto } from './dto/update-current-store.dto';
 import { StoresService } from './stores.service';
 
 const currentStoreExample = {
@@ -28,5 +29,22 @@ export class StoresController {
   @ApiResponse({ status: 200, schema: { example: currentStoreExample } })
   getMe(@TenantContext() context: TenantContextType | undefined) {
     return this.service.getCurrentStore(context);
+  }
+
+  @Patch('me')
+  @Roles('admin')
+  @ApiBody({
+    type: UpdateCurrentStoreDto,
+    examples: { update: { value: { tableMode: true } } },
+  })
+  @ApiResponse({ status: 200, schema: { example: currentStoreExample } })
+  @ApiResponse({ status: 400, description: 'Validation Problem Details' })
+  @ApiResponse({ status: 403, description: 'Forbidden — admin role required' })
+  @ApiResponse({ status: 404, description: 'Store not found Problem Details' })
+  updateMe(
+    @TenantContext() context: TenantContextType | undefined,
+    @Body() body: UpdateCurrentStoreDto,
+  ) {
+    return this.service.updateCurrentStoreTableMode(context, body.tableMode);
   }
 }

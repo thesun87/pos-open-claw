@@ -48,9 +48,20 @@ export type TableFilters = {
   active?: boolean
 }
 
+export type UpdateStoreTableModeDto = {
+  tableMode: boolean
+}
+
+export type TableStatusRow = {
+  tableId: string
+  status: 'empty' | 'occupied' | 'pending_sync'
+  activeOrderCount: number
+}
+
 export const areasQueryKey = ['admin', 'areas'] as const
 export const tablesQueryKey = ['admin', 'tables'] as const
 export const storeMeQueryKey = ['admin', 'stores', 'me'] as const
+export const tableStatusQueryKey = ['admin', 'table-status'] as const
 
 export async function fetchAreas(): Promise<AreaDto[]> {
   const response = await apiClient.get<AreaDto[]>('/areas')
@@ -95,5 +106,15 @@ export async function deleteTable(id: string): Promise<void> {
 
 export async function fetchStoreMe(): Promise<StoreMeDto> {
   const response = await apiClient.get<StoreMeDto>('/stores/me')
+  return response.data
+}
+
+export async function updateStoreTableMode(payload: UpdateStoreTableModeDto): Promise<StoreMeDto> {
+  const response = await apiClient.patch<StoreMeDto>('/stores/me', payload)
+  return response.data
+}
+
+export async function fetchTableStatus(): Promise<TableStatusRow[]> {
+  const response = await apiClient.get<TableStatusRow[]>('/tables/status')
   return response.data
 }

@@ -31,4 +31,27 @@ export class StoresService {
       });
     return store;
   }
+
+  async updateCurrentStoreTableMode(
+    context: TenantContext | undefined,
+    tableMode: boolean,
+  ): Promise<CurrentStoreResponse> {
+    if (!context?.tenantId || !context.storeId)
+      throw new ForbiddenException({
+        type: PROBLEM_TYPES.forbidden,
+        title: 'Forbidden',
+        detail: 'Missing tenant context',
+      });
+    const store = await this.repo.updateCurrentStoreTableMode(
+      context,
+      tableMode,
+    );
+    if (!store)
+      throw new NotFoundException({
+        type: PROBLEM_TYPES.notFound,
+        title: 'Not Found',
+        detail: 'Store not found',
+      });
+    return store;
+  }
 }
