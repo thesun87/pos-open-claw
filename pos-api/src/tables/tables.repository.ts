@@ -59,7 +59,11 @@ export class TablesRepository {
   list(context: TenantContext, areaId?: string): Promise<TableRecord[]> {
     return runWithTenantContext(context, () =>
       this.prisma.table.findMany({
-        where: areaId ? { areaId } : {},
+        where: {
+          tenantId: context.tenantId,
+          storeId: context.storeId,
+          ...(areaId ? { areaId } : {}),
+        },
         select: selectTable,
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       }),

@@ -15,6 +15,19 @@ type PrismaMock = {
   order: { groupBy: OrderGroupByMock };
 };
 
+const tableSelect = {
+  id: true,
+  areaId: true,
+  name: true,
+  capacity: true,
+  sortOrder: true,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+const tableOrderBy = [{ sortOrder: 'asc' as const }, { name: 'asc' as const }];
+
 const context = {
   tenantId: 'tenant-1',
   storeId: 'store-1',
@@ -41,6 +54,34 @@ function setup() {
     repository: new TablesRepository(prisma as never),
   };
 }
+
+describe('TablesRepository.list', () => {
+  it('scopes findMany by tenantId and storeId from context', async () => {
+    const { prisma, repository } = setup();
+    prisma.table.findMany.mockResolvedValue([]);
+
+    await repository.list(context);
+
+    expect(prisma.table.findMany).toHaveBeenCalledWith({
+      where: { tenantId: 'tenant-1', storeId: 'store-1' },
+      select: tableSelect,
+      orderBy: tableOrderBy,
+    });
+  });
+
+  it('includes areaId filter together with tenantId+storeId when provided', async () => {
+    const { prisma, repository } = setup();
+    prisma.table.findMany.mockResolvedValue([]);
+
+    await repository.list(context, 'area-9');
+
+    expect(prisma.table.findMany).toHaveBeenCalledWith({
+      where: { tenantId: 'tenant-1', storeId: 'store-1', areaId: 'area-9' },
+      select: tableSelect,
+      orderBy: tableOrderBy,
+    });
+  });
+});
 
 describe('TablesRepository.listActiveTableOrderCounts', () => {
   it('returns empty array when there are no active tables and skips order.groupBy', async () => {

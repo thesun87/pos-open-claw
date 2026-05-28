@@ -49,6 +49,7 @@ export class AreasRepository {
   list(context: TenantContext): Promise<AreaRecord[]> {
     return runWithTenantContext(context, () =>
       this.prisma.area.findMany({
+        where: { tenantId: context.tenantId, storeId: context.storeId },
         select: selectArea,
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       }),
