@@ -75,25 +75,45 @@ model Area {
 }
 
 model Table {
-  id        String   @id @db.Uuid
-  tenantId  String   @map("tenant_id") @db.Uuid
-  storeId   String   @map("store_id") @db.Uuid
-  areaId    String   @map("area_id") @db.Uuid
+  id        String         @id @db.Uuid
+  tenantId  String         @map("tenant_id") @db.Uuid
+  storeId   String         @map("store_id") @db.Uuid
+  areaId    String         @map("area_id") @db.Uuid
   name      String
-  capacity  Int      @default(2)
-  sortOrder Int      @default(0) @map("sort_order")
-  isActive  Boolean  @default(true) @map("is_active")
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  store     Store    @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  area      Area     @relation(fields: [areaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  capacity  Int            @default(2)
+  sortOrder Int            @default(0) @map("sort_order")
+  isActive  Boolean        @default(true) @map("is_active")
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  store     Store          @relation(fields: [storeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  area      Area           @relation(fields: [areaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   orders    Order[]
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  sessions  TableSession[]
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@unique([tenantId, storeId, name], map: "uq_tables_tenant_store_name")
   @@index([tenantId, storeId], map: "idx_tables_tenant_store")
   @@index([areaId], map: "idx_tables_area_id")
   @@map("tables")
+}
+
+model TableSession {
+  id              String             @id @db.Uuid
+  tenantId        String             @map("tenant_id") @db.Uuid
+  storeId         String             @map("store_id") @db.Uuid
+  tableId         String             @map("table_id") @db.Uuid
+  openedByDevice  String             @map("opened_by_device")
+  status          TableSessionStatus @default(open)
+  openedAt        DateTime           @map("opened_at") @db.Timestamptz(6)
+  clientSessionId String             @map("client_session_id") @db.Uuid
+  table           Table              @relation(fields: [tableId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, storeId, clientSessionId], map: "uq_table_sessions_tenant_store_client")
+  @@index([tableId, status], map: "idx_table_sessions_table_status")
+  @@index([tenantId, storeId], map: "idx_table_sessions_tenant_store")
+  @@map("table_sessions")
 }
 
 model User {
@@ -246,6 +266,13 @@ enum PaymentMethod {
   Cash
   Transfer
   Card
+}
+
+enum TableSessionStatus {
+  open
+  settled
+  voided
+  superseded
 }
 
 model Order {

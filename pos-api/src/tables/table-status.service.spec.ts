@@ -7,22 +7,140 @@ import { TablesRepository } from './tables.repository';
 const context = { tenantId: 't1', storeId: 's1', role: 'cashier' as const };
 
 describe('TableStatusService', () => {
-  it('maps empty and occupied statuses from aggregate counts', async () => {
+  it('maps empty and occupied statuses from aggregate counts (no sessions)', async () => {
     const repo = {
       listActiveTableOrderCounts: jest.fn().mockResolvedValue([
         { tableId: 'tbl-empty', activeOrderCount: 0 },
         { tableId: 'tbl-occupied', activeOrderCount: 2 },
       ]),
     };
-    const service = new TableStatusService(repo as never);
+    const sessionRepo = {
+      countOpenSessionsByTable: jest.fn().mockResolvedValue([
+        { tableId: 'tbl-empty', openSessionCount: 0 },
+        { tableId: 'tbl-occupied', openSessionCount: 0 },
+      ]),
+    };
+    const service = new TableStatusService(repo as never, sessionRepo as never);
     await expect(service.listStatus(context)).resolves.toEqual([
-      { tableId: 'tbl-empty', activeOrderCount: 0, status: 'empty' },
-      { tableId: 'tbl-occupied', activeOrderCount: 2, status: 'occupied' },
+      {
+        tableId: 'tbl-empty',
+        activeOrderCount: 0,
+        openSessionCount: 0,
+        conflict: false,
+        status: 'empty',
+      },
+      {
+        tableId: 'tbl-occupied',
+        activeOrderCount: 2,
+        openSessionCount: 0,
+        conflict: false,
+        status: 'occupied',
+      },
     ]);
     expect(repo.listActiveTableOrderCounts).toHaveBeenCalledWith(
       context,
       expect.any(Date),
     );
+  });
+
+  it('marks occupied from open session even when no orders', async () => {
+    const repo = {
+      listActiveTableOrderCounts: jest
+        .fn()
+        .mockResolvedValue([{ tableId: 'tbl-session', activeOrderCount: 0 }]),
+    };
+    const sessionRepo = {
+      countOpenSessionsByTable: jest
+        .fn()
+        .mockResolvedValue([{ tableId: 'tbl-session', openSessionCount: 1 }]),
+    };
+    const service = new TableStatusService(repo as never, sessionRepo as never);
+    await expect(service.listStatus(context)).resolves.toEqual([
+      {
+        tableId: 'tbl-session',
+        activeOrderCount: 0,
+        openSessionCount: 1,
+        conflict: false,
+        status: 'occupied',
+      },
+    ]);
+  });
+
+  it('marks conflict when openSessionCount >= 2', async () => {
+    const repo = {
+      listActiveTableOrderCounts: jest
+        .fn()
+        .mockResolvedValue([{ tableId: 'tbl-conflict', activeOrderCount: 0 }]),
+    };
+    const sessionRepo = {
+      countOpenSessionsByTable: jest
+        .fn()
+        .mockResolvedValue([{ tableId: 'tbl-conflict', openSessionCount: 2 }]),
+    };
+    const service = new TableStatusService(repo as never, sessionRepo as never);
+    await expect(service.listStatus(context)).resolves.toEqual([
+      {
+        tableId: 'tbl-conflict',
+        activeOrderCount: 0,
+        openSessionCount: 2,
+        conflict: true,
+        status: 'occupied',
+      },
+    ]);
+  });
+
+  it('marks occupied from order AND session together', async () => {
+    const repo = {
+      listActiveTableOrderCounts: jest
+        .fn()
+        .mockResolvedValue([{ tableId: 'tbl-both', activeOrderCount: 1 }]),
+    };
+    const sessionRepo = {
+      countOpenSessionsByTable: jest
+        .fn()
+        .mockResolvedValue([{ tableId: 'tbl-both', openSessionCount: 1 }]),
+    };
+    const service = new TableStatusService(repo as never, sessionRepo as never);
+    const result = await service.listStatus(context);
+    expect(result[0]).toMatchObject({
+      tableId: 'tbl-both',
+      activeOrderCount: 1,
+      openSessionCount: 1,
+      conflict: false,
+      status: 'occupied',
+    });
+  });
+
+  it('returns empty when no orders and no open sessions', async () => {
+    const repo = {
+      listActiveTableOrderCounts: jest
+        .fn()
+        .mockResolvedValue([{ tableId: 'tbl-empty', activeOrderCount: 0 }]),
+    };
+    const sessionRepo = {
+      countOpenSessionsByTable: jest
+        .fn()
+        .mockResolvedValue([{ tableId: 'tbl-empty', openSessionCount: 0 }]),
+    };
+    const service = new TableStatusService(repo as never, sessionRepo as never);
+    const result = await service.listStatus(context);
+    expect(result[0]).toMatchObject({
+      status: 'empty',
+      openSessionCount: 0,
+      conflict: false,
+    });
+  });
+
+  it('skips session query when no tables returned', async () => {
+    const repo = {
+      listActiveTableOrderCounts: jest.fn().mockResolvedValue([]),
+    };
+    const sessionRepo = {
+      countOpenSessionsByTable: jest.fn(),
+    };
+    const service = new TableStatusService(repo as never, sessionRepo as never);
+    await expect(service.listStatus(context)).resolves.toEqual([]);
+    expect(sessionRepo.countOpenSessionsByTable).not.toHaveBeenCalled();
   });
 
   it('uses Asia/Ho_Chi_Minh day boundary converted to UTC', () => {
@@ -32,7 +150,7 @@ describe('TableStatusService', () => {
   });
 
   it('rejects missing context with Problem Details body', async () => {
-    const service = new TableStatusService({} as never);
+    const service = new TableStatusService({} as never, {} as never);
     await expect(service.listStatus(undefined)).rejects.toMatchObject({
       response: { type: expect.stringContaining('forbidden') as unknown },
     });
