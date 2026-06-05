@@ -24,8 +24,8 @@ afterEach(async () => {
 describe('buildLocalOrder', () => {
   it('builds snapshot order with fixed discount, uuid v7, UTC soldAt, menu version, and no mutation', async () => {
     await db.orders.bulkPut([
-      { clientOrderId: 'old-1', orderCode: '20260509-POS01-0001', deviceId: 'POS01', soldAt: '2026-05-09T01:00:00.000Z', menuVersionAtSale: 7, items: [], discountAmount: 0, total: 0, paymentMethod: 'cash', status: 'pendingSync', createdAt: '2026-05-09T01:00:00.000Z', updatedAt: '2026-05-09T01:00:00.000Z' },
-      { clientOrderId: 'other-device', orderCode: '20260509-POS02-0001', deviceId: 'POS02', soldAt: '2026-05-09T02:00:00.000Z', menuVersionAtSale: 7, items: [], discountAmount: 0, total: 0, paymentMethod: 'cash', status: 'pendingSync', createdAt: '2026-05-09T02:00:00.000Z', updatedAt: '2026-05-09T02:00:00.000Z' },
+      { clientOrderId: 'old-1', orderCode: '20260509-POS01-0001', deviceId: 'POS01', soldAt: '2026-05-09T01:00:00.000Z', menuVersionAtSale: 7, items: [], discountAmount: 0, total: 0, paymentMethod: 'cash', tableId: null, tableNameSnapshot: null, status: 'pendingSync', createdAt: '2026-05-09T01:00:00.000Z', updatedAt: '2026-05-09T01:00:00.000Z' },
+      { clientOrderId: 'other-device', orderCode: '20260509-POS02-0001', deviceId: 'POS02', soldAt: '2026-05-09T02:00:00.000Z', menuVersionAtSale: 7, items: [], discountAmount: 0, total: 0, paymentMethod: 'cash', tableId: null, tableNameSnapshot: null, status: 'pendingSync', createdAt: '2026-05-09T02:00:00.000Z', updatedAt: '2026-05-09T02:00:00.000Z' },
     ])
     const cart = { items, discount: { type: 'fixed' as const, value: 10000 } }
     const before = structuredClone(cart)
@@ -62,5 +62,38 @@ describe('buildLocalOrder', () => {
     expect(dateArg).toBeInstanceOf(Date)
     expect((dateArg as Date).toISOString()).toBe(order.soldAt)
     expect(order.orderCode.slice(0, 8)).toBe(orderCode.localOrderDatePart(dateArg as Date))
+  })
+
+  // Story 6.8: table context pair invariant tests (AC15)
+  it('table context pair invariant — cùng null (no tableId in cart)', async () => {
+    const order = await buildLocalOrder({ items, discount: null }, 'cash', 'POS01')
+    expect(order.tableId).toBeNull()
+    expect(order.tableNameSnapshot).toBeNull()
+  })
+
+  it('table context pair invariant — cùng non-null', async () => {
+    const order = await buildLocalOrder(
+      { items, discount: null, tableId: '018f0000-0000-7000-8000-000000000001', tableNameSnapshot: 'Bàn 3' },
+      'cash',
+      'POS01',
+    )
+    expect(order.tableId).toBe('018f0000-0000-7000-8000-000000000001')
+    expect(order.tableNameSnapshot).toBe('Bàn 3')
+  })
+
+  it('tableNameSnapshot immutable sau build — cart input không bị mutate', async () => {
+    const cart = { items, discount: null, tableId: '018f0000-0000-7000-8000-000000000001', tableNameSnapshot: 'Bàn 3' }
+    const before = structuredClone(cart)
+    const order = await buildLocalOrder(cart, 'cash', 'POS01')
+    expect(order.tableNameSnapshot).toBe('Bàn 3')
+    // Cart input không bị mutate sau khi build
+    expect(cart).toEqual(before)
+  })
+
+  it('undefined tableId/tableNameSnapshot in cart → null in order', async () => {
+    const cart: { items: typeof items; discount: null; tableId?: string | null; tableNameSnapshot?: string | null } = { items, discount: null }
+    const order = await buildLocalOrder(cart, 'cash', 'POS01')
+    expect(order.tableId).toBeNull()
+    expect(order.tableNameSnapshot).toBeNull()
   })
 })

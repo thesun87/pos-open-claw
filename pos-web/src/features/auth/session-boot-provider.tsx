@@ -8,6 +8,7 @@ import { refresh } from './api'
 import { expireSession, getRoleRoute, restoreSessionOnBoot, shouldRefreshSoon } from './session-lifecycle'
 import { installMenuOnlineRecovery, triggerMenuPull } from '../menu/sync'
 import { installTableConfigOnlineRecovery, triggerTableConfigPull } from '../tables/cache'
+import { installSessionSyncOnlineRecovery, sessionSyncEngine } from '../tables/session-sync'
 
 
 let refreshInFlight: Promise<void> | null = null
@@ -96,7 +97,10 @@ export function SessionBootProvider({ children }: { children: React.ReactNode })
     if (bootStatus !== 'ready' || !currentUser) return
     const cleanupMenu = installMenuOnlineRecovery({ isAuthenticated: () => useSessionStore.getState().isAuthenticated })
     const cleanupTableConfig = installTableConfigOnlineRecovery({ isAuthenticated: () => useSessionStore.getState().isAuthenticated })
-    return () => { cleanupMenu(); cleanupTableConfig() }
+    // Story 6.8: kick pending session syncs on boot + wire online-resume
+    sessionSyncEngine.kick()
+    const cleanupSessionSync = installSessionSyncOnlineRecovery({ isAuthenticated: () => useSessionStore.getState().isAuthenticated })
+    return () => { cleanupMenu(); cleanupTableConfig(); cleanupSessionSync() }
   }, [bootStatus, currentUser])
 
   React.useEffect(() => {

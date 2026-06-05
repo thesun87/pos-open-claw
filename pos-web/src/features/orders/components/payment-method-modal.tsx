@@ -10,9 +10,11 @@ import { PaymentMethodSelector } from './payment-method-selector'
 type PaymentMethodModalProps = {
   items: CartItem[]
   discount: CartDiscount | null
+  tableId?: string | null
+  tableNameSnapshot?: string | null
 }
 
-export function PaymentMethodModal({ items, discount }: PaymentMethodModalProps) {
+export function PaymentMethodModal({ items, discount, tableId, tableNameSnapshot }: PaymentMethodModalProps) {
   const paymentMethod = useCheckoutStore((state) => state.paymentMethod)
   const isCheckingOut = useCheckoutStore((state) => state.isCheckingOut)
   const isPaymentMethodModalOpen = useCheckoutStore((state) => state.isPaymentMethodModalOpen)
@@ -45,10 +47,12 @@ export function PaymentMethodModal({ items, discount }: PaymentMethodModalProps)
     if (items.length === 0 || isCheckingOut) return
     startCheckout()
     try {
-      const order = await finalizeOrder({ cart: { items, discount }, paymentMethod, deviceId: 'POS01' })
+      const order = await finalizeOrder({ cart: { items, discount, tableId: tableId ?? null, tableNameSnapshot: tableNameSnapshot ?? null }, paymentMethod, deviceId: 'POS01' })
+      // Capture tableId BEFORE resetCart() clears it (AC26 fix: settle-on-finalize wiring)
+      const finalizedTableId = tableId ?? null
       resetCart()
       completeCheckout(order)
-      window.dispatchEvent(new CustomEvent('order.finalized', { detail: { at: new Date().toISOString(), clientOrderId: order.clientOrderId, orderCode: order.orderCode } }))
+      window.dispatchEvent(new CustomEvent('order.finalized', { detail: { at: new Date().toISOString(), clientOrderId: order.clientOrderId, orderCode: order.orderCode, tableId: finalizedTableId } }))
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Không thể lưu đơn. Vui lòng thử lại.'
       failCheckout(message)

@@ -5,7 +5,7 @@ import { createUuidV7 } from '../../shared/lib/uuid'
 import { calculateCartTotals } from './cart-store'
 import type { CartDiscount, CartItem, LocalOrder, LocalOrderItem, PaymentMethod } from './types'
 
-type CartLike = { items: CartItem[]; discount: CartDiscount | null }
+type CartLike = { items: CartItem[]; discount: CartDiscount | null; tableId?: string | null; tableNameSnapshot?: string | null }
 
 function localDayBounds(date: Date) {
   const start = new Date(date.getFullYear(), date.getMonth(), date.getDate())
@@ -59,5 +59,7 @@ export async function buildLocalOrder(cart: CartLike, paymentMethod: PaymentMeth
     discountAmount: totals.discountAmount,
     total: totals.total,
     paymentMethod,
+    tableId: cart.tableId ?? null,
+    tableNameSnapshot: cart.tableNameSnapshot ?? null,
   }
 }

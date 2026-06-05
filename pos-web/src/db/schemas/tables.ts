@@ -33,9 +33,15 @@ export type LocalTableSessionStatus = 'open' | 'settled' | 'voided' | 'supersede
 /**
  * TableSessionRecord mirrors the BE table_sessions entity for offline derivation.
  * Story 6.10 defines the READ shape + empty store; Story 6.8 writes open/settle entries.
+ *
+ * syncStatus state machine (Story 6.8 refine — additive; derivation reads status not syncStatus):
+ *   pendingOpen → synced (after POST /tables/:id/sessions returns serverSessionId)
+ *   synced → pendingSettle (after finalize order or hủy/đổi bàn)
+ *   pendingSettle → settled (after POST /tables/sessions/:serverSessionId/settle)
+ *   any → syncFailed (on non-retryable 4xx)
  */
 export interface TableSessionRecord {
-  /** Server id (UUIDv7) when synced; local clientSessionId before sync (6.8 decides). */
+  /** PK = clientSessionId (stable, offline-generated UUIDv7). */
   id: string
   tableId: string
   status: LocalTableSessionStatus
@@ -43,6 +49,8 @@ export interface TableSessionRecord {
   clientSessionId: string
   openedByDevice?: string
   openedAt?: string // ISO 8601 UTC
-  /** 6.8 writes; 6.10 derivation reads for pendingSync detection. */
-  syncStatus?: 'pendingSync' | 'synced'
+  /** Story 6.8: server-assigned id — set after POST /tables/:id/sessions succeeds. Required for settle. */
+  serverSessionId?: string
+  /** Story 6.8 refined syncStatus — was 'pendingSync'|'synced' in 6.10 placeholder. Additive change. */
+  syncStatus?: 'pendingOpen' | 'synced' | 'pendingSettle' | 'settled' | 'syncFailed'
 }

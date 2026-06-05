@@ -34,6 +34,8 @@ const orderFixture: LocalOrderRecord = {
   discountAmount: 0,
   total: 45000,
   paymentMethod: 'transfer',
+  tableId: null,
+  tableNameSnapshot: null,
   status: 'pendingSync',
   createdAt: '2026-05-17T07:39:00.000Z',
   updatedAt: '2026-05-17T07:39:00.000Z',
@@ -95,7 +97,7 @@ describe('PaymentMethodModal', () => {
     await user.click(screen.getByRole('radio', { name: /Chuyển khoản/ }))
     await user.click(screen.getByRole('button', { name: 'Hoàn tất' }))
 
-    await waitFor(() => expect(finalizeSpy).toHaveBeenCalledWith({ cart: { items: [cartItem], discount: null }, paymentMethod: 'transfer', deviceId: 'POS01' }))
+    await waitFor(() => expect(finalizeSpy).toHaveBeenCalledWith({ cart: { items: [cartItem], discount: null, tableId: null, tableNameSnapshot: null }, paymentMethod: 'transfer', deviceId: 'POS01' }))
     expect(useCartStore.getState().items).toEqual([])
     expect(useCheckoutStore.getState().lastFinalizedOrder?.clientOrderId).toBe(orderFixture.clientOrderId)
     expect(useCheckoutStore.getState().isPaymentMethodModalOpen).toBe(false)

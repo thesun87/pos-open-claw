@@ -77,4 +77,34 @@ describe('cart store', () => {
     useCartStore.getState().resetCart()
     expect(useCartStore.getState()).toMatchObject({ items: [], discount: null })
   })
+
+  // Story 6.8: table context tests (AC15)
+  it('setTableContext sets tableId and tableNameSnapshot as a pair', () => {
+    useCartStore.getState().setTableContext({ id: 'table-1', name: 'Bàn 3' })
+    expect(useCartStore.getState()).toMatchObject({ tableId: 'table-1', tableNameSnapshot: 'Bàn 3' })
+  })
+
+  it('setTableContext(null) clears both tableId and tableNameSnapshot', () => {
+    useCartStore.getState().setTableContext({ id: 'table-1', name: 'Bàn 3' })
+    useCartStore.getState().setTableContext(null)
+    expect(useCartStore.getState()).toMatchObject({ tableId: null, tableNameSnapshot: null })
+  })
+
+  it('resetCart clears tableId and tableNameSnapshot (AC3)', () => {
+    useCartStore.getState().setTableContext({ id: 'table-1', name: 'Bàn 3' })
+    useCartStore.getState().addItem(baseItem)
+    useCartStore.getState().resetCart()
+    expect(useCartStore.getState()).toMatchObject({ tableId: null, tableNameSnapshot: null, items: [] })
+  })
+
+  it('clearCart clears tableId and tableNameSnapshot (AC3)', () => {
+    useCartStore.getState().setTableContext({ id: 'table-2', name: 'Bàn 5' })
+    useCartStore.getState().addItem(baseItem)
+    useCartStore.getState().clearCart()
+    expect(useCartStore.getState()).toMatchObject({ tableId: null, tableNameSnapshot: null, items: [] })
+  })
+
+  it('initial state has tableId and tableNameSnapshot as null', () => {
+    expect(useCartStore.getState()).toMatchObject({ tableId: null, tableNameSnapshot: null })
+  })
 })

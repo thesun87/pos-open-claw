@@ -224,6 +224,7 @@ describe('FloorPlanView (offline-first — Story 6.12)', () => {
         orderCode: 'ORD001',
         deviceId: 'dev-1',
         tableId: 'tbl-1',
+        tableNameSnapshot: 'Bàn 1',
         soldAt: todayVN,
         menuVersionAtSale: 1,
         items: [],
@@ -233,7 +234,7 @@ describe('FloorPlanView (offline-first — Story 6.12)', () => {
         status: 'synced',
         createdAt: todayVN,
         updatedAt: todayVN,
-      } as Parameters<typeof db.orders.put>[0])
+      })
     })
     renderFloorPlan()
 

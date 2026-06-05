@@ -6,7 +6,7 @@ import { buildLocalOrder } from './builder'
 import type { CartDiscount, CartItem, PaymentMethod } from './types'
 
 export type FinalizeOrderInput = {
-  cart: { items: CartItem[]; discount: CartDiscount | null }
+  cart: { items: CartItem[]; discount: CartDiscount | null; tableId?: string | null; tableNameSnapshot?: string | null }
   paymentMethod: PaymentMethod
   deviceId: string
   cashierId?: string

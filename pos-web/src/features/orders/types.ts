@@ -45,4 +45,8 @@ export interface LocalOrder {
   discountAmount: number
   total: number
   paymentMethod: PaymentMethod
+  // Story 6.8: pair invariant — both null or both non-null (FR51/AR24/NFR14)
+  // tableNameSnapshot is immutable after buildLocalOrder creates the order
+  tableId: string | null
+  tableNameSnapshot: string | null
 }

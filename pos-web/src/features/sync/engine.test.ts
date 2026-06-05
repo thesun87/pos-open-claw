@@ -29,6 +29,8 @@ function order(id: string, createdAt: string): LocalOrderRecord {
     discountAmount: 0,
     total: 20000,
     paymentMethod: 'cash',
+    tableId: null,
+    tableNameSnapshot: null,
     status: 'pendingSync',
     createdAt,
     updatedAt: createdAt,

@@ -21,6 +21,8 @@ const order: LocalOrderRecord = {
   discountAmount: 5000,
   total: 75000,
   paymentMethod: 'cash',
+  tableId: null,
+  tableNameSnapshot: null,
   status: 'pendingSync',
   createdAt: '2026-05-13T14:05:00.000Z',
   updatedAt: '2026-05-13T14:05:00.000Z',
@@ -139,5 +141,45 @@ describe('ReceiptModal', () => {
     onOpenChange.mockClear()
     await user.keyboard('{Escape}')
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
+  })
+
+  // Story 6.8: table name display tests (AC7, AC8, AC16)
+  it('renders "Bàn" row when tableNameSnapshot is non-null (AC7)', async () => {
+    const orderWithTable: LocalOrderRecord = {
+      ...order,
+      tableId: '018f0000-0000-7000-8000-000000000001',
+      tableNameSnapshot: 'Bàn 3',
+    }
+    await db.orders.put(orderWithTable)
+    render(<ReceiptModal order={orderWithTable} open onOpenChange={vi.fn()} />)
+    // label "Bàn" must appear as a term in the details section
+    await waitFor(() => {
+      expect(screen.getByText('Bàn')).toBeInTheDocument()
+      expect(screen.getByText('Bàn 3')).toBeInTheDocument()
+    })
+  })
+
+  it('hides "Bàn" row completely when tableNameSnapshot is null (AC8)', async () => {
+    renderReceipt()
+    // The base order fixture has no tableNameSnapshot — verify "Bàn" label is absent
+    // Note: avoid matching "Bạc Xỉu" which starts with "Bạ" not "Bàn"
+    await waitFor(() => {
+      // Only check for the dt label "Bàn" — not the product name
+      const termElements = screen.queryAllByText('Bàn')
+      expect(termElements).toHaveLength(0)
+    })
+  })
+
+  it('hides "Bàn" row when tableNameSnapshot is explicitly null (AC8)', async () => {
+    const orderWithNullTable: LocalOrderRecord = {
+      ...order,
+      tableId: null,
+      tableNameSnapshot: null,
+    }
+    await db.orders.put(orderWithNullTable)
+    render(<ReceiptModal order={orderWithNullTable} open onOpenChange={vi.fn()} />)
+    await waitFor(() => {
+      expect(screen.queryByText('Bàn')).not.toBeInTheDocument()
+    })
   })
 })

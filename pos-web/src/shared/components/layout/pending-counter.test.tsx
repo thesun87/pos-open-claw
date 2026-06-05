@@ -8,7 +8,7 @@ import type { LocalOrderRecord } from '../../../db/schemas/orders'
 import { PendingCounter } from './pending-counter'
 
 function order(id: string, status: LocalOrderRecord['status']): LocalOrderRecord {
-  return { clientOrderId: id, orderCode: id, deviceId: 'POS01', soldAt: '2026-05-14T00:00:00.000Z', menuVersionAtSale: 1, items: [], discountAmount: 0, total: 0, paymentMethod: 'cash', status, createdAt: '2026-05-14T00:00:00.000Z', updatedAt: '2026-05-14T00:00:00.000Z' }
+  return { clientOrderId: id, orderCode: id, deviceId: 'POS01', soldAt: '2026-05-14T00:00:00.000Z', menuVersionAtSale: 1, items: [], discountAmount: 0, total: 0, paymentMethod: 'cash', tableId: null, tableNameSnapshot: null, status, createdAt: '2026-05-14T00:00:00.000Z', updatedAt: '2026-05-14T00:00:00.000Z' }
 }
 
 beforeEach(async () => { await db.open(); await db.orders.clear() })

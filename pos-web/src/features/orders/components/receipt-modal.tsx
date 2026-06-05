@@ -80,6 +80,12 @@ export function ReceiptModal({ order, open, onOpenChange }: ReceiptModalProps) {
           <section aria-labelledby="receipt-details-heading" className="space-y-3">
             <h3 id="receipt-details-heading" className="text-lg font-semibold">Chi tiết</h3>
             <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+              {displayOrder.tableNameSnapshot ? (
+                <>
+                  <dt className="text-text-secondary">Bàn</dt>
+                  <dd className="text-right font-medium">{displayOrder.tableNameSnapshot}</dd>
+                </>
+              ) : null}
               <dt className="text-text-secondary">Thu ngân</dt><dd className="text-right font-medium">{displayOrder.cashierId || 'Thu ngân POS'}</dd>
               <dt className="text-text-secondary">Thanh toán</dt><dd className="text-right font-medium">{PAYMENT_LABELS[displayOrder.paymentMethod]}</dd>
               {displayOrder.voidReason ? <><dt className="text-text-secondary">Lý do hủy</dt><dd className="text-right font-medium">{displayOrder.voidReason}</dd></> : null}

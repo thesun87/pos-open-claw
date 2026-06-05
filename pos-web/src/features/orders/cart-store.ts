@@ -5,11 +5,15 @@ import type { CartDiscount, CartItem, CartItemInput } from './types'
 interface CartState {
   items: CartItem[]
   discount: CartDiscount | null
+  // Story 6.8: table context — pair invariant: both null or both non-null (FR51)
+  tableId: string | null
+  tableNameSnapshot: string | null
   addItem: (item: CartItemInput) => CartItem
   updateQuantity: (tempId: string, quantity: number) => void
   removeItem: (tempId: string) => void
   updateItemNote: (tempId: string, note: string) => void
   setDiscount: (discount: CartDiscount | null) => void
+  setTableContext: (payload: { id: string; name: string } | null) => void
   clearCart: () => void
   resetCart: () => void
 }
@@ -78,12 +82,14 @@ function toCartItem(input: CartItemInput): CartItem {
 }
 
 function resetState() {
-  return { items: [], discount: null }
+  return { items: [], discount: null, tableId: null, tableNameSnapshot: null }
 }
 
 export const useCartStore = create<CartState>((set, get) => ({
   items: [],
   discount: null,
+  tableId: null,
+  tableNameSnapshot: null,
   addItem: (input) => {
     let result: CartItem | undefined
     set((state) => {
@@ -134,6 +140,10 @@ export const useCartStore = create<CartState>((set, get) => ({
     }),
   })),
   setDiscount: (discount) => set((state) => ({ discount: sanitizeDiscount(discount, calculateCartSubtotal(state.items)) })),
+  setTableContext: (payload) => set({
+    tableId: payload?.id ?? null,
+    tableNameSnapshot: payload?.name ?? null,
+  }),
   clearCart: () => set(resetState()),
   resetCart: () => set(resetState()),
 }))

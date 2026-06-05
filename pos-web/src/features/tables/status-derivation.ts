@@ -87,8 +87,8 @@ export function deriveTableStatus({
     const orderMs = timestampStr ? new Date(timestampStr).getTime() : 0
     const isToday = orderMs >= startOfTodayMs
 
-    // tableId field — only present when Story 6.8 has been implemented; skip orders without it
-    const tableId = (order as LocalOrderRecord & { tableId?: string }).tableId
+    // tableId field — null for counter-mode orders; skip those
+    const tableId = order.tableId
     if (!tableId) continue
 
     const isVoided = Boolean(order.voidedAt)

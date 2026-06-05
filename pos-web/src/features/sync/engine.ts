@@ -26,6 +26,9 @@ interface SyncOrderPayload {
   discountAmount: number
   total: number
   paymentMethod: LocalOrderRecord['paymentMethod']
+  // Story 6.8: pair invariant — both null or both non-null (FR51/AR24)
+  tableId: string | null
+  tableNameSnapshot: string | null
 }
 
 function buildSyncPayload(order: LocalOrderRecord): SyncOrderPayload {
@@ -39,6 +42,8 @@ function buildSyncPayload(order: LocalOrderRecord): SyncOrderPayload {
     discountAmount: order.discountAmount,
     total: order.total,
     paymentMethod: order.paymentMethod,
+    tableId: order.tableId ?? null,
+    tableNameSnapshot: order.tableNameSnapshot ?? null,
   }
 }
 

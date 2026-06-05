@@ -69,6 +69,23 @@ export class PosDexie extends Dexie {
       storeConfig: 'id',
       tableSessions: 'id, tableId, status, clientSessionId',
     })
+    // Story 6.8: version 5 — orders thêm field tableId/tableNameSnapshot (plain fields, no index).
+    // Phải liệt kê lại TẤT CẢ store (Dexie semantics). 4 store table-config dưới đây do Story 6.10 thêm ở v4.
+    // tableId/tableNameSnapshot là optional null fields → KHÔNG cần upgrade callback (Dexie behavior: undefined cho record cũ).
+    // Code phải handle `order.tableId ?? null` và `order.tableNameSnapshot ?? null`.
+    this.version(5).stores({
+      session: 'id, expiresAt, lastLoginAt',
+      orders: ORDERS_SCHEMA,
+      categories: 'id, isActive, sortOrder',
+      products: 'id, categoryId, isActive, sortOrder',
+      optionGroups: 'id, sortOrder',
+      options: 'id, optionGroupId, sortOrder',
+      menuMeta: 'id, menuVersion, lastPulledAt',
+      areas: 'id, sortOrder',
+      posTables: 'id, areaId, sortOrder',
+      storeConfig: 'id',
+      tableSessions: 'id, tableId, status, clientSessionId',
+    })
   }
 }
 

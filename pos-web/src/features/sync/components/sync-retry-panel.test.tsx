@@ -11,7 +11,7 @@ import { SyncRetryPanel } from './sync-retry-panel'
 vi.mock('../engine', () => ({ syncEngine: { kick: vi.fn() } }))
 
 function order(id: string, status: LocalOrderRecord['status'], soldAt: string, total = 20000): LocalOrderRecord {
-  return { clientOrderId: id, orderCode: `ORD-${id}`, deviceId: 'POS01', soldAt, menuVersionAtSale: 1, items: [], discountAmount: 0, total, paymentMethod: 'cash', status, ...(status === 'syncFailed' ? { failReason: 'Idempotency tenant_id violations stack raw SQL' } : {}), createdAt: soldAt, updatedAt: soldAt }
+  return { clientOrderId: id, orderCode: `ORD-${id}`, deviceId: 'POS01', soldAt, menuVersionAtSale: 1, items: [], discountAmount: 0, total, paymentMethod: 'cash', tableId: null, tableNameSnapshot: null, status, ...(status === 'syncFailed' ? { failReason: 'Idempotency tenant_id violations stack raw SQL' } : {}), createdAt: soldAt, updatedAt: soldAt }
 }
 
 function renderPanel() {

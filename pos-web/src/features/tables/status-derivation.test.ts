@@ -14,8 +14,8 @@ function makeTable(id: string): TableRecord {
 }
 
 function makeOrder(
-  overrides: Partial<LocalOrderRecord> & { tableId?: string } = {},
-): LocalOrderRecord & { tableId?: string } {
+  overrides: Partial<LocalOrderRecord> = {},
+): LocalOrderRecord {
   return {
     clientOrderId: `order-${Math.random()}`,
     orderCode: 'ORD001',
@@ -26,6 +26,8 @@ function makeOrder(
     discountAmount: 0,
     total: 0,
     paymentMethod: 'cash',
+    tableId: null,
+    tableNameSnapshot: null,
     status: 'synced',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

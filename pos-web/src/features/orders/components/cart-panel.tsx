@@ -125,9 +125,16 @@ function CartLineItem({ item, onAskRemove }: LineItemProps) {
   )
 }
 
-export function CartPanel() {
+type CartPanelProps = {
+  /** Story 6.8 Tier A: callback to hold table (back to floor-plan, session stays open). Passed from PosShell (route-level) to preserve boundary §8. */
+  onHoldTable?: () => void
+}
+
+export function CartPanel({ onHoldTable }: CartPanelProps = {}) {
   const items = useCartStore((state) => state.items)
   const discount = useCartStore((state) => state.discount)
+  const tableId = useCartStore((state) => state.tableId)
+  const tableNameSnapshot = useCartStore((state) => state.tableNameSnapshot)
   const setDiscount = useCartStore((state) => state.setDiscount)
   const removeItem = useCartStore((state) => state.removeItem)
   const resetCart = useCartStore((state) => state.resetCart)
@@ -209,28 +216,39 @@ export function CartPanel() {
         </div>
 
         <div className="flex gap-3">
-          <Button 
-            ref={discountButtonRef} 
-            type="button" 
-            variant="outline" 
-            className="flex-1 h-12 rounded-xl text-sm" 
-            disabled={!hasItems} 
+          <Button
+            ref={discountButtonRef}
+            type="button"
+            variant="outline"
+            className="flex-1 h-12 rounded-xl text-sm"
+            disabled={!hasItems}
             onClick={() => setIsDiscountModalOpen(true)}
           >
             {totals.discount ? `Giảm giá (${totals.discount.type === 'fixed' ? formatVnd(totals.discount.value) : `${totals.discount.value}%`})` : 'Giảm giá'}
           </Button>
-          <Button 
-            type="button" 
-            className="flex-1 h-12 rounded-xl bg-primary text-on-primary font-bold shadow-md shadow-primary/25 text-sm" 
-            disabled={!hasItems || isCheckingOut} 
+          <Button
+            type="button"
+            className="flex-1 h-12 rounded-xl bg-primary text-on-primary font-bold shadow-md shadow-primary/25 text-sm"
+            disabled={!hasItems || isCheckingOut}
             onClick={() => openPaymentMethodModal()}
           >
             {isCheckingOut ? 'Đang chuẩn bị...' : 'Hoàn tất đơn'}
           </Button>
         </div>
+        {/* Story 6.8 Tier A: "Giữ bàn" — only in table-flow (tableId !== null). AC28. */}
+        {tableId ? (
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full h-10 rounded-xl text-sm"
+            onClick={onHoldTable}
+          >
+            Giữ bàn
+          </Button>
+        ) : null}
       </footer>
 
-      <PaymentMethodModal items={items} discount={totals.discount} />
+      <PaymentMethodModal items={items} discount={totals.discount} tableId={tableId} tableNameSnapshot={tableNameSnapshot} />
       <VoidOrderDialog open={isVoidDialogOpen} onOpenChange={handleVoidDialogOpenChange} onConfirm={handleVoidOrder} />
       <DiscountModal open={isDiscountModalOpen} onOpenChange={handleDiscountModalOpenChange} subtotal={totals.subtotal} discount={totals.discount} onApply={setDiscount} />
       <Dialog open={pendingRemove !== null} onOpenChange={(open) => { if (!open) setPendingRemove(null) }}>
