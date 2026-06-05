@@ -61,18 +61,28 @@ type TableCardProps = {
   table: TableShape
   status: TableDisplayStatus
   onSelect: (table: TableShape) => void
+  /**
+   * Story 6.13: When true, this table has a local draft (items saved on this device).
+   * Overrides the status-based `disabled` flag so cashier can re-open and reload items (AC9).
+   * Tables with drafts show a "Tiếp tục" badge (optional visual cue).
+   * Tables occupied WITHOUT a local draft remain disabled (cross-device = Epic 7).
+   */
+  hasLocalDraft?: boolean
 }
 
-export function TableCard({ table, status, onSelect }: TableCardProps) {
+export function TableCard({ table, status, onSelect, hasLocalDraft = false }: TableCardProps) {
   const meta = STATUS_META[status]
-  const ariaLabel = `Bàn ${table.name}, ${table.capacity} chỗ, ${meta.label}`
+  // Story 6.13 (AC9): tables with a local draft override the status-based disabled flag.
+  // disabled = status says disabled AND no local draft (cannot reopen cross-device tables).
+  const isDisabled = meta.disabled && !hasLocalDraft
+  const ariaLabel = `Bàn ${table.name}, ${table.capacity} chỗ, ${meta.label}${hasLocalDraft ? ' — Tiếp tục' : ''}`
 
   return (
     <button
       type="button"
       aria-label={ariaLabel}
-      disabled={meta.disabled}
-      aria-disabled={meta.disabled ? 'true' : undefined}
+      disabled={isDisabled}
+      aria-disabled={isDisabled ? 'true' : undefined}
       onClick={() => onSelect(table)}
       className={cn(
         'min-h-[88px] min-w-[88px] p-4 rounded-2xl border border-outline-variant/30 bg-surface',
@@ -85,6 +95,10 @@ export function TableCard({ table, status, onSelect }: TableCardProps) {
       <span className="text-2xl font-bold text-on-surface leading-tight">{table.name}</span>
       <span className="text-sm text-on-surface-variant">{table.capacity} chỗ</span>
       <StatusBadge variant={meta.variant} label={meta.label} icon={meta.icon} />
+      {/* Story 6.13 (AC9): optional visual cue for tables with a local draft */}
+      {hasLocalDraft ? (
+        <span className="text-xs font-medium text-warning">Tiếp tục</span>
+      ) : null}
     </button>
   )
 }

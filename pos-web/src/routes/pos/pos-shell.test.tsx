@@ -408,12 +408,12 @@ describe('PosShell session lifecycle integration (Review fixes)', () => {
     const holdBtn = await screen.findByRole('button', { name: 'Giữ bàn' })
     await userEvent.setup().click(holdBtn)
 
-    // Assert: 'toast' event (not 'table.hold') with the AC28 message
+    // Assert: 'toast' event with the AC3 (Story 6.13) updated message
+    // Story 6.13 changed the toast from "món chưa được lưu" (Phase 1) to "món đã được lưu trên máy này"
     expect(toastListener).toHaveBeenCalledTimes(1)
     const event = toastListener.mock.calls[0]?.[0] as CustomEvent
     expect(event.detail).toContain('Bàn 3')
-    expect(event.detail).toContain('đang phục vụ')
-    expect(event.detail).toContain('món trong giỏ chưa được lưu')
+    expect(event.detail).toContain('món đã được lưu trên máy này')
 
     window.removeEventListener('toast', toastListener)
   })
@@ -434,5 +434,179 @@ describe('PosShell session lifecycle integration (Review fixes)', () => {
     // No toast from hold (order.finalized != toast)
     expect(toastListener).not.toHaveBeenCalled()
     window.removeEventListener('toast', toastListener)
+  })
+})
+
+// Story 6.13: Draft cart persistence integration tests (AC13)
+describe('PosShell draft cart orchestration (Story 6.13 — AC13)', () => {
+  // Extra cleanup: clear tableDrafts before each test in this describe block
+  // (global beforeEach does not clear tableDrafts to avoid breaking other tests)
+  beforeEach(async () => {
+    await db.tableDrafts.clear()
+  })
+
+  afterEach(async () => {
+    await db.tableDrafts.clear()
+  })
+
+  const draftItem = {
+    tempId: 'tmp-draft-1',
+    productId: 'p-draft-product',
+    productNameSnapshot: 'Sản phẩm nháp',
+    unitPriceSnapshot: 30000,
+    options: [],
+    quantity: 1,
+    lineTotal: 30000,
+  }
+
+  // Helper: seed db.tableDrafts directly (bypasses cart-draft module to test load path)
+  async function seedDraft(tableId: string) {
+    await act(async () => {
+      await db.tableDrafts.put({
+        tableId,
+        items: [draftItem],
+        discount: null,
+        updatedAt: new Date().toISOString(),
+      })
+    })
+  }
+
+  it('"Giữ bàn" with non-empty cart writes a draft to db.tableDrafts (AC3)', async () => {
+    vi.mocked(useCachedTableMode).mockReturnValue(true)
+    await seedMenu()
+
+    // Pre-select table so product grid renders (not floor plan)
+    usePosTableContextStore.getState().setSelectedTable({ id: 'tbl-hold', name: 'Bàn 3' })
+    useCartStore.getState().setTableContext({ id: 'tbl-hold', name: 'Bàn 3' })
+
+    renderPosShell()
+    // Wait for product grid to render (tableId non-null → product grid, not floor plan)
+    await screen.findByLabelText('Lưới sản phẩm')
+
+    // Add an item to the cart before holding
+    const user = userEvent.setup()
+    // Click "Cà phê" category to see Cà phê đen product
+    await user.click(await screen.findByRole('button', { name: 'Cà phê' }))
+    await user.click(await screen.findByRole('button', { name: 'Cà phê đen, 30.000 ₫' }))
+    expect(useCartStore.getState().items).toHaveLength(1)
+
+    // Click "Giữ bàn"
+    const holdBtn = await screen.findByRole('button', { name: 'Giữ bàn' })
+    await user.click(holdBtn)
+
+    // Draft should now be persisted in Dexie for tbl-hold
+    await waitFor(async () => {
+      const draft = await db.tableDrafts.get('tbl-hold')
+      expect(draft).not.toBeUndefined()
+      expect(draft!.items).toHaveLength(1)
+      expect(draft!.items[0]!.productId).toBe('p-den')
+    })
+  })
+
+  it('re-selecting a held table loads items into cart via loadCart (AC4)', async () => {
+    vi.mocked(useCachedTableMode).mockReturnValue(true)
+
+    // Seed a draft directly into Dexie (simulating a prior "Giữ bàn")
+    await seedDraft('tbl-held')
+
+    renderPosShell()
+
+    // Simulate cashier re-selecting the table that has a draft
+    await act(async () => {
+      usePosTableContextStore.getState().setSelectedTable({ id: 'tbl-held', name: 'Bàn Held' })
+    })
+
+    // After selection, cart should have the draft items loaded
+    await waitFor(() => {
+      const state = useCartStore.getState()
+      expect(state.items).toHaveLength(1)
+      expect(state.items[0]!.productId).toBe('p-draft-product')
+    })
+  })
+
+  it('re-selecting a table WITHOUT a draft starts with empty cart (AC5)', async () => {
+    vi.mocked(useCachedTableMode).mockReturnValue(true)
+    // No draft seeded for 'tbl-empty'
+    // Ensure cart is empty
+    useCartStore.getState().resetCart()
+
+    renderPosShell()
+
+    await act(async () => {
+      usePosTableContextStore.getState().setSelectedTable({ id: 'tbl-empty', name: 'Bàn Empty' })
+    })
+
+    // Wait for async loadTableDraft to complete (it should not call loadCart)
+    // Small delay to allow the async chain to resolve
+    await waitFor(() => {
+      // Cart stays empty — no draft means no items loaded
+      expect(useCartStore.getState().items).toHaveLength(0)
+    })
+  })
+
+  it('order.finalized event fires clearTableDraft — draft removed after payment (AC6)', async () => {
+    // Seed a draft for the table
+    await seedDraft('tbl-finalize')
+
+    renderPosShell()
+
+    // Verify draft exists before finalize
+    const before = await db.tableDrafts.get('tbl-finalize')
+    expect(before).not.toBeUndefined()
+
+    // Fire order.finalized event (as payment-method-modal would)
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('order.finalized', {
+        detail: {
+          at: new Date().toISOString(),
+          clientOrderId: 'order-clr-1',
+          orderCode: 'ORD-CLR-1',
+          tableId: 'tbl-finalize',
+        },
+      }))
+    })
+
+    // Draft should be deleted
+    await waitFor(async () => {
+      const after = await db.tableDrafts.get('tbl-finalize')
+      expect(after).toBeUndefined()
+    })
+  })
+
+  it('"Tạo cart mới" (handleResetCart via dialog) fires clearTableDraft for the current table (AC7)', async () => {
+    vi.mocked(useCachedTableMode).mockReturnValue(true)
+    await seedMenu()
+
+    // Seed a draft and select the table with items in cart
+    await seedDraft('tbl-reset')
+    usePosTableContextStore.getState().setSelectedTable({ id: 'tbl-reset', name: 'Bàn Reset' })
+    useCartStore.getState().setTableContext({ id: 'tbl-reset', name: 'Bàn Reset' })
+    // Add an item so the cancel dialog opens (not skipped for empty cart)
+    useCartStore.getState().addItem({
+      productId: 'p-den',
+      productNameSnapshot: 'Cà phê đen',
+      unitPriceSnapshot: 30000,
+      options: [],
+      quantity: 1,
+      lineTotal: 30000,
+    })
+
+    renderPosShell()
+    await screen.findByLabelText('Lưới sản phẩm')
+
+    // Open the cancel-table dialog (has items so dialog opens instead of immediate action)
+    const user = userEvent.setup()
+    const cancelBtn = await screen.findByRole('button', { name: 'Hủy chọn bàn' })
+    await user.click(cancelBtn)
+
+    // Click "Tạo cart mới" in the dialog
+    const resetBtn = await screen.findByRole('button', { name: 'Tạo cart mới' })
+    await user.click(resetBtn)
+
+    // Draft should be cleared
+    await waitFor(async () => {
+      const draft = await db.tableDrafts.get('tbl-reset')
+      expect(draft).toBeUndefined()
+    })
   })
 })

@@ -20,7 +20,17 @@ const STATUS_LEGEND = [
   { label: 'Tạm tắt', variant: 'neutral' as const, icon: <Lock className="size-3" /> },
 ]
 
-export function FloorPlanView() {
+type FloorPlanViewProps = {
+  /**
+   * Story 6.13: Set of tableIds that have a local draft on this device.
+   * Tables in this set are enabled (clickable) even if their status is serving/occupied,
+   * so the cashier can reopen and reload items (AC9).
+   * Boundary: passed from pos-shell.tsx (route-level) to avoid features/tables ↔ features/orders cross-import.
+   */
+  reopenableTableIds?: Set<string>
+}
+
+export function FloorPlanView({ reopenableTableIds = new Set() }: FloorPlanViewProps) {
   // Offline-first data sources (Story 6.10 cache hooks — Dexie via useLiveQuery)
   const areasCache = useCachedAreas()    // undefined = loading, [] = empty cache
   const tablesCache = useCachedTables() // undefined = loading, [] = empty cache
@@ -132,6 +142,7 @@ export function FloorPlanView() {
             key={table.id}
             table={table}
             status={displayStatusMap.get(table.id) ?? 'empty'}
+            hasLocalDraft={reopenableTableIds.has(table.id)}
             onSelect={(t) => handleTableSelect(t.id, t.name)}
           />
         ))}

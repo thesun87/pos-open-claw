@@ -7,7 +7,7 @@ import type {
   MenuOptionRecord,
   MenuProductRecord,
 } from './schemas/menu'
-import { ORDERS_SCHEMA, type LocalOrderRecord } from './schemas/orders'
+import { ORDERS_SCHEMA, type LocalOrderRecord, type TableDraftRecord } from './schemas/orders'
 import type { AreaRecord, StoreConfigRecord, TableRecord, TableSessionRecord } from './schemas/tables'
 
 export class PosDexie extends Dexie {
@@ -25,6 +25,8 @@ export class PosDexie extends Dexie {
   posTables!: Table<TableRecord, string>
   storeConfig!: Table<StoreConfigRecord, string>
   tableSessions!: Table<TableSessionRecord, string>
+  // Story 6.13: per-table draft cart (version 6)
+  tableDrafts!: Table<TableDraftRecord, string>
 
   constructor(name = 'pos-bmad') {
     super(name)
@@ -85,6 +87,25 @@ export class PosDexie extends Dexie {
       posTables: 'id, areaId, sortOrder',
       storeConfig: 'id',
       tableSessions: 'id, tableId, status, clientSessionId',
+    })
+    // Story 6.13: version 6 — adds tableDrafts store for per-table draft cart (single-device local).
+    // PK = tableId (one draft per table, upsert semantics).
+    // No upgrade callback needed — new store starts empty.
+    // NFR18 variance: tableDrafts is intentionally persistent across reload (by design for table-service).
+    // KHÔNG sync to server; KHÔNG cross-device (Epic 7 handles multi-device).
+    this.version(6).stores({
+      session: 'id, expiresAt, lastLoginAt',
+      orders: ORDERS_SCHEMA,
+      categories: 'id, isActive, sortOrder',
+      products: 'id, categoryId, isActive, sortOrder',
+      optionGroups: 'id, sortOrder',
+      options: 'id, optionGroupId, sortOrder',
+      menuMeta: 'id, menuVersion, lastPulledAt',
+      areas: 'id, sortOrder',
+      posTables: 'id, areaId, sortOrder',
+      storeConfig: 'id',
+      tableSessions: 'id, tableId, status, clientSessionId',
+      tableDrafts: 'tableId',
     })
   }
 }

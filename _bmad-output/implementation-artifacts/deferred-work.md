@@ -18,3 +18,7 @@
 
 - Empty PATCH body trả HTTP 409 thay vì 400 — `ConflictException` trong `AreasService.update()` và `CategoriesService.update()` khi body rỗng nên là `BadRequestException` (400). Pre-existing pattern từ story 3.2 (`CategoriesService`). Cần refactor cả 2 service nếu muốn đúng spec HTTP.
 - Repository `delete()` có redundant `findFirst` trong transaction — `AreasRepository.delete()` và `CategoriesRepository.delete()` tự check existence lại dù service đã check trước đó. Extra round-trip không gây bug; có thể simplify sau khi coverage test đảm bảo.
+
+## Deferred from: code review of 6-13-fe-per-table-draft-cart-local-reload (2026-06-05)
+
+- "Đổi bàn → Giữ cart" carries the current cart's items into the next selected table when that table has no local draft (loadCart not invoked → previous items remain). Matches AC8 + inherited Story 6.8 dialog semantics, but is an item-mixing footgun. Confirm intended behavior before Epic 7 / multi-device work. [pos-web/src/routes/pos/pos-shell.tsx:199-210]

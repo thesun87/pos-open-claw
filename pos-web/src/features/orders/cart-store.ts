@@ -16,6 +16,13 @@ interface CartState {
   setTableContext: (payload: { id: string; name: string } | null) => void
   clearCart: () => void
   resetCart: () => void
+  /**
+   * Story 6.13: Bulk-load items + discount from a persisted table draft.
+   * Sets items and discount simultaneously; does NOT touch tableId/tableNameSnapshot
+   * (those are set separately via setTableContext by the orchestrator in pos-shell).
+   * additive action — existing actions unchanged.
+   */
+  loadCart: (payload: { items: CartItem[]; discount: CartDiscount | null }) => void
 }
 
 export function normalizeCartNote(note?: string) {
@@ -146,4 +153,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   }),
   clearCart: () => set(resetState()),
   resetCart: () => set(resetState()),
+  // Story 6.13: bulk-load items + discount from a table draft (AC10).
+  // Does NOT touch tableId/tableNameSnapshot — set by orchestrator via setTableContext.
+  loadCart: (payload) => set({ items: payload.items, discount: payload.discount }),
 }))

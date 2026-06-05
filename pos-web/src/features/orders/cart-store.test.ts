@@ -107,4 +107,40 @@ describe('cart store', () => {
   it('initial state has tableId and tableNameSnapshot as null', () => {
     expect(useCartStore.getState()).toMatchObject({ tableId: null, tableNameSnapshot: null })
   })
+
+  // Story 6.13: loadCart tests (AC10)
+  it('loadCart sets items and discount simultaneously', () => {
+    const items: CartItemInput[] = [baseItem]
+    const cartItems = items.map((i) => useCartStore.getState().addItem(i))
+    // Reset and reload via loadCart
+    useCartStore.getState().resetCart()
+    useCartStore.getState().loadCart({ items: cartItems, discount: { type: 'percentage', value: 15 } })
+    const state = useCartStore.getState()
+    expect(state.items).toHaveLength(1)
+    expect(state.discount).toEqual({ type: 'percentage', value: 15 })
+  })
+
+  it('loadCart does NOT affect tableId or tableNameSnapshot (AC10)', () => {
+    useCartStore.getState().setTableContext({ id: 'tbl-3', name: 'Bàn 3' })
+    const item = useCartStore.getState().addItem(baseItem)
+    useCartStore.getState().loadCart({ items: [item], discount: null })
+    const state = useCartStore.getState()
+    // Table context should remain unchanged
+    expect(state.tableId).toBe('tbl-3')
+    expect(state.tableNameSnapshot).toBe('Bàn 3')
+  })
+
+  it('loadCart with empty items sets items to empty array', () => {
+    useCartStore.getState().addItem(baseItem)
+    useCartStore.getState().loadCart({ items: [], discount: null })
+    expect(useCartStore.getState().items).toEqual([])
+    expect(useCartStore.getState().discount).toBeNull()
+  })
+
+  it('loadCart with null discount sets discount to null', () => {
+    useCartStore.getState().setDiscount({ type: 'fixed', value: 5000 })
+    const item = useCartStore.getState().addItem(baseItem)
+    useCartStore.getState().loadCart({ items: [item], discount: null })
+    expect(useCartStore.getState().discount).toBeNull()
+  })
 })

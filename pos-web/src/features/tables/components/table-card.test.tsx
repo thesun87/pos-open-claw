@@ -106,6 +106,57 @@ describe('TableCard', () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
+  // --- Story 6.13 (AC9): hasLocalDraft override ---
+
+  it('serving table WITH hasLocalDraft=true is enabled and clickable (AC9)', async () => {
+    const onSelect = vi.fn()
+    const user = userEvent.setup()
+    render(<TableCard table={baseTable} status="serving" hasLocalDraft={true} onSelect={onSelect} />)
+    // Button should NOT be disabled when the table has a local draft
+    const btn = screen.getByRole('button')
+    expect(btn).not.toBeDisabled()
+    expect(btn).not.toHaveAttribute('aria-disabled')
+    // Should be clickable
+    await user.click(btn)
+    expect(onSelect).toHaveBeenCalledTimes(1)
+    expect(onSelect).toHaveBeenCalledWith(baseTable)
+  })
+
+  it('serving table WITH hasLocalDraft=true shows "Tiếp tục" label (AC9)', () => {
+    render(<TableCard table={baseTable} status="serving" hasLocalDraft={true} onSelect={vi.fn()} />)
+    expect(screen.getByText('Tiếp tục')).toBeInTheDocument()
+    // Status label is still rendered
+    expect(screen.getByText('Đang phục vụ')).toBeInTheDocument()
+  })
+
+  it('occupied table WITH hasLocalDraft=true is enabled and shows "Tiếp tục" (AC9)', async () => {
+    const onSelect = vi.fn()
+    const user = userEvent.setup()
+    render(<TableCard table={baseTable} status="occupied" hasLocalDraft={true} onSelect={onSelect} />)
+    const btn = screen.getByRole('button')
+    expect(btn).not.toBeDisabled()
+    expect(btn).not.toHaveAttribute('aria-disabled')
+    expect(screen.getByText('Tiếp tục')).toBeInTheDocument()
+    await user.click(btn)
+    expect(onSelect).toHaveBeenCalledTimes(1)
+  })
+
+  it('serving table WITHOUT hasLocalDraft stays disabled (AC9 — cross-device table)', () => {
+    render(<TableCard table={baseTable} status="serving" onSelect={vi.fn()} />)
+    const btn = screen.getByRole('button')
+    expect(btn).toBeDisabled()
+    expect(btn).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.queryByText('Tiếp tục')).not.toBeInTheDocument()
+  })
+
+  it('occupied table WITHOUT hasLocalDraft stays disabled (AC9 — no local draft)', () => {
+    render(<TableCard table={baseTable} status="occupied" onSelect={vi.fn()} />)
+    const btn = screen.getByRole('button')
+    expect(btn).toBeDisabled()
+    expect(btn).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.queryByText('Tiếp tục')).not.toBeInTheDocument()
+  })
+
   // --- Accessibility / WCAG ---
 
   it('has minimum height class for touch target ≥56px', () => {
