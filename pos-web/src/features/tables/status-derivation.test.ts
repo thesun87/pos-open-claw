@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import type { LocalOrderRecord } from '../../db/schemas/orders'
 import type { TableRecord, TableSessionRecord } from '../../db/schemas/tables'
 import type { TableStatusRow } from './api'
-import { deriveTableStatus, getStartOfTodayVietnamMs } from './status-derivation'
+import { deriveTableStatus, getStartOfTodayVietnamMs, toDisplayStatus } from './status-derivation'
+import type { DerivedTableStatus } from './status-derivation'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -204,5 +205,73 @@ describe('deriveTableStatus', () => {
       expect(result.has('tbl-1')).toBe(true)
       expect(result.has('tbl-2')).toBe(true)
     })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// toDisplayStatus — Story 6.12 (AC4, AC5, AC9)
+// ---------------------------------------------------------------------------
+
+function makeDerived(overrides: Partial<DerivedTableStatus> = {}): DerivedTableStatus {
+  return {
+    tableId: 'tbl-1',
+    status: 'empty',
+    openSessionCount: 0,
+    activeOrderCount: 0,
+    conflict: false,
+    pendingSync: false,
+    ...overrides,
+  }
+}
+
+const activeTable: TableRecord = makeTable('tbl-1')
+const inactiveTable: TableRecord = { ...makeTable('tbl-2'), isActive: false }
+
+describe('toDisplayStatus — Story 6.12 (AC4, AC5, AC9)', () => {
+  it('returns "inactive" when table.isActive=false, regardless of derived status', () => {
+    expect(toDisplayStatus(inactiveTable, undefined)).toBe('inactive')
+    expect(toDisplayStatus(inactiveTable, makeDerived({ conflict: true }))).toBe('inactive')
+    expect(toDisplayStatus(inactiveTable, makeDerived({ openSessionCount: 1 }))).toBe('inactive')
+  })
+
+  it('returns "empty" when no derived data (table active, no Dexie derivation yet)', () => {
+    expect(toDisplayStatus(activeTable, undefined)).toBe('empty')
+  })
+
+  it('returns "conflict" when derived.conflict=true (openSessionCount>1 — FR56)', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ conflict: true, openSessionCount: 2 }))).toBe('conflict')
+  })
+
+  it('returns "pending_sync" when derived.pendingSync=true and no conflict', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ pendingSync: true }))).toBe('pending_sync')
+  })
+
+  it('returns "serving" when openSessionCount>0 (1 open session, no conflict or pending)', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ openSessionCount: 1 }))).toBe('serving')
+  })
+
+  it('returns "occupied" when activeOrderCount>0 and openSessionCount=0 (order-only, no session)', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ activeOrderCount: 1 }))).toBe('occupied')
+  })
+
+  it('returns "empty" when all counts are 0', () => {
+    expect(toDisplayStatus(activeTable, makeDerived())).toBe('empty')
+  })
+
+  // Priority tests
+  it('conflict beats serving (inactive > conflict > pending_sync > serving > occupied > empty)', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ conflict: true, openSessionCount: 2 }))).toBe('conflict')
+  })
+
+  it('conflict beats pending_sync', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ conflict: true, pendingSync: true, openSessionCount: 2 }))).toBe('conflict')
+  })
+
+  it('pending_sync beats serving', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ pendingSync: true, openSessionCount: 1 }))).toBe('pending_sync')
+  })
+
+  it('serving beats occupied', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ openSessionCount: 1, activeOrderCount: 1 }))).toBe('serving')
   })
 })

@@ -16,7 +16,7 @@ import { db } from '../../db/dexie'
 import type { LocalOrderRecord } from '../../db/schemas/orders'
 import type { TableRecord, TableSessionRecord } from '../../db/schemas/tables'
 import { formatYmdInVietnam } from '../../shared/lib/date'
-import type { TableStatusRow } from './api'
+import type { TableDisplayStatus, TableStatusRow } from './api'
 
 export type DerivedOccupancyStatus = 'empty' | 'occupied' | 'conflict' | 'pending_sync'
 
@@ -177,4 +177,37 @@ export function useLocalTableStatus(serverStatus?: TableStatusRow[]): Map<string
     ])
     return deriveTableStatus({ tables, orders, sessions, ...(serverStatus !== undefined ? { serverStatus } : {}) })
   }, [serverStatus])
+}
+
+/**
+ * Convert a TableRecord + DerivedTableStatus into a richer TableDisplayStatus for UI floor-plan.
+ *
+ * Priority order (highest first):
+ *   inactive > conflict > pending_sync > serving > occupied > empty
+ *
+ * Note: deriveTableStatus doesn't distinguish serving vs occupied (both are 'occupied' internally).
+ * This helper uses openSessionCount/activeOrderCount to make that distinction for the floor-plan UI.
+ *
+ * @param table   The table record (needed for isActive check)
+ * @param derived Optional DerivedTableStatus for this table. Undefined means no derivation data yet.
+ * @returns       TableDisplayStatus for use in floor-plan rendering
+ */
+export function toDisplayStatus(
+  table: TableRecord,
+  derived: DerivedTableStatus | undefined,
+): TableDisplayStatus {
+  // 1. inactive beats everything
+  if (!table.isActive) return 'inactive'
+  // If no derived data yet, treat as empty
+  if (!derived) return 'empty'
+  // 2. conflict (openSessionCount > 1 — FR56)
+  if (derived.conflict) return 'conflict'
+  // 3. pending_sync (any order waiting to sync)
+  if (derived.pendingSync) return 'pending_sync'
+  // 4. serving (an open session exists — cashier currently at the table)
+  if (derived.openSessionCount > 0) return 'serving'
+  // 5. occupied (order today, no open session — synced/closed session remains)
+  if (derived.activeOrderCount > 0) return 'occupied'
+  // 6. empty
+  return 'empty'
 }

@@ -10,13 +10,22 @@ import { useDebouncedValue } from '../../features/menu/hooks'
 import { useCartStore } from '../../features/orders/cart-store'
 import { useCheckoutStore } from '../../features/orders/checkout-store'
 import { syncEngine } from '../../features/sync/engine'
-import { useTableMode } from '../../features/tables/hooks'
+import { useCachedTableMode } from '../../features/tables/cache-hooks'
 import { usePosTableContextStore } from '../../features/tables/store'
 import { PosShell } from './pos-shell'
 
 vi.mock('../../features/sync/engine', () => ({ syncEngine: { kick: vi.fn() } }))
 
-// Mock features/tables hooks so existing counter-mode tests remain unaffected (tableMode=false default)
+// Story 6.12: PosShell now uses useCachedTableMode (Dexie) instead of useTableMode (online)
+// Mock cache-hooks so we can control tableMode in tests without seeding Dexie
+vi.mock('../../features/tables/cache-hooks', () => ({
+  useCachedTableMode: vi.fn(() => false), // default: counter-mode (safe default)
+  useCachedStoreConfig: vi.fn(() => null),
+  useCachedAreas: vi.fn(() => []),
+  useCachedTables: vi.fn(() => []),
+}))
+
+// Mock features/tables online hooks (still used by FloorPlanView for server-status enhancement)
 vi.mock('../../features/tables/hooks', () => ({
   useTableMode: vi.fn(() => ({ tableMode: false, isLoading: false, isError: false })),
   useStoreMe: vi.fn(() => ({ data: undefined, isLoading: false, isError: false })),
@@ -100,8 +109,8 @@ beforeEach(async () => {
   useCheckoutStore.getState().resetCheckoutState()
   usePosTableContextStore.getState().reset()
   vi.mocked(syncEngine.kick).mockReset()
-  // Default: tableMode=false so existing tests are unaffected
-  vi.mocked(useTableMode).mockReturnValue({ tableMode: false, isLoading: false, isError: false })
+  // Default: tableMode=false (counter-mode) so existing tests are unaffected
+  vi.mocked(useCachedTableMode).mockReturnValue(false)
 })
 
 afterEach(async () => {
@@ -282,10 +291,10 @@ describe('PosShell product browsing', () => {
   })
 })
 
-// Story 6.7: Table mode routing tests
-describe('PosShell table mode routing (Story 6.7)', () => {
-  it('renders product grid when tableMode=false (counter-mode regression)', async () => {
-    vi.mocked(useTableMode).mockReturnValue({ tableMode: false, isLoading: false, isError: false })
+// Story 6.12: Table mode routing tests (updated to use useCachedTableMode — offline-capable)
+describe('PosShell table mode routing (Story 6.12 — cache-based gating)', () => {
+  it('renders product grid when cache tableMode=false (counter-mode regression)', async () => {
+    vi.mocked(useCachedTableMode).mockReturnValue(false)
     await seedMenu()
     renderPosShell()
     // Product grid should appear; no floor plan
@@ -293,16 +302,16 @@ describe('PosShell table mode routing (Story 6.7)', () => {
     expect(screen.queryByTestId('floor-plan-view')).not.toBeInTheDocument()
   })
 
-  it('renders FloorPlanView when tableMode=true and no table selected', async () => {
-    vi.mocked(useTableMode).mockReturnValue({ tableMode: true, isLoading: false, isError: false })
+  it('renders FloorPlanView when cache tableMode=true and no table selected', async () => {
+    vi.mocked(useCachedTableMode).mockReturnValue(true)
     // selectedTableId is null by default
     renderPosShell()
     await waitFor(() => expect(screen.getByTestId('floor-plan-view')).toBeInTheDocument())
     expect(screen.queryByLabelText('Lưới sản phẩm')).not.toBeInTheDocument()
   })
 
-  it('renders product grid when tableMode=true and table IS selected', async () => {
-    vi.mocked(useTableMode).mockReturnValue({ tableMode: true, isLoading: false, isError: false })
+  it('renders product grid when cache tableMode=true and table IS selected', async () => {
+    vi.mocked(useCachedTableMode).mockReturnValue(true)
     usePosTableContextStore.getState().setSelectedTable({ id: 'tbl-1', name: 'Bàn 1' })
     await seedMenu()
     renderPosShell()
@@ -310,8 +319,8 @@ describe('PosShell table mode routing (Story 6.7)', () => {
     expect(screen.queryByTestId('floor-plan-view')).not.toBeInTheDocument()
   })
 
-  it('renders product grid when tableMode=true but quickCounterMode=true', async () => {
-    vi.mocked(useTableMode).mockReturnValue({ tableMode: true, isLoading: false, isError: false })
+  it('renders product grid when cache tableMode=true but quickCounterMode=true', async () => {
+    vi.mocked(useCachedTableMode).mockReturnValue(true)
     usePosTableContextStore.getState().setQuickCounterMode(true)
     await seedMenu()
     renderPosShell()
@@ -319,16 +328,9 @@ describe('PosShell table mode routing (Story 6.7)', () => {
     expect(screen.queryByTestId('floor-plan-view')).not.toBeInTheDocument()
   })
 
-  it('renders product grid (safe default) when useStoreMe is loading', async () => {
-    vi.mocked(useTableMode).mockReturnValue({ tableMode: false, isLoading: true, isError: false })
-    await seedMenu()
-    renderPosShell()
-    await screen.findByLabelText('Lưới sản phẩm')
-    expect(screen.queryByTestId('floor-plan-view')).not.toBeInTheDocument()
-  })
-
-  it('renders product grid (safe default) when useStoreMe has error', async () => {
-    vi.mocked(useTableMode).mockReturnValue({ tableMode: false, isLoading: false, isError: true })
+  it('renders product grid (safe default) when cache tableMode=false (loading/undefined → false)', async () => {
+    // useCachedTableMode returns false when loading (safe default — no isLoading/isError)
+    vi.mocked(useCachedTableMode).mockReturnValue(false)
     await seedMenu()
     renderPosShell()
     await screen.findByLabelText('Lưới sản phẩm')

@@ -1,39 +1,51 @@
 import { useEffect } from 'react'
-import { Coffee, CloudOff, Lock, Users } from 'lucide-react'
+import { AlertTriangle, Coffee, CloudOff, Lock, ReceiptText, Users } from 'lucide-react'
 import { LoadingSkeleton } from '../../../shared/components/ui/loading-skeleton'
 import { StatusBadge } from '../../../shared/components/ui/status-badge'
-import { useAreas, useTableMode, useTables, useTableStatus } from '../hooks'
-import type { TableOccupancyStatus, TableDto } from '../api'
+import { useConnectivityStore } from '../../../shared/stores/connectivity.store'
+import { useCachedAreas, useCachedTables } from '../cache-hooks'
+import { useTableStatus } from '../hooks'
+import { useLocalTableStatus, toDisplayStatus } from '../status-derivation'
+import type { TableDisplayStatus } from '../api'
 import { usePosTableContextStore } from '../store'
 import { AreaTabs } from './area-tabs'
 import { TableCard } from './table-card'
 
-type TableStatus = TableOccupancyStatus | 'inactive'
-
 const STATUS_LEGEND = [
   { label: 'Trống', variant: 'success' as const, icon: <Coffee className="size-3" /> },
   { label: 'Đang phục vụ', variant: 'warning' as const, icon: <Users className="size-3" /> },
+  { label: 'Đã có đơn', variant: 'accent' as const, icon: <ReceiptText className="size-3" /> },
+  { label: 'Xung đột phiên', variant: 'danger' as const, icon: <AlertTriangle className="size-3" /> },
   { label: 'Chờ đồng bộ', variant: 'danger' as const, icon: <CloudOff className="size-3" /> },
   { label: 'Tạm tắt', variant: 'neutral' as const, icon: <Lock className="size-3" /> },
 ]
 
 export function FloorPlanView() {
-  const { isLoading: tableModeLoading } = useTableMode()
-  const areasQuery = useAreas()
-  const tablesQuery = useTables()
+  // Offline-first data sources (Story 6.10 cache hooks — Dexie via useLiveQuery)
+  const areasCache = useCachedAreas()    // undefined = loading, [] = empty cache
+  const tablesCache = useCachedTables() // undefined = loading, [] = empty cache
+
+  // Online enhancement: fetch /tables/status for cross-device occupancy merge
+  // paused when offline (isOnline gate in hooks.ts — AC2)
   const statusQuery = useTableStatus()
 
-  const areas = areasQuery.data ?? []
-  const allTables = tablesQuery.data ?? []
+  // Local derivation — merge local Dexie data + optional server status
+  const statusMap = useLocalTableStatus(statusQuery.data)
+
+  const isOnline = useConnectivityStore((s) => s.isOnline)
 
   const selectedAreaId = usePosTableContextStore((s) => s.selectedAreaId)
   const setSelectedAreaId = usePosTableContextStore((s) => s.setSelectedAreaId)
   const setSelectedTable = usePosTableContextStore((s) => s.setSelectedTable)
   const setQuickCounterMode = usePosTableContextStore((s) => s.setQuickCounterMode)
 
+  // Stable references (undefined while loading)
+  const areas = areasCache
+  const allTables = tablesCache
+
   // Auto-select first area on mount or if stale persisted areaId no longer exists
   useEffect(() => {
-    if (areas.length === 0) return
+    if (!areas || areas.length === 0) return
     if (!selectedAreaId) {
       setSelectedAreaId(areas[0]!.id)
       return
@@ -44,29 +56,8 @@ export function FloorPlanView() {
     }
   }, [areas, selectedAreaId, setSelectedAreaId])
 
-  // Build status map: tableId → effective status
-  const statusByTableId = new Map<string, TableStatus>()
-  for (const table of allTables) {
-    if (!table.isActive) {
-      statusByTableId.set(table.id, 'inactive')
-    } else {
-      // Default to 'empty' if not in status response (server only returns non-empty or all)
-      statusByTableId.set(table.id, 'empty')
-    }
-  }
-  for (const row of statusQuery.data ?? []) {
-    const table = allTables.find((t) => t.id === row.tableId)
-    if (table && table.isActive) {
-      statusByTableId.set(row.tableId, row.status)
-    }
-  }
-
-  function handleTableSelect(table: TableDto) {
-    setSelectedTable({ id: table.id, name: table.name })
-  }
-
-  // --- Loading state ---
-  if (tableModeLoading || tablesQuery.isLoading || areasQuery.isLoading) {
+  // --- Loading state (§5.F: useLiveQuery undefined = still loading) ---
+  if (areas === undefined || allTables === undefined || statusMap === undefined) {
     return (
       <div data-testid="floor-plan-view" className="flex flex-col gap-4 p-4">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
@@ -78,29 +69,7 @@ export function FloorPlanView() {
     )
   }
 
-  // --- Error state (tables or areas failed to load) ---
-  if (tablesQuery.isError || areasQuery.isError) {
-    return (
-      <div data-testid="floor-plan-view" className="flex flex-col items-center gap-4 p-8 text-center">
-        <h2 className="text-lg font-semibold text-on-surface">Không tải được danh sách bàn</h2>
-        <p className="text-sm text-on-surface-variant">
-          Vui lòng thử lại. Dữ liệu kỹ thuật đã được ẩn để bảo vệ hệ thống.
-        </p>
-        <button
-          type="button"
-          onClick={() => {
-            void tablesQuery.refetch()
-            void areasQuery.refetch()
-          }}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary/90 transition-colors"
-        >
-          Thử lại
-        </button>
-      </div>
-    )
-  }
-
-  // --- Empty state (no tables or areas configured) ---
+  // --- Empty state (cache populated but no tables/areas configured — UX-DR-T9) ---
   if (allTables.length === 0 || areas.length === 0) {
     return (
       <div data-testid="floor-plan-view" className="flex flex-col items-center gap-4 p-8 text-center">
@@ -118,26 +87,37 @@ export function FloorPlanView() {
     )
   }
 
+  // Build display status map: tableId → TableDisplayStatus (AC4/AC5/AC9)
+  const displayStatusMap = new Map<string, TableDisplayStatus>()
+  for (const table of allTables) {
+    const derived = statusMap.get(table.id)
+    displayStatusMap.set(table.id, toDisplayStatus(table, derived))
+  }
+
+  function handleTableSelect(tableId: string, tableName: string) {
+    setSelectedTable({ id: tableId, name: tableName })
+  }
+
   // Filter tables by selected area
   const filteredTables = allTables.filter((t) => t.areaId === selectedAreaId)
 
   return (
     <div data-testid="floor-plan-view" className="flex flex-col gap-0">
-      {/* Status error banner */}
-      {statusQuery.isError ? (
+      {/* Offline indicator banner (AC6) */}
+      {!isOnline ? (
         <div
-          role="alert"
+          role="status"
           className="mx-4 mt-4 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning"
         >
-          Không cập nhật được trạng thái bàn. Sẽ tự thử lại.
+          Đang offline — trạng thái bàn lấy từ bộ nhớ cục bộ
         </div>
       ) : null}
 
-      {/* Area tabs */}
+      {/* Area tabs — AreaRecord is structurally compatible with what AreaTabs needs */}
       <AreaTabs
         areas={areas}
         tables={allTables}
-        statusByTableId={statusByTableId}
+        statusByTableId={displayStatusMap}
         selectedAreaId={selectedAreaId}
         onSelect={setSelectedAreaId}
       />
@@ -151,8 +131,8 @@ export function FloorPlanView() {
           <TableCard
             key={table.id}
             table={table}
-            status={statusByTableId.get(table.id) ?? 'empty'}
-            onSelect={handleTableSelect}
+            status={displayStatusMap.get(table.id) ?? 'empty'}
+            onSelect={(t) => handleTableSelect(t.id, t.name)}
           />
         ))}
       </div>

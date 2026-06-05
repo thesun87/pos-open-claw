@@ -32,6 +32,18 @@ export type StoreMeDto = {
 
 export type TableOccupancyStatus = 'empty' | 'occupied' | 'pending_sync'
 
+/**
+ * Display status for floor-plan UI (Story 6.12) — richer than TableOccupancyStatus from BE.
+ * Priority order (highest first): inactive > conflict > pending_sync > serving > occupied > empty
+ */
+export type TableDisplayStatus =
+  | 'empty'        // trống
+  | 'serving'      // phiên mở chưa thanh toán (openSessionCount > 0)
+  | 'occupied'     // đã có đơn trong ngày, không phiên mở (activeOrderCount > 0)
+  | 'conflict'     // openSessionCount > 1 (FR56)
+  | 'pending_sync' // có order pendingSync
+  | 'inactive'     // table.isActive === false
+
 export type TableStatusRow = {
   tableId: string
   status: TableOccupancyStatus

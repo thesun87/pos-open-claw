@@ -1,14 +1,17 @@
 import type { KeyboardEvent } from 'react'
 import { useRef } from 'react'
 import { cn } from '../../../shared/lib/cn'
-import type { AreaDto, TableDto, TableOccupancyStatus } from '../api'
+import type { TableDisplayStatus } from '../api'
 
-type TableStatus = TableOccupancyStatus | 'inactive'
+/** Minimal area shape — satisfied by both AreaDto and AreaRecord (Dexie) */
+type AreaShape = { id: string; name: string }
+/** Minimal table shape — satisfied by both TableDto and TableRecord (Dexie) */
+type TableShape = { id: string; areaId: string; isActive: boolean }
 
 type AreaTabsProps = {
-  areas: AreaDto[]
-  tables: TableDto[]
-  statusByTableId: Map<string, TableStatus>
+  areas: AreaShape[]
+  tables: TableShape[]
+  statusByTableId: Map<string, TableDisplayStatus>
   selectedAreaId: string | null
   onSelect: (areaId: string) => void
 }
@@ -18,7 +21,7 @@ export function AreaTabs({ areas, tables, statusByTableId, selectedAreaId, onSel
 
   if (areas.length === 0) return null
 
-  function getAreaCounts(area: AreaDto) {
+  function getAreaCounts(area: AreaShape) {
     const activeTables = tables.filter((t) => t.areaId === area.id && t.isActive)
     const freeCount = activeTables.filter((t) => statusByTableId.get(t.id) === 'empty').length
     return { freeCount, totalCount: activeTables.length }

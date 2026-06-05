@@ -1,5 +1,9 @@
 # Deferred Work
 
+## Deferred from: code review of 6-12-fe-floor-plan-offline-rework (2026-06-05)
+
+- Manual smoke test (AC12) deferred — requires a running BE server + seeded store data (table-mode store online→offline render, counter-mode regression). All automated gates (typecheck/lint/test/build) are green. Run when an integration environment is available before promoting to production.
+
 ## Deferred from: code review of 6-11-be-table-session-lifecycle-occupancy-sync (2026-06-04)
 
 - `settle()` repository không filter `status=open` — `updateMany` không có điều kiện `status: open` nên có thể settle session đang `voided`/`superseded`. Không ảnh hưởng Phase 1 (không có cơ chế void/supersede). Cần sửa khi Phase 2 implement voiding endpoint [pos-api/src/tables/table-sessions.repository.ts:130].

@@ -14,6 +14,7 @@ import {
   type TableStatusRow,
 } from './api'
 import { usePosTableContextStore } from './store'
+import { useConnectivityStore } from '../../shared/stores/connectivity.store'
 
 export function useStoreMe() {
   return useQuery<StoreMeDto>({
@@ -55,7 +56,9 @@ export function useTables() {
 export function useTableStatus() {
   const { tableMode } = useTableMode()
   const selectedTableId = usePosTableContextStore((s) => s.selectedTableId)
-  const enabled = tableMode && selectedTableId === null
+  // Gate polling: only when table-mode active, no table selected, AND online (AC2 — offline pause)
+  const isOnline = useConnectivityStore((s) => s.isOnline)
+  const enabled = tableMode && selectedTableId === null && isOnline
   return useQuery<TableStatusRow[]>({
     queryKey: tableStatusQueryKey,
     queryFn: fetchTableStatus,

@@ -1,10 +1,15 @@
 import type { ReactNode } from 'react'
-import { Coffee, CloudOff, Lock, Users } from 'lucide-react'
+import { Coffee, CloudOff, Lock, ReceiptText, TriangleAlert, Users } from 'lucide-react'
 import { StatusBadge, type StatusBadgeVariant } from '../../../shared/components/ui/status-badge'
 import { cn } from '../../../shared/lib/cn'
-import type { TableDto, TableOccupancyStatus } from '../api'
+import type { TableDisplayStatus } from '../api'
 
-type TableStatus = TableOccupancyStatus | 'inactive'
+/** Minimal table shape used by TableCard — satisfied by both TableDto and TableRecord (Dexie) */
+type TableShape = {
+  id: string
+  name: string
+  capacity: number
+}
 
 type StatusMeta = {
   label: string
@@ -13,17 +18,29 @@ type StatusMeta = {
   disabled: boolean
 }
 
-const STATUS_META: Record<TableStatus, StatusMeta> = {
+const STATUS_META: Record<TableDisplayStatus, StatusMeta> = {
   empty: {
     label: 'Trống',
     variant: 'success',
     icon: <Coffee className="size-4" />,
     disabled: false,
   },
-  occupied: {
+  serving: {
     label: 'Đang phục vụ',
     variant: 'warning',
     icon: <Users className="size-4" />,
+    disabled: true,
+  },
+  occupied: {
+    label: 'Đã có đơn',
+    variant: 'accent',
+    icon: <ReceiptText className="size-4" />,
+    disabled: true,
+  },
+  conflict: {
+    label: 'Xung đột phiên',
+    variant: 'danger',
+    icon: <TriangleAlert className="size-4" />,
     disabled: true,
   },
   pending_sync: {
@@ -41,9 +58,9 @@ const STATUS_META: Record<TableStatus, StatusMeta> = {
 }
 
 type TableCardProps = {
-  table: TableDto
-  status: TableStatus
-  onSelect: (table: TableDto) => void
+  table: TableShape
+  status: TableDisplayStatus
+  onSelect: (table: TableShape) => void
 }
 
 export function TableCard({ table, status, onSelect }: TableCardProps) {

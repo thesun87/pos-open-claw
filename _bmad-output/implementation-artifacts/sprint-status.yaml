@@ -22,7 +22,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-05-10T15:11:57+07:00"
-last_updated: "2026-06-05T17:30:00+07:00"
+last_updated: "2026-06-05T14:05:00+07:00"
 project: pos-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -96,7 +96,7 @@ development_status:
   # Phase 1 offline table management — added 2026-06-01 via SCP-2026-06-01-offline-table-sessions
   6-10-fe-offline-cache-table-config-local-status: done
   6-11-be-table-session-lifecycle-occupancy-sync: done
-  6-12-fe-floor-plan-offline-rework: ready-for-dev
+  6-12-fe-floor-plan-offline-rework: done
   # 6-13 added 2026-06-05 — per-table draft cart (single-device hold+reload items, no cross-session)
   6-13-fe-per-table-draft-cart-local-reload: ready-for-dev
   epic-6-retrospective: optional

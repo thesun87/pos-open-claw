@@ -9,7 +9,7 @@ import { OptionModal } from '../../features/menu/components/option-modal'
 import { ProductTile } from '../../features/menu/components/product-tile'
 import { useCategories, useDebouncedValue, useProducts } from '../../features/menu/hooks'
 import { EmptyState } from '../../shared/components/ui/empty-state'
-import { useTableMode } from '../../features/tables/hooks'
+import { useCachedTableMode } from '../../features/tables/cache-hooks'
 import { usePosTableContextStore } from '../../features/tables/store'
 import { FloorPlanView } from '../../features/tables/components/floor-plan-view'
 import { PosCategorySidebar } from './pos-category-sidebar'
@@ -45,18 +45,15 @@ export function PosShell() {
   const clearLastFinalizedOrder = useCheckoutStore((state) => state.clearLastFinalizedOrder)
   const isReceiptOpen = Boolean(lastFinalizedOrder)
 
-  // Story 6.7: Table mode routing (conditional render — NO new route)
-  const { tableMode, isLoading: tableModeLoading, isError: tableModeError } = useTableMode()
+  // Story 6.12: Table mode gating from Dexie cache (offline-capable — AC3)
+  // useCachedTableMode returns false when loading/no-cache (safe default for counter-mode)
+  // Note: first login online has a brief period where cache=false then reactive update → floor-plan appears. Accepted.
+  const tableMode = useCachedTableMode()
   const selectedTableId = usePosTableContextStore((s) => s.selectedTableId)
   const quickCounterMode = usePosTableContextStore((s) => s.quickCounterMode)
 
-  // Show floor plan only when: tableMode=true, loaded without error, no table selected, not in quick-counter
-  const showFloorPlan = tableMode && !tableModeLoading && !tableModeError && selectedTableId === null && !quickCounterMode
-
-  // Log warn for dev when tableMode fetch errors (silent for cashier — counter-mode is safe default; AC4)
-  if (tableModeError) {
-    console.warn('[PosShell] useStoreMe failed — defaulting to counter-mode. Cashier can continue selling.')
-  }
+  // Show floor plan only when: tableMode=true (cache), no table selected, not in quick-counter
+  const showFloorPlan = tableMode && selectedTableId === null && !quickCounterMode
 
   function handleReceiptOpenChange(open: boolean) { if (!open) clearLastFinalizedOrder() }
   function handleSelectProduct(product: MenuProductRecord) { if (product.optionGroupIds.length > 0) { setSelectedProductForOptions(product); return } addItem({ productId: product.id, productNameSnapshot: product.name, unitPriceSnapshot: product.priceVnd, options: [], quantity: 1, lineTotal: product.priceVnd }) }
