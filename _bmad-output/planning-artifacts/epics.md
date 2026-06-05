@@ -13,11 +13,14 @@ workflowType: 'epics-and-stories'
 status: 'complete'
 lastStep: 4
 completedAt: '2026-05-09'
-lastEdited: '2026-05-25'
+lastEdited: '2026-06-04'
 editHistory:
   - date: '2026-05-25'
     source: 'SCP-2026-05-25-table-mgmt (approved)'
     changes: 'Thêm Epic 6 (Quản lý Bàn F&B) với 9 stories — brownfield expansion để hỗ trợ table-service dual-mode. Cập nhật Overview để phản ánh 52 FR + 18 NFR. Brownfield patches embedded trong Story 6-1 (seed 1.4), Story 6-5 (admin nav 3.1), Story 6-8 (orders 2.4-2.8) thay vì re-open Epic 2/3.'
+  - date: '2026-06-04'
+    source: 'SCP-2026-06-01-offline-table-sessions (approved)'
+    changes: 'Phase 1 offline table management: thêm Story 6.10 (FE Dexie cache + local status), 6.11 (BE table-session lifecycle + status upgrade), 6.12 (FE floor-plan offline rework); thêm AC table-session/occupancy vào Story 6.8; cập nhật Epic 6 known limitations + summary (9→12 stories, FR53-56 + NFR19); thêm outline Epic 7 "Shared Table Sessions" (Phase 2 deferred, cần create-epics-and-stories).'
 ---
 
 # pos-bmad - Epic Breakdown
@@ -26,7 +29,7 @@ editHistory:
 
 This document provides the complete epic and story breakdown for **Café POS MVP (`pos-bmad`)**, decomposing the requirements from the PRD, UX Design Specification, and Architecture into implementable stories.
 
-Tài liệu này phá vỡ **52 FR + 18 NFR** (sau SCP-2026-05-25-table-mgmt: thêm FR44-FR52 + NFR18) + các yêu cầu kỹ thuật/UX bổ sung thành các epics có thể giao cho Developer agent thực thi tuần tự, mỗi story đi kèm acceptance criteria có thể test được.
+Tài liệu này phá vỡ **56 FR + 19 NFR** (sau SCP-2026-05-25-table-mgmt: thêm FR44-FR52 + NFR18; sau SCP-2026-06-01-offline-table-sessions: thêm FR53-FR56 + NFR19) + các yêu cầu kỹ thuật/UX bổ sung thành các epics có thể giao cho Developer agent thực thi tuần tự, mỗi story đi kèm acceptance criteria có thể test được.
 
 **Epic 6 (Quản lý Bàn F&B)** được thêm 2026-05-25 qua brownfield expansion — không re-open Epic 2/3 đã done, mà embed brownfield patches trong Story 6-8/6-5/6-1.
 
@@ -98,6 +101,23 @@ Tài liệu này phá vỡ **52 FR + 18 NFR** (sau SCP-2026-05-25-table-mgmt: th
 - FR42: Developer có thể chạy migration database bằng lệnh chuẩn.
 - FR43: Developer có thể seed dữ liệu demo: 1 tenant/store, 1 admin, 1 thu ngân, 4–6 danh mục, 20–30 sản phẩm, nhóm tùy chọn (size, đá, đường, topping), đơn hàng mẫu đã sync.
 
+**Quản lý Bàn F&B (FR44–FR56)**
+
+- FR44: Admin có thể bật/tắt `tableMode` cho từng store để chọn giữa counter-service và table-service.
+- FR45: Admin có thể tạo, xem, sửa, xóa khu vực bàn (areas) trong store.
+- FR46: Admin có thể tạo, xem, sửa, xóa bàn (tables) trong từng khu vực, gồm tên bàn, sức chứa, thứ tự và trạng thái hoạt động.
+- FR47: Khi `tableMode=true`, thu ngân chọn bàn từ floor-plan trước khi vào menu; order tự gắn `tableId` và snapshot tên bàn.
+- FR47b: Khi `tableMode=true`, thu ngân vẫn có thể vào luồng **Bán hàng nhanh** cho khách mang đi mà không cần chọn bàn.
+- FR48: Order có thể lưu `tableId` nullable và `tableNameSnapshot` immutable; counter-service giữ `tableId=null`.
+- FR49: Admin có thể cập nhật cấu hình store `tableMode`; POS áp dụng sau reload session để tránh race trong ca bán.
+- FR50: Floor-plan view là entry point mặc định khi `tableMode=true`; lưới bàn theo khu vực, hiển thị status (trống / đang phục vụ / chờ sync / ⚠️ xung đột phiên). Floor-plan và trạng thái bàn hoạt động cả khi offline từ IndexedDB.
+- FR51: Trạng thái bàn phản ánh order trong ngày và/hoặc phiên bàn đang mở; status được refresh online định kỳ nhưng không là dependency bắt buộc khi offline.
+- FR52: Receipt hiển thị tên bàn khi order có `tableNameSnapshot`; ẩn hoàn toàn dòng bàn khi bán hàng nhanh.
+- FR53: Khi `tableMode=true`, thu ngân mở bàn tạo một `table_session` đánh dấu bàn occupied ngay khi mở — trước khi thanh toán.
+- FR54: Phiên bàn đồng bộ cross-device: khi online, POS khác thấy bàn occupied trong vòng ≤1 chu kỳ polling; mở bàn đang có phiên hiển thị cảnh báo mềm, không khóa cứng.
+- FR55: Floor-plan, chọn bàn, mở/giữ phiên bàn và hoàn tất đơn kèm bàn hoạt động đầy đủ khi offline; session/order xếp hàng sync khi có mạng.
+- FR56: Khi 2 thiết bị offline cùng mở 1 bàn, hệ thống giữ cả hai phiên, đánh dấu xung đột trên bàn để thu ngân xử lý thủ công.
+
 ### NonFunctional Requirements
 
 **Hiệu năng (NFR1–NFR6)**
@@ -125,6 +145,8 @@ Tài liệu này phá vỡ **52 FR + 18 NFR** (sau SCP-2026-05-25-table-mgmt: th
 - NFR15: Đơn hàng pending trong IndexedDB không mất khi trình duyệt khởi động lại hoặc tab được làm mới.
 - NFR16: Khi sync thất bại, hệ thống retry tự động — không im lặng bỏ qua đơn pending.
 - NFR17: Phiên offline hết hạn sau đúng 7 ngày kể từ lần xác thực online cuối — không sớm hơn, không muộn hơn.
+- NFR18: Store có thể bật/tắt `tableMode` mà không cần redeploy; mode mới áp dụng sau reload session POS để tránh race trong ca bán.
+- NFR19: Mọi thao tác quản lý bàn phía POS (xem floor-plan, chọn bàn, mở phiên, hoàn tất đơn kèm bàn) phải hoạt động khi offline với độ trễ tương đương online — không phụ thuộc kết nối server.
 
 ### Additional Requirements
 
@@ -310,6 +332,20 @@ Yêu cầu UX từ UX Design Specification — mỗi UX-DR đủ specific để 
 | FR41 | Epic 1 | Docker Compose PostgreSQL |
 | FR42 | Epic 1 | Migration Prisma |
 | FR43 | Epic 1 | Seed dữ liệu demo café |
+| FR44 | Epic 6 | Store `tableMode` dual-mode F&B |
+| FR45 | Epic 6 | Admin CRUD khu vực bàn |
+| FR46 | Epic 6 | Admin CRUD bàn |
+| FR47 | Epic 6 | POS chọn bàn trước khi vào menu |
+| FR47b | Epic 6 | Bán hàng nhanh trong store `tableMode=true` |
+| FR48 | Epic 6 | Order gắn `tableId` nullable + `tableNameSnapshot` immutable |
+| FR49 | Epic 6 | Admin cập nhật cấu hình `tableMode` |
+| FR50 | Epic 6 | Floor-plan offline-first + status bàn |
+| FR51 | Epic 6 | Status bàn từ order/session và online refresh |
+| FR52 | Epic 6 | Receipt hiển thị tên bàn |
+| FR53 | Epic 6 | Mở bàn tạo `table_session` occupied ngay |
+| FR54 | Epic 6 | Cross-device occupancy + allow/warn |
+| FR55 | Epic 6 | POS table management hoạt động offline |
+| FR56 | Epic 6 | Offline double-open giữ cả hai phiên + conflict badge |
 
 **NFR Distribution:**
 
@@ -317,6 +353,7 @@ Yêu cầu UX từ UX Design Specification — mỗi UX-DR đủ specific để 
 - **Epic 2:** NFR1–NFR5 (performance: POS shell, add cart, finalize, sync, menu cache), NFR13–NFR16 (reliability: idempotency, snapshot immutable, persist Dexie, retry no-skip)
 - **Epic 3:** NFR14 (snapshot immutability — re-verified khi menu cập nhật)
 - **Epic 4:** NFR6 (report 30 ngày <5s)
+- **Epic 6:** NFR18 (mode toggle không cần redeploy), NFR19 (POS table management offline parity)
 
 **UX-DR Distribution:**
 
@@ -393,11 +430,11 @@ Yêu cầu UX từ UX Design Specification — mỗi UX-DR đủ specific để 
 
 ### Epic 6: Quản lý Bàn F&B (Table Service Mode) — Brownfield Expansion
 
-**Mục tiêu Epic:** Mở rộng MVP sang **dual-mode F&B**: mỗi store có thể bật/tắt `tableMode` để vận hành theo counter-service (như trước) hoặc table-service (gắn order với bàn cụ thể). Khi `tableMode=true`, floor-plan view trở thành entry point POS — thu ngân chọn bàn trước khi vào menu; order lưu kèm `tableId` + `tableNameSnapshot` immutable; hóa đơn in tên bàn. **Quick-counter ("Bán hàng nhanh")** vẫn truy cập một chạm từ floor-plan để phục vụ khách mua mang đi tại quán F&B. Sau Epic này, **store F&B vận hành table-service đầy đủ** với 2 khu vực và ~8 bàn demo; **store counter-service hiện hữu KHÔNG thấy bất kỳ thay đổi UI nào** (backward compatible qua `tableMode=false`).
+**Mục tiêu Epic:** Mở rộng MVP sang **dual-mode F&B**: mỗi store có thể bật/tắt `tableMode` để vận hành theo counter-service (như trước) hoặc table-service (gắn order với bàn cụ thể). Khi `tableMode=true`, floor-plan view trở thành entry point POS — thu ngân chọn bàn trước khi vào menu; order lưu kèm `tableId` + `tableNameSnapshot` immutable; hóa đơn in tên bàn. **Quick-counter ("Bán hàng nhanh")** vẫn truy cập một chạm từ floor-plan để phục vụ khách mua mang đi tại quán F&B. Sau Epic này, **store F&B vận hành table-service đầy đủ** với 2 khu vực và ~8 bàn demo; **store counter-service hiện hữu KHÔNG thấy bất kỳ thay đổi UI nào** (backward compatible qua `tableMode=false`). Sau SCP-2026-06-01, Epic 6 Phase 1 cũng đảm bảo floor-plan/chọn bàn/mở phiên/finalize đơn kèm bàn hoạt động offline-first; occupancy dựa trên `table_session` open hoặc order trong ngày; online cross-device thấy occupied trong ≤1 chu kỳ polling; offline double-open giữ cả hai phiên và hiện badge conflict.
 
-**FRs covered:** FR44, FR45, FR46, FR47, FR47b, FR48, FR49, FR50, FR51, FR52
+**FRs covered:** FR44, FR45, FR46, FR47, FR47b, FR48, FR49, FR50, FR51, FR52, FR53, FR54, FR55, FR56
 
-**NFRs covered:** NFR18 (mode toggle không cần redeploy)
+**NFRs covered:** NFR18 (mode toggle không cần redeploy), NFR19 (POS table management offline parity)
 
 **UX-DRs covered:** UX-DR-T1 (TablePicker), UX-DR-T2 (FloorPlanView), UX-DR-T3 (AreaTabs), UX-DR-T4 (TableStatusBadge), UX-DR-T5 (Admin Table Form), UX-DR-T6 (Admin Area Form), UX-DR-T7 (POS Layout sticky bàn), UX-DR-T8 (TableModeBadge), UX-DR-T9 (POS Empty State), UX-DR-T10 (Admin Empty State), UX-DR-T11 (Admin Navigation), UX-DR-T12 (Quick-Counter Button), UX-DR-T13 (Mode Transition Affordance)
 
@@ -2310,6 +2347,8 @@ So that tôi biết khách hay trả bằng cách nào và món nào đang hot.
 - `pending_sync` = có order `pendingSync` (POS thiết bị khác đã sync nhưng server chưa nhận)
 - Aggregate query 1 lần, payload nhẹ (<5KB cho 50 bàn)
 
+> **SCP-2026-06-01 note:** Story 6.4 là baseline online status. Story 6.11 sẽ nâng cấp `/tables/status` để `occupied = open table_session OR order trong ngày`, thêm `openSessionCount` + `conflict`.
+
 **Given** orders DTO mở rộng (brownfield patch Story 2.6)
 **When** `POST /api/v1/orders` payload có `tableId` non-null
 **Then** server validate `tableId` thuộc store hiện tại (`tables.tenant_id + store_id` khớp user); cross-tenant → 400 `type=.../validation`. `tableNameSnapshot` cũng được persist nguyên văn từ payload (không re-query DB — đảm bảo immutability AR24)
@@ -2470,7 +2509,27 @@ So that tôi biết khách hay trả bằng cách nào và món nào đang hot.
 **When** test cases
 **Then** verify: snapshot pair (null/null hoặc cùng non-null), `tableNameSnapshot` immutable sau khi build, cart reset đúng khi confirm "Tạo cart mới"
 
-**Dependencies:** Story 6.7 (floor-plan entry), Story 6.4 (orders DTO accept tableId), Stories 2.4-2.8 (foundation cart/order/receipt — brownfield patches embedded here, KHÔNG re-open Epic 2).
+**Acceptance Criteria bổ sung (SCP-2026-06-01 — table session / occupancy, Phase 1):**
+
+**Given** `tableMode=true`, click `TableCard` empty
+**When** mở bàn
+**Then** tạo `table_session` (status `open`) — local (Dexie) khi offline, sync khi online; bàn chuyển trạng thái **"đang phục vụ" NGAY** (occupancy trước thanh toán — FR53)
+
+**Given** mở bàn đang có phiên `open` của device khác (online)
+**When** click
+**Then** cảnh báo mềm "máy khác đang phục vụ bàn này" (allow + warn, không chặn — FR54)
+
+**Given** finalize order
+**When** settle
+**Then** đóng `table_session` (status `settled`) + materialize order bất biến như cũ (RULE 4 — order chỉ materialize tại settle từ snapshot)
+
+**Given** offline
+**When** mở bàn / finalize
+**Then** mọi thao tác hoạt động offline (FR55); session/order xếp hàng sync (idempotent theo `client_session_id`)
+
+> **GHI CHÚ:** KHÔNG share item cross-device ở Phase 1 (tab chia sẻ đầy đủ + merge để Phase 2 / Epic 7).
+
+**Dependencies:** Story 6.7 (floor-plan entry — nâng cấp qua Story 6.12), Story 6.4 (orders DTO accept tableId), Story 6.11 (BE table-session lifecycle), Stories 2.4-2.8 (foundation cart/order/receipt — brownfield patches embedded here, KHÔNG re-open Epic 2).
 **Files touched:**
 - `features/orders/builder.ts` (brownfield Story 2.5 patch — `buildLocalOrder` thêm `tableId` + `tableNameSnapshot`)
 - `db/schemas/orders.ts` (brownfield Story 2.7 patch — Dexie schema)
@@ -2526,9 +2585,106 @@ So that tôi biết khách hay trả bằng cách nào và món nào đang hot.
 
 ---
 
+> **Phase 1 — Offline Table Management** (added 2026-06-04 via `SCP-2026-06-01-offline-table-sessions`, approved). Đảo thiết kế online-only của Epic 6 sang offline-first + table-session occupancy cross-device. Stories 6.10 → 6.11 → 6.12 → (cập nhật) 6.8.
+
+### Story 6.10: FE — Offline Cache Table Config + Local Status Derivation
+
+**As a** cashier
+**I want** floor-plan và trạng thái bàn render được khi offline
+**So that** store F&B `tableMode=true` không vỡ luồng bán hàng khi mất mạng (FR55, NFR19)
+
+**Acceptance Criteria:**
+
+**Given** POS login (hoặc online trở lại)
+**When** boot / online-resume
+**Then** pull `GET /areas` + `GET /tables` + `GET /stores/me`, ghi vào Dexie stores `db.areas`, `db.tables`, `db.storeConfig` (mirror, chỉ field cần offline)
+
+**Given** floor-plan view
+**When** render
+**Then** đọc tables/areas/storeConfig từ Dexie cache (không phụ thuộc network); status derive cục bộ từ `db.orders` + `db.tableSessions` qua `useLiveQuery`
+
+**Given** online
+**When** `/tables/status` trả về
+**Then** merge occupancy cross-device vào local derivation (online enhancement, không ghi đè local pending)
+
+**Given** ngắt mạng (offline)
+**When** mở floor-plan
+**Then** floor-plan + status vẫn render đầy đủ từ cache; không lỗi, không màn trắng
+
+**Dependencies:** Story 6.4 (endpoint nguồn). **Files touched:** `db/schemas/{areas,tables,store-config,table-sessions}.ts`, `features/tables/cache.ts` (populate on login/resume), `features/tables/status-derivation.ts`.
+**Estimate:** 10-14h.
+
+---
+
+### Story 6.11: BE — Table Session Lifecycle (Occupancy) + Sync + Status Upgrade
+
+**As a** system
+**I want** phiên bàn (table session) làm nguồn occupancy cross-device
+**So that** bàn hiện occupied ngay khi mở (trước thanh toán) và đồng bộ giữa các máy (FR53, FR54, FR56)
+
+**Acceptance Criteria:**
+
+**Given** migration mới
+**When** apply
+**Then** tạo bảng `table_sessions` (id, tenant_id, store_id, table_id FK, opened_by_device, status `open|settled|voided|superseded`, opened_at, client_session_id UUIDv7, created_at, updated_at); index `(table_id, status)`; unique `(tenant_id, store_id, client_session_id)`
+
+**Given** `POST /api/v1/tables/:id/sessions`
+**When** gọi (kể cả replay cùng `client_session_id`)
+**Then** mở phiên idempotent — replay trả cùng kết quả, không tạo phiên trùng
+
+**Given** `GET /api/v1/tables/sessions?status=open`
+**When** gọi
+**Then** trả list phiên đang mở của store (cross-device occupancy)
+
+**Given** `POST /api/v1/tables/sessions/:id/settle`
+**When** finalize order
+**Then** chuyển phiên sang `settled`
+
+**Given** `GET /api/v1/tables/status` (nâng cấp)
+**When** gọi
+**Then** `occupied` = có phiên `open` **OR** có order trong ngày; trả thêm `openSessionCount` + cờ `conflict`
+
+**Given** ≥2 phiên `open` cùng `table_id` (2 máy offline cùng mở)
+**When** sync về server
+**Then** `conflict=true`; **KHÔNG xóa phiên nào** (giữ cả hai — FR56)
+
+**Dependencies:** Story 6.1 (schema), Story 6.4 (status endpoint gốc). **Files touched:** `prisma/schema.prisma` + migration, `src/tables/table-sessions.{controller,service}.ts`, `src/tables/tables.service.ts` (status upgrade).
+**Estimate:** 12-16h.
+
+---
+
+### Story 6.12: FE — Floor-Plan Offline Rework (Brownfield Patch Story 6.7)
+
+**As a** cashier
+**I want** floor-plan đã build (Story 6.7) hoạt động offline + hiển thị xung đột
+**So that** polling 30s không còn là điểm vỡ offline (FR50, FR55)
+
+**Acceptance Criteria:**
+
+**Given** floor-plan (Story 6.7 đã done với polling online-only)
+**When** rework
+**Then** floor-plan đọc tables/areas/storeConfig từ Dexie (Story 6.10); status từ local derivation; polling 30s `/tables/status` trở thành **online enhancement** — pause khi offline, KHÔNG throw lỗi
+
+**Given** bàn có `openSessionCount > 1` (conflict)
+**When** render
+**Then** `TableCard` hiển thị badge **⚠️ "Xung đột phiên"**
+
+**Given** offline
+**When** floor-plan visible
+**Then** hiện chỉ báo offline (re-use connectivity indicator Story 2.10); mọi tương tác chọn bàn vẫn hoạt động
+
+**Given** trạng thái "đang phục vụ" (phiên mở chưa thanh toán)
+**When** render TableCard
+**Then** phân biệt visual với "đã có đơn trong ngày" và "trống"
+
+**Dependencies:** Story 6.10 (Dexie cache + derivation), Story 6.11 (status conflict flag). **Files touched:** `routes/pos/floor-plan-view.tsx` (brownfield Story 6.7 patch), `features/tables/components/table-card.tsx`.
+**Estimate:** 8-10h.
+
+---
+
 ### Epic 6 Summary
 
-- **9 stories** covering FR44–FR52 (gồm FR47b); NFR18 (mode toggle no redeploy); UX-DR-T1..T13 (13 design requirements)
+- **12 stories** (9 gốc + 3 Phase 1 offline) covering FR44–FR56 (gồm FR47b, FR53-56); NFR18 + NFR19 (offline parity); UX-DR-T1..T13 (13 design requirements) + offline indicator/conflict badge
 - **Dependency graph:**
   - 6.1 (BE schema foundation) — chặn tất cả
   - 6.1 → 6.2, 6.3 (BE CRUD areas/tables) song song
@@ -2537,11 +2693,12 @@ So that tôi biết khách hay trả bằng cách nào và món nào đang hot.
   - 6.4 → 6.7 (FE floor-plan)
   - 6.7 → 6.8 (FE table-first + brownfield 2-4..2-8 + 3-1)
   - 6.8 → 6.9 (FE quick-counter)
+  - **Phase 1 offline (SCP-2026-06-01):** 6.11 (BE session) + 6.10 (FE Dexie cache) → 6.12 (FE floor-plan rework) → cập nhật 6.8 (table-first + session); 6.9 ~không đổi
 - **Brownfield patches embedded** (KHÔNG re-open Epic 2/3):
   - Story 1.4 (seed) trong Story 6.1
   - Story 2.4 (cart-panel), 2.5 (checkout-summary/buildLocalOrder), 2.6 (orders DTO), 2.7 (Dexie schema), 2.8 (receipt) trong Story 6.8
   - Story 3.1 (admin nav) trong Story 6.5
-- **Effort estimate tổng:** ~60-90h (~2-3 sprint developer-week tại 1 dev intermediate, theo SCP §3)
+- **Effort estimate tổng:** ~60-90h gốc + ~35-50h Phase 1 offline (Story 6.10-6.12 + rework 6.8, theo SCP-2026-06-01 §2.4)
 - **Deliverable Epic 6:**
   - Store F&B vận hành table-service đầy đủ: cashier mở POS → floor-plan → chọn bàn → menu (sticky bàn) → finalize → receipt in tên bàn → floor-plan refresh
   - "Bán hàng nhanh" cách 1 chạm cho khách mang đi trong cùng store F&B
@@ -2549,11 +2706,28 @@ So that tôi biết khách hay trả bằng cách nào và món nào đang hot.
   - Mode toggle bật/tắt không cần redeploy (NFR18)
   - Store counter-service hiện hữu KHÔNG thấy bất kỳ thay đổi UI nào (backward compat verified qua regression)
 - **Demo verification:** seed có 1 store mode-off + 1 store mode-on; e2e test cả 2 paths (HT5 + HT5b)
-- **Known limitations** (per SCP §6, ghi rõ trong "Out of Scope" Epic 6):
+- **Known limitations** (per SCP-2026-06-01 §4.D3, ghi rõ trong "Out of Scope" Epic 6):
   - No split/merge bill · no transfer table · no reservation · no KOT/kitchen display
-  - Table status không realtime (polling 30s; 2 POS chọn cùng 1 bàn offline có thể conflict — sync engine vẫn idempotent, log conflict)
+  - **Phase 1 (SCP-2026-06-01):** table occupancy cross-device khi online (≤1 chu kỳ polling); offline derive cục bộ từ Dexie. 2 POS offline cùng mở 1 bàn → giữ cả 2 phiên + badge ⚠️ xung đột, thu ngân xử lý thủ công.
+  - **Defer Phase 2 (Epic 7 "Shared Table Sessions"):** tab chia sẻ đầy đủ (xem/thêm item cross-device) + màn gộp phiên (merge) + item-event sync 2 chiều.
   - Floor-plan không visual editor
   - Reports Epic 4 không break down theo bàn (quick-counter và table sales aggregate chung)
+
+---
+
+## Epic 7: Shared Table Sessions (Phase 2 — Fast-Follow)
+
+> **Outline only** — added 2026-06-04 via `SCP-2026-06-01-offline-table-sessions` (approved). Phase 2 deferred. **Cần chi tiết hóa qua `bmad-create-epics-and-stories`** trước khi dev. Mục tiêu: tab chia sẻ đầy đủ cross-device (POS khác mở được tab đang mở, xem + thêm item vào cùng đơn) + merge khi xung đột + item-event sync 2 chiều (append-only + tombstone, union semantics — KHÔNG cần CRDT).
+
+**Stories (outline — chưa chốt AC):**
+
+- **7.1 — BE:** `table_session_items` append-only + tombstone; endpoints add/remove item; sync union semantics theo `client_item_id` (ADD tự do conflict; remove = tombstone).
+- **7.2 — FE:** `TableSessionView` (tab đang mở, item theo device); join-tab + offline event-sync engine.
+- **7.3 — FE:** concurrent-edit warning (online — 2 máy cùng sửa 1 tab).
+- **7.4 — FE+BE:** `MergeSessionDialog` (gộp 2 phiên conflict) + reconcile logic (union item-event theo `client_item_id`).
+- **7.5 — Test:** e2e multi-device offline → sync → merge.
+
+**Dependencies:** Epic 6 Phase 1 done (table_sessions occupancy + offline cache). **Effort estimate (SCP §2.4):** ~90-120h, risk Medium-High.
 
 ---
 

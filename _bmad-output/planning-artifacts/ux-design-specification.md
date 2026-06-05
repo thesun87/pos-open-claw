@@ -13,11 +13,14 @@ date: '2026-05-09'
 lastStep: 14
 status: 'complete'
 completedAt: '2026-05-09'
-lastEdited: '2026-05-25'
+lastEdited: '2026-06-04'
 editHistory:
   - date: '2026-05-25'
     source: 'SCP-2026-05-25-table-mgmt (approved)'
     changes: 'Thêm 2 user journeys (HT5 table-first + HT5b quick-counter), 9 custom components (FloorPlanView/TableCard/AreaTabs/TablePicker/QuickCounterButton/TableContextHeader/TableModeBadge/StoreConfigToggle/ModeTransitionConfirmDialog), Phase 5 implementation roadmap, 6 patterns mới (sticky bàn header, mode transition, floor-plan touch, quick-counter button, table color semantics, table context language), và section "Table Service Mode — UX Design Requirements" với 13 UX-DR-T1..T13'
+  - date: '2026-06-04'
+    source: 'SCP-2026-06-01-offline-table-sessions (approved)'
+    changes: 'Thêm section "Phase 1 — Offline & Table Session UX" với 3 UX-DR mới: T14 (floor-plan offline indicator + conflict badge), T15 (status badge "đang phục vụ"/open session), T16 (concurrent-open soft warning); cập nhật matrix UX-DR→Story; ghi chú defer Phase 2 (TableSessionView, MergeSessionDialog) sang Epic 7.'
 ---
 
 # UX Design Specification pos-bmad
@@ -1421,6 +1424,47 @@ Ba ràng buộc xuyên suốt:
 - Esc = "Hủy".
 - Không trigger khi cart rỗng (tránh ma sát thừa).
 
+---
+
+## Phase 1 — Offline & Table Session UX (SCP-2026-06-01)
+
+> Bổ sung 2026-06-04 qua `SCP-2026-06-01-offline-table-sessions` (approved). Hỗ trợ floor-plan offline + occupancy cross-device (phiên bàn mở trước thanh toán) + xử lý xung đột. **Phase 2 (TableSessionView, MergeSessionDialog) được defer sang Epic 7** — xem cuối section.
+
+### UX-DR-T14: Floor-Plan Offline Indicator + Conflict Badge
+
+**Mục đích:** Thu ngân tin tưởng floor-plan vẫn đúng khi offline, và nhận biết bàn có xung đột phiên.
+
+**Acceptance criteria:**
+
+- **Offline indicator:** re-use connectivity indicator (Story 2.10) — khi offline, floor-plan hiển thị chỉ báo trạng thái offline rõ ràng; KHÔNG hiện lỗi/màn trắng; mọi tương tác chọn bàn vẫn hoạt động.
+- **Conflict badge:** khi `openSessionCount > 1`, `TableCard` hiển thị badge **⚠️ "Xung đột phiên"** (góc TableCard, màu cảnh báo); accessible label đầy đủ ("Bàn X, xung đột phiên — 2 máy đang phục vụ").
+- Polling 30s `/tables/status` chỉ là online enhancement — pause khi offline, không gây flicker/spinner lỗi.
+
+### UX-DR-T15: Status Badge "Đang phục vụ" (Open Session)
+
+**Mục đích:** Phân biệt rõ bàn có phiên mở chưa thanh toán với bàn đã có đơn trong ngày và bàn trống.
+
+**Acceptance criteria:**
+
+- `StatusBadge` / `TableCard` bổ sung trạng thái **"đang phục vụ"** (phiên `open`, chưa thanh toán) — phân biệt visual (màu + label + icon) với: "trống", "đã có đơn trong ngày", "chờ sync".
+- Trạng thái derive cục bộ (offline-capable) từ `db.tableSessions` + `db.orders`.
+
+### UX-DR-T16: Concurrent-Open Warning (Soft, Online)
+
+**Mục đích:** Cảnh báo mềm khi mở bàn đang được máy khác phục vụ — không khóa cứng (allow + warn).
+
+**Acceptance criteria:**
+
+- Khi mở bàn đang có phiên `open` của device khác (online): hiện toast/dialog cảnh báo mềm — *"Bàn X đang được máy khác phục vụ (mở lúc HH:mm). Vẫn tiếp tục?"*.
+- KHÔNG chặn: thu ngân vẫn tiếp tục mở được (FR54).
+- Offline: không thể biết phiên máy khác → không cảnh báo; xung đột được phát hiện sau sync (badge T14).
+
+### Phase 2 (defer — Epic 7 "Shared Table Sessions")
+
+- **TableSessionView:** màn tab đang mở, hiển thị item theo device (xem + thêm item cross-device).
+- **MergeSessionDialog:** gộp 2 phiên xung đột, reconcile item-event theo `client_item_id`.
+- **Concurrent-edit warning:** cảnh báo khi 2 máy cùng sửa 1 tab đang mở (online).
+
 ### Tổng hợp matrix UX-DR → Component → Story
 
 | UX-DR | Component(s) chính | Story (Epic 6) |
@@ -1438,3 +1482,6 @@ Ba ràng buộc xuyên suốt:
 | T11 | Admin nav section | 6-5 (brownfield 3-1 patch) |
 | T12 | QuickCounterButton | 6-9 (quick-counter flow) |
 | T13 | ModeTransitionConfirmDialog | 6-8, 6-9 |
+| T14 | FloorPlanView, TableCard, connectivity indicator | 6-12 (floor-plan offline rework) |
+| T15 | TableCard, StatusBadge | 6-10 / 6-12 (local status derivation) |
+| T16 | concurrent-open warning toast/dialog | 6-8 (table-first + session) |

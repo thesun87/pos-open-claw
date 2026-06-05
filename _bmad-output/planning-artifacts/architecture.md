@@ -11,11 +11,14 @@ date: '2026-05-09'
 lastStep: 8
 status: 'complete'
 completedAt: '2026-05-09'
-lastEdited: '2026-05-25'
+lastEdited: '2026-06-04'
 editHistory:
   - date: '2026-05-25'
     source: 'SCP-2026-05-25-table-mgmt (approved)'
     changes: 'Thêm Area/Table models + stores.table_mode + orders.table_id/table_name_snapshot; thêm 4 endpoints (/areas, /tables, /tables/status, /stores/me); cập nhật sync payload + idempotency rules cho tableId; thêm Epic 6 vào trình tự implementation; mở rộng FR coverage (FR44-52) + NFR18 + HT5/HT5b'
+  - date: '2026-06-04'
+    source: 'SCP-2026-06-01-offline-table-sessions (approved)'
+    changes: 'Offline-first table management (Phase 1): đảo quyết định "không cache" → cache areas/tables/storeConfig vào Dexie (:166); mở rộng Dexie mirror + local status derivation (:234); nâng cấp conflict policy → giữ cả 2 phiên + cờ conflict (:445); thêm model table_sessions (+ table_session_items Phase 2) + 3 endpoint session lifecycle + nâng cấp /tables/status (open session OR order today, openSessionCount + conflict). Coverage: FR53-56 + NFR19'
 ---
 
 # Tài Liệu Quyết Định Kiến Trúc — Café POS MVP
@@ -162,8 +165,10 @@ Các lệnh khởi tạo trên là **story đầu tiên của sprint thực thi*
 - `sync_log` (idempotency dedup theo `tenant_id + store_id + device_id + client_order_id`; **không** bao gồm `table_id` trong composite key)
 - **`areas`** (khu vực bàn, scoped `tenant_id + store_id`, unique `name` per store — FR45)
 - **`tables`** (thuộc `area`, fields: `name`, `capacity`, `sort_order`, `is_active`, scoped `tenant_id + store_id` — FR46)
+- **`table_sessions`** (phiên bàn occupancy — Phase 1, SCP-2026-06-01): `id`, `tenant_id`, `store_id`, `table_id` FK, `opened_by_device`, `status` (`open|settled|voided|superseded`), `opened_at`, `client_session_id` (UUIDv7, idempotency), `created_at`, `updated_at`; index `(table_id, status)`; unique `(tenant_id, store_id, client_session_id)` — FR53, FR54, FR56
+- **`table_session_items`** (Phase 2 — Epic 7, append-only event): `id`, `session_id` FK, `client_item_id`, `added_by_device`, `added_at`, `product_id`, `*_snapshot`, `quantity`, `options`, `note`, `status` (`active|removed`). "Xóa" = tombstone, không hard-delete
 
-**Lưu ý table config:** không có version monotonic cho `areas`/`tables` (đơn giản hóa MVP — floor-plan đổi không thường xuyên). POS pull `GET /tables` mỗi lần focus tab; có thể nâng cấp `tableConfigVersion` sau nếu cần.
+**Lưu ý table config** (cập nhật SCP-2026-06-01 — offline-first): `areas`/`tables`/store config được **CACHE vào IndexedDB (Dexie)** để POS hoạt động offline. FE pull `GET /areas` + `GET /tables` + `GET /stores/me` khi login và khi online trở lại, ghi vào `db.areas` / `db.tables` / `db.storeConfig`; floor-plan đọc từ cache (online refresh nền). Chưa cần version monotonic (config đổi không thường xuyên); có thể nâng cấp `tableConfigVersion` sau. Bổ sung bảng `table_sessions` cho occupancy cross-device.
 
 ### Xác thực & Bảo mật
 
@@ -231,7 +236,7 @@ Các lệnh khởi tạo trên là **story đầu tiên của sprint thực thi*
 **Phụ thuộc giữa các quyết định:**
 
 - Prisma schema **drives** Zod schema chia sẻ → DTO server class-validator phải khớp Zod FE
-- Dexie schema **mirror** Prisma schema cho menu cache + pending orders, không khớp 100% (chỉ field cần offline)
+- Dexie schema **mirror** Prisma schema cho menu cache + pending orders + table config (`areas`, `tables`, `storeConfig`) + table sessions (occupancy), không khớp 100% (chỉ field cần offline). Floor-plan status derive cục bộ từ `db.orders` + `db.tableSessions` qua `useLiveQuery`; `/tables/status` chỉ là online enhancement để hợp nhất occupancy cross-device.
 - RFC 7807 envelope ⇒ FE error handler **một nơi** map `type` URI → action (redirect login, show toast, retry)
 - Single access token 7 ngày trong IndexedDB ⇒ AuthInterceptor đính Bearer từ IndexedDB; khi 401 thử /refresh (cookie); khi offline đọc trực tiếp `exp` để gate UX
 - Multi-tenant middleware (Prisma `$extends`) ⇒ mọi service backend tự động scope; **không có endpoint nào bypass**
@@ -442,7 +447,7 @@ Idempotency-Key: a3f8b2c1-...
 - `tableId` và `tableNameSnapshot` là **optional/nullable**. Khi `tableId = null` (quick-counter sale hoặc store ở counter-service mode), `tableNameSnapshot` cũng phải là `null`.
 - `tableId` **KHÔNG** thuộc composite idempotency key `(tenant_id, store_id, device_id, client_order_id)`. Đổi bàn rồi resend cùng `clientOrderId` → server vẫn dedup, không tạo đơn thứ 2.
 - Server validate `tableId` (nếu non-null) phải thuộc cùng `tenant_id + store_id` của user; nếu sai → 400 với `type = .../validation`.
-- **Conflict offline (2 POS cùng chọn bàn 4):** MVP **chấp nhận** — cả 2 sync thành công, server log conflict qua `table_id` trùng với `synced_at` gần nhau, không lock realtime.
+- **Conflict offline (2 POS cùng mở bàn 4)** (cập nhật SCP-2026-06-01): **GIỮ CẢ HAI phiên** (idempotent theo `client_session_id`, không mất đơn). Server phát hiện ≥2 phiên `open` cùng `table_id` → set cờ conflict trong `/tables/status`; floor-plan hiện badge ⚠️. **Phase 1:** thu ngân xử lý thủ công. **Phase 2 (Epic 7):** màn gộp phiên (merge) hợp nhất item-event theo `client_item_id`. Không lock cứng (online "allow + warn", không chặn).
 
 ### Mẫu Quy trình
 
@@ -914,7 +919,10 @@ pos-web/
 | `/api/v1/reports` | GET (`?from&to&metric`) | bearer + admin | reports | FR37–FR40 |
 | `/api/v1/areas` | GET/POST/PATCH/DELETE | bearer + admin | tables | FR45 (CRUD khu vực) |
 | `/api/v1/tables` | GET/POST/PATCH/DELETE | bearer + admin | tables | FR46 (CRUD bàn, FK→area) |
-| `/api/v1/tables/status` | GET | bearer | tables | FR50 (occupancy derive từ `orders` chưa void trong ngày; polling 30s khi POS ở floor-plan view) |
+| `/api/v1/tables/status` | GET | bearer | tables | FR50, FR54 (occupied = open session OR order today; thêm `openSessionCount` + cờ `conflict`; online enhancement — offline derive cục bộ) |
+| `/api/v1/tables/:id/sessions` | POST | bearer | tables | FR53 (mở phiên bàn / occupancy; idempotent `client_session_id`) |
+| `/api/v1/tables/sessions` | GET (`?status=open`) | bearer | tables | FR54 (list phiên đang mở của store — cross-device occupancy) |
+| `/api/v1/tables/sessions/:id/settle` | POST | bearer | tables | FR53 (đóng phiên khi finalize order) |
 | `/api/v1/stores/me` | GET | bearer | stores | FR44 (FE đọc `tableMode` khi login/reload — NFR18) |
 | `/health` | GET | none | health | (connectivity) |
 | `/api/docs` | GET | none (dev) | swagger | DX |

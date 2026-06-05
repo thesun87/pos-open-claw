@@ -41,10 +41,10 @@ When spawning child sub-agent sessions, the orchestrator MUST pass an explicit `
 | `bmad-help` | `sonnet` |
 | `bmad-dev-story` | `sonnet` |
 | `bmad-quick-dev` | `sonnet` |
-| `bmad-code-review` | `sonnet` |
+| `bmad-code-review` | `opus` |
 | any other BMAD workflow not listed above | `sonnet` |
 
-Rationale: story creation requires the strongest reasoning for requirements decomposition, acceptance criteria, and architectural alignment, so it runs on Opus. All other workflows (status probing, implementation, review, helpers) run on Sonnet for cost/speed efficiency.
+Rationale: story creation and code review require the strongest reasoning — requirements decomposition, acceptance criteria, and architectural alignment for create-story; adversarial defect-finding and acceptance auditing for code-review — so both run on Opus. The remaining workflows (status probing, implementation, helpers) run on Sonnet for cost/speed efficiency.
 
 Apply this rule on every sub-agent spawn (e.g., via the Agent tool's `model` field). Do not override these defaults unless the user explicitly requests a different model for a specific run.
 
@@ -301,7 +301,7 @@ Make the minimal safe change, run relevant gates, update applicable BMAD artifac
 
 ### Code review child
 
-Spawn with `model: sonnet`.
+Spawn with `model: opus`.
 
 ```text
 Use skill `bmad-code-review` for {{story_file_or_target_story}}.
