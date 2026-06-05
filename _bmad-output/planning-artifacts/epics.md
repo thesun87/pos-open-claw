@@ -2682,9 +2682,45 @@ So that tôi biết khách hay trả bằng cách nào và món nào đang hot.
 
 ---
 
+### Story 6.13: FE — Per-Table Draft Cart (Local Reload Items on Re-Select)
+
+> Added 2026-06-05 (product owner decision). Tách phần "giữ món" single-device khỏi Story 6.8 (vốn chỉ giữ occupancy). KHÔNG cross-device/cross-session (đó là Epic 7).
+
+**As a** cashier (store F&B `tableMode=true`)
+**I want** khi "Giữ bàn" với giỏ có món rồi chọn lại đúng bàn đó (trên cùng máy), các món được nạp lại vào giỏ
+**So that** giữ bàn để phục vụ bàn khác rồi quay lại làm tiếp đơn cũ mà không nhập lại món (FR53 on-hold, single-device)
+
+**Acceptance Criteria:**
+
+**Given** cashier "Giữ bàn" (Story 6.8) với giỏ ≥1 món
+**When** bấm giữ bàn
+**Then** lưu items+discount theo `tableId` vào Dexie `tableDrafts` (version 6); bàn vẫn "Đang phục vụ" + **clickable** để mở lại
+
+**Given** bàn có draft local
+**When** chọn lại bàn đó ở floor-plan
+**Then** nạp draft vào giỏ (`loadCart`); product grid hiện với món cũ; KHÔNG lẫn món bàn khác
+
+**Given** thanh toán / "Tạo cart mới" / "Hủy chọn bàn"
+**When** kết thúc/giải phóng bàn
+**Then** xóa draft của bàn đó (`clearTableDraft`)
+
+**Given** reload trang
+**When** chọn lại bàn đang giữ
+**Then** vẫn nạp được món (draft persistent qua Dexie; cart-store vẫn memory-only)
+
+**Given** counter-mode / quick-counter (`tableId=null`)
+**When** bán hàng
+**Then** KHÔNG tạo draft nào (regression an toàn)
+
+**Dependencies:** Story 6.8 (nút "Giữ bàn" + session + cart context + Dexie v5 — implement TRƯỚC), Story 6.10 (Dexie infra), Story 6.12 (display status/disabled — wire bàn reopenable), Story 6.7 (select flow). **Files touched:** `features/orders/cart-draft.ts` (NEW), `db/dexie.ts` (v6 + `tableDrafts`), `features/orders/cart-store.ts` (`loadCart`), `routes/pos/pos-shell.tsx` (orchestration), `features/tables/components/{floor-plan-view,table-card}.tsx` (reopenable).
+**NOT in scope:** đồng bộ đa thiết bị / append-only item events / merge (Epic 7).
+**Estimate:** 6-9h.
+
+---
+
 ### Epic 6 Summary
 
-- **12 stories** (9 gốc + 3 Phase 1 offline) covering FR44–FR56 (gồm FR47b, FR53-56); NFR18 + NFR19 (offline parity); UX-DR-T1..T13 (13 design requirements) + offline indicator/conflict badge
+- **13 stories** (9 gốc + 3 Phase 1 offline + 6.13 per-table draft cart single-device) covering FR44–FR56 (gồm FR47b, FR53-56); NFR18 + NFR19 (offline parity); UX-DR-T1..T13 (13 design requirements) + offline indicator/conflict badge
 - **Dependency graph:**
   - 6.1 (BE schema foundation) — chặn tất cả
   - 6.1 → 6.2, 6.3 (BE CRUD areas/tables) song song
