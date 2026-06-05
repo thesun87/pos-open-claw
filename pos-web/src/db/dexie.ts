@@ -8,6 +8,7 @@ import type {
   MenuProductRecord,
 } from './schemas/menu'
 import { ORDERS_SCHEMA, type LocalOrderRecord } from './schemas/orders'
+import type { AreaRecord, StoreConfigRecord, TableRecord, TableSessionRecord } from './schemas/tables'
 
 export class PosDexie extends Dexie {
   session!: Table<SessionRecord, string>
@@ -17,6 +18,13 @@ export class PosDexie extends Dexie {
   optionGroups!: Table<MenuOptionGroupRecord, string>
   options!: Table<MenuOptionRecord, string>
   menuMeta!: Table<MenuMetaRecord, string>
+  // Story 6.10 stores (version 4)
+  // Note: 'tables' is a reserved property name on Dexie.prototype (returns Table[]).
+  // The Dexie store is named 'posTables' to avoid the collision; index schema mirrors AC2.
+  areas!: Table<AreaRecord, string>
+  posTables!: Table<TableRecord, string>
+  storeConfig!: Table<StoreConfigRecord, string>
+  tableSessions!: Table<TableSessionRecord, string>
 
   constructor(name = 'pos-bmad') {
     super(name)
@@ -43,6 +51,23 @@ export class PosDexie extends Dexie {
       optionGroups: 'id, sortOrder',
       options: 'id, optionGroupId, sortOrder',
       menuMeta: 'id, menuVersion, lastPulledAt',
+    })
+    // Story 6.10 — table config offline cache + tableSessions read-shape.
+    // Version 4 adds 4 new stores for floor-plan offline rendering.
+    // Story 6.8 must use version 5 for its orders.tableId/tableNameSnapshot fields.
+    this.version(4).stores({
+      session: 'id, expiresAt, lastLoginAt',
+      orders: ORDERS_SCHEMA,
+      categories: 'id, isActive, sortOrder',
+      products: 'id, categoryId, isActive, sortOrder',
+      optionGroups: 'id, sortOrder',
+      options: 'id, optionGroupId, sortOrder',
+      menuMeta: 'id, menuVersion, lastPulledAt',
+      // New stores (6.10) — 'tables' is a Dexie built-in property so we use 'posTables'
+      areas: 'id, sortOrder',
+      posTables: 'id, areaId, sortOrder',
+      storeConfig: 'id',
+      tableSessions: 'id, tableId, status, clientSessionId',
     })
   }
 }

@@ -36,6 +36,9 @@ export type TableStatusRow = {
   tableId: string
   status: TableOccupancyStatus
   activeOrderCount: number
+  /** Story 6.10 — additive fields from BE 6.11 upgrade. */
+  openSessionCount: number
+  conflict: boolean
 }
 
 // POS-namespaced query keys — MUST NOT collide with admin keys

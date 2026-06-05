@@ -7,6 +7,7 @@ import { clearSession, getCurrentSession, saveRefreshedAccessToken } from './tok
 import { refresh } from './api'
 import { expireSession, getRoleRoute, restoreSessionOnBoot, shouldRefreshSoon } from './session-lifecycle'
 import { installMenuOnlineRecovery, triggerMenuPull } from '../menu/sync'
+import { installTableConfigOnlineRecovery, triggerTableConfigPull } from '../tables/cache'
 
 
 let refreshInFlight: Promise<void> | null = null
@@ -54,6 +55,9 @@ export function SessionBootProvider({ children }: { children: React.ReactNode })
         void triggerMenuPull({ isAuthenticated: () => true })?.catch(() => {
           // Best-effort cache refresh: cached/offline POS shell must still boot.
         })
+        void triggerTableConfigPull({ isAuthenticated: () => true })?.catch(() => {
+          // Best-effort: table config cache refresh; offline boot must not be blocked.
+        })
         if (result.shouldRefresh) void refreshBestEffort(setSessionFromRecord)
       } else if (result.status === 'expired') {
         await expireSession({ clearSession, clearSessionState, message: result.message })
@@ -90,7 +94,9 @@ export function SessionBootProvider({ children }: { children: React.ReactNode })
 
   React.useEffect(() => {
     if (bootStatus !== 'ready' || !currentUser) return
-    return installMenuOnlineRecovery({ isAuthenticated: () => useSessionStore.getState().isAuthenticated })
+    const cleanupMenu = installMenuOnlineRecovery({ isAuthenticated: () => useSessionStore.getState().isAuthenticated })
+    const cleanupTableConfig = installTableConfigOnlineRecovery({ isAuthenticated: () => useSessionStore.getState().isAuthenticated })
+    return () => { cleanupMenu(); cleanupTableConfig() }
   }, [bootStatus, currentUser])
 
   React.useEffect(() => {

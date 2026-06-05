@@ -1,5 +1,5 @@
 # generated: 2026-05-10T15:13:01+07:00
-# last_updated: 2026-05-18T21:01:00+07:00
+# last_updated: 2026-06-05
 # project: pos-bmad
 # project_key: NOKEY
 # tracking_system: file-system
@@ -22,7 +22,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-05-10T15:11:57+07:00"
-last_updated: "2026-06-04T12:00:00+07:00"
+last_updated: "2026-06-05T10:00:00+07:00"
 project: pos-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -94,7 +94,7 @@ development_status:
   6-8-fe-pos-table-first-flow-brownfield-orders-integration: ready-for-dev
   6-9-fe-pos-quick-counter-button-mode-transitions: ready-for-dev
   # Phase 1 offline table management — added 2026-06-01 via SCP-2026-06-01-offline-table-sessions
-  6-10-fe-offline-cache-table-config-local-status: backlog
+  6-10-fe-offline-cache-table-config-local-status: done
   6-11-be-table-session-lifecycle-occupancy-sync: done
   6-12-fe-floor-plan-offline-rework: backlog
   epic-6-retrospective: optional
