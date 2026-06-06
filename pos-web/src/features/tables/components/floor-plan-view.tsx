@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { AlertTriangle, Coffee, CloudOff, Lock, ReceiptText, Users } from 'lucide-react'
+import { AlertTriangle, Coffee, Lock, Users } from 'lucide-react'
 import { LoadingSkeleton } from '../../../shared/components/ui/loading-skeleton'
 import { StatusBadge } from '../../../shared/components/ui/status-badge'
 import { useConnectivityStore } from '../../../shared/stores/connectivity.store'
@@ -14,16 +14,14 @@ import { TableCard } from './table-card'
 const STATUS_LEGEND = [
   { label: 'Trống', variant: 'success' as const, icon: <Coffee className="size-3" /> },
   { label: 'Đang phục vụ', variant: 'warning' as const, icon: <Users className="size-3" /> },
-  { label: 'Đã có đơn', variant: 'accent' as const, icon: <ReceiptText className="size-3" /> },
   { label: 'Xung đột phiên', variant: 'danger' as const, icon: <AlertTriangle className="size-3" /> },
-  { label: 'Chờ đồng bộ', variant: 'danger' as const, icon: <CloudOff className="size-3" /> },
   { label: 'Tạm tắt', variant: 'neutral' as const, icon: <Lock className="size-3" /> },
 ]
 
 type FloorPlanViewProps = {
   /**
    * Story 6.13: Set of tableIds that have a local draft on this device.
-   * Tables in this set are enabled (clickable) even if their status is serving/occupied,
+   * Tables in this set are enabled (clickable) even if their status is serving,
    * so the cashier can reopen and reload items (AC9).
    * Boundary: passed from pos-shell.tsx (route-level) to avoid features/tables ↔ features/orders cross-import.
    */

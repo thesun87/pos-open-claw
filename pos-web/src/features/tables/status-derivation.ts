@@ -69,11 +69,17 @@ export function deriveTableStatus({
 }): Map<string, DerivedTableStatus> {
   const startOfTodayMs = getStartOfTodayVietnamMs(now)
 
-  // Index local open sessions by tableId
+  // Index local sessions by tableId — track both open and settled counts.
+  // settledSessionsByTable lets us know which tables THIS device has explicitly released:
+  // a settled session means the cashier finished/paid the table locally, so the table is free
+  // here regardless of what the (possibly stale) server /tables/status still reports.
   const openSessionsByTable = new Map<string, number>()
+  const settledSessionsByTable = new Map<string, number>()
   for (const session of sessions) {
     if (session.status === 'open') {
       openSessionsByTable.set(session.tableId, (openSessionsByTable.get(session.tableId) ?? 0) + 1)
+    } else if (session.status === 'settled') {
+      settledSessionsByTable.set(session.tableId, (settledSessionsByTable.get(session.tableId) ?? 0) + 1)
     }
   }
 
@@ -115,20 +121,39 @@ export function deriveTableStatus({
   for (const table of tables) {
     const { id: tableId } = table
     const localOpenSessions = openSessionsByTable.get(tableId) ?? 0
+    const localSettledSessions = settledSessionsByTable.get(tableId) ?? 0
     const localActiveOrders = activeOrdersByTable.get(tableId) ?? 0
     const hasPendingSync = pendingSyncByTable.has(tableId)
 
-    // Online-merge: union server occupancy with local (AC6)
-    // Server data enhances local — does NOT overwrite local pendingSync or open sessions
+    // Online-merge with local authority (AC6 + bug-fix 2026-06-06):
+    // The server /tables/status still counts a session as open until this device's "settle" syncs
+    // (sessionSyncEngine pass 2) AND the next 30s poll refreshes. Taking max(local, server)
+    // therefore kept a just-paid table stuck on "Đang phục vụ" until that round-trip completed.
+    //
+    // Local is authoritative for tables this device has touched:
+    //   - localOpenSessions > 0  → this device has it open now → occupied (max with server).
+    //   - localSettledSessions>0 → this device RELEASED it → free here immediately; ignore the
+    //                              stale server open-count (no flicker: settled records persist).
+    //   - no local session       → trust server (cross-device discovery — AC6 union preserved).
     const serverRow = serverByTable.get(tableId)
     const serverOpenSessions = serverRow?.openSessionCount ?? 0
     const serverActiveOrders = serverRow?.activeOrderCount ?? 0
     const serverConflict = serverRow?.conflict ?? false
 
-    // Union: take the max of local and server counts
-    const mergedOpenSessions = Math.max(localOpenSessions, serverOpenSessions)
+    let mergedOpenSessions: number
+    let mergedConflict: boolean
+    if (localOpenSessions > 0) {
+      mergedOpenSessions = Math.max(localOpenSessions, serverOpenSessions)
+      mergedConflict = serverConflict || localOpenSessions >= 2
+    } else if (localSettledSessions > 0) {
+      // Released locally — do not let a stale server open-count resurrect "serving".
+      mergedOpenSessions = 0
+      mergedConflict = false
+    } else {
+      mergedOpenSessions = serverOpenSessions
+      mergedConflict = serverConflict
+    }
     const mergedActiveOrders = Math.max(localActiveOrders, serverActiveOrders)
-    const mergedConflict = serverConflict || localOpenSessions >= 2
 
     const isOccupied = mergedOpenSessions > 0 || mergedActiveOrders > 0
 
@@ -183,10 +208,14 @@ export function useLocalTableStatus(serverStatus?: TableStatusRow[]): Map<string
  * Convert a TableRecord + DerivedTableStatus into a richer TableDisplayStatus for UI floor-plan.
  *
  * Priority order (highest first):
- *   inactive > conflict > pending_sync > serving > occupied > empty
+ *   inactive > conflict > serving > empty
  *
- * Note: deriveTableStatus doesn't distinguish serving vs occupied (both are 'occupied' internally).
- * This helper uses openSessionCount/activeOrderCount to make that distinction for the floor-plan UI.
+ * Hành vi (sau khi bỏ trạng thái "Đã có đơn" và "Chờ đồng bộ" khỏi display):
+ *  - Bàn chỉ "bận" khi đang có phiên phục vụ mở (serving) — cashier đang thao tác trên bàn.
+ *  - Khi thanh toán xong, phiên được settle (openSessionCount = 0) → bàn về 'empty' NGAY để lên đơn mới,
+ *    BẤT KỂ trong ngày đã có bao nhiêu đơn (activeOrderCount) HAY đơn vừa tạo còn chờ đồng bộ (pendingSync).
+ *  - Một đơn pendingSync luôn là đơn ĐÃ thanh toán (orders chỉ tạo lúc finalize) → KHÔNG giữ bàn bận.
+ *    Tình trạng đồng bộ được báo toàn cục (FR24), không per-table — nên không còn nhánh 'pending_sync' ở đây.
  *
  * @param table   The table record (needed for isActive check)
  * @param derived Optional DerivedTableStatus for this table. Undefined means no derivation data yet.
@@ -202,12 +231,9 @@ export function toDisplayStatus(
   if (!derived) return 'empty'
   // 2. conflict (openSessionCount > 1 — FR56)
   if (derived.conflict) return 'conflict'
-  // 3. pending_sync (any order waiting to sync)
-  if (derived.pendingSync) return 'pending_sync'
-  // 4. serving (an open session exists — cashier currently at the table)
+  // 3. serving (an open session exists — cashier currently at the table; blocks selection)
   if (derived.openSessionCount > 0) return 'serving'
-  // 5. occupied (order today, no open session — synced/closed session remains)
-  if (derived.activeOrderCount > 0) return 'occupied'
-  // 6. empty
+  // 4. empty — no open session. Neither an order today (activeOrderCount) nor an unsynced paid
+  //    order (pendingSync) marks the table as occupied: a paid table is free immediately.
   return 'empty'
 }

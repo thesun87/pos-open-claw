@@ -20,6 +20,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from '../../../db/dexie'
 import { useConnectivityStore } from '../../../shared/stores/connectivity.store'
 import { usePosTableContextStore } from '../store'
+import { useTableStatus } from '../hooks'
 import { FloorPlanView } from './floor-plan-view'
 
 // Mock useTableStatus (online hook) — floor-plan now uses it only for server-status enhancement
@@ -215,7 +216,7 @@ describe('FloorPlanView (offline-first — Story 6.12)', () => {
     expect(servingBtn).toBeDisabled()
   })
 
-  it('shows "Đã có đơn" for table with order today and no open session (AC5)', async () => {
+  it('shows "Trống" (chọn được) for table with a SYNCED order today and no open session — đã thanh toán xong, "Đã có đơn" đã bỏ', async () => {
     await seedCache()
     const todayVN = new Date().toISOString() // use current date so it counts as "today"
     await act(async () => {
@@ -226,6 +227,7 @@ describe('FloorPlanView (offline-first — Story 6.12)', () => {
         tableId: 'tbl-1',
         tableNameSnapshot: 'Bàn 1',
         soldAt: todayVN,
+        syncedAt: todayVN,
         menuVersionAtSale: 1,
         items: [],
         discountAmount: 0,
@@ -238,9 +240,66 @@ describe('FloorPlanView (offline-first — Story 6.12)', () => {
     })
     renderFloorPlan()
 
-    const occupiedBtn = await screen.findByRole('button', { name: 'Bàn Bàn 1, 2 chỗ, Đã có đơn' })
-    expect(occupiedBtn).toBeInTheDocument()
-    expect(occupiedBtn).toBeDisabled()
+    // Bàn có đơn đã sync nhưng không còn phiên mở → về "Trống", chọn được để lên đơn mới
+    const freeBtn = await screen.findByRole('button', { name: 'Bàn Bàn 1, 2 chỗ, Trống' })
+    expect(freeBtn).toBeInTheDocument()
+    expect(freeBtn).not.toBeDisabled()
+    expect(freeBtn).not.toHaveAttribute('aria-disabled')
+  })
+
+  it('shows "Trống" (chọn được) NGAY cho bàn vừa thanh toán dù đơn còn pendingSync (chưa sync) — bug-fix: không kẹt "Chờ đồng bộ"', async () => {
+    await seedCache()
+    const todayVN = new Date().toISOString()
+    await act(async () => {
+      // Đơn vừa finalize: status='pendingSync', CHƯA có syncedAt; phiên đã settle (không có open session)
+      await db.orders.put({
+        clientOrderId: 'cord-pending',
+        orderCode: 'ORD002',
+        deviceId: 'dev-1',
+        tableId: 'tbl-1',
+        tableNameSnapshot: 'Bàn 1',
+        soldAt: todayVN,
+        menuVersionAtSale: 1,
+        items: [],
+        discountAmount: 0,
+        total: 1000,
+        paymentMethod: 'cash',
+        status: 'pendingSync',
+        createdAt: todayVN,
+        updatedAt: todayVN,
+      })
+    })
+    renderFloorPlan()
+
+    // Trước fix: bàn hiển thị "Chờ đồng bộ" tới khi sync xong. Sau fix: "Trống" ngay.
+    const freeBtn = await screen.findByRole('button', { name: 'Bàn Bàn 1, 2 chỗ, Trống' })
+    expect(freeBtn).toBeInTheDocument()
+    expect(freeBtn).not.toBeDisabled()
+    expect(freeBtn).not.toHaveAttribute('aria-disabled')
+    // Đảm bảo KHÔNG còn badge "Chờ đồng bộ" trên sơ đồ bàn
+    expect(screen.queryByText('Chờ đồng bộ')).not.toBeInTheDocument()
+  })
+
+  it('shows "Trống" NGAY cho bàn đã settle local DÙ server /tables/status còn báo openSessionCount=1 (bug-fix: không chờ API)', async () => {
+    await seedCache()
+    // Server status (cache cũ / settle chưa sync) vẫn báo Bàn 1 đang có 1 phiên mở
+    vi.mocked(useTableStatus).mockReturnValueOnce({
+      data: [{ tableId: 'tbl-1', status: 'occupied', activeOrderCount: 1, openSessionCount: 1, conflict: false }],
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useTableStatus>)
+    await act(async () => {
+      // Máy này đã settle phiên của Bàn 1 (vừa thanh toán)
+      await db.tableSessions.put({ id: 'sess-1', tableId: 'tbl-1', status: 'settled', clientSessionId: 'cs-1', syncStatus: 'pendingSettle' })
+    })
+    renderFloorPlan()
+
+    // Bàn 1 phải là "Trống" (chọn được) — KHÔNG có nút Bàn 1 ở trạng thái "Đang phục vụ".
+    // (Lưu ý: "Đang phục vụ" vẫn xuất hiện trong chú thích/legend — nên kiểm tra theo nút, không theo text.)
+    const freeBtn = await screen.findByRole('button', { name: 'Bàn Bàn 1, 2 chỗ, Trống' })
+    expect(freeBtn).toBeInTheDocument()
+    expect(freeBtn).not.toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Bàn Bàn 1, 2 chỗ, Đang phục vụ' })).not.toBeInTheDocument()
   })
 
   it('shows "Trống" for tables with no activity', async () => {

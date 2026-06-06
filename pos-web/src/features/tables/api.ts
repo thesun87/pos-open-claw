@@ -34,14 +34,19 @@ export type TableOccupancyStatus = 'empty' | 'occupied' | 'pending_sync'
 
 /**
  * Display status for floor-plan UI (Story 6.12) — richer than TableOccupancyStatus from BE.
- * Priority order (highest first): inactive > conflict > pending_sync > serving > occupied > empty
+ * Priority order (highest first): inactive > conflict > serving > empty
+ *
+ * Lưu ý: 'occupied' ("Đã có đơn") VÀ 'pending_sync' ("Chờ đồng bộ") đã bị BỎ khỏi display —
+ * bàn đã thanh toán xong (không còn phiên mở) trả về 'empty' NGAY để cashier lên đơn mới,
+ * BẤT KỂ đơn đã sync hay chưa. Một đơn pendingSync luôn là đơn ĐÃ thanh toán (orders chỉ tạo
+ * lúc finalize) → không giữ bàn bận. Tình trạng đồng bộ được báo toàn cục (FR24 — bộ đếm đơn
+ * chờ đồng bộ), không per-table. Bàn chỉ bị chặn khi đang phục vụ (serving), xung đột phiên
+ * (conflict) hoặc tạm tắt (inactive).
  */
 export type TableDisplayStatus =
-  | 'empty'        // trống
+  | 'empty'        // trống — không phiên mở (kể cả khi đã có đơn/đơn chờ sync trong ngày)
   | 'serving'      // phiên mở chưa thanh toán (openSessionCount > 0)
-  | 'occupied'     // đã có đơn trong ngày, không phiên mở (activeOrderCount > 0)
   | 'conflict'     // openSessionCount > 1 (FR56)
-  | 'pending_sync' // có order pendingSync
   | 'inactive'     // table.isActive === false
 
 export type TableStatusRow = {

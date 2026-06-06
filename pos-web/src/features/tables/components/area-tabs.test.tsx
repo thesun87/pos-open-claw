@@ -22,10 +22,10 @@ const tables: TableDto[] = [
 
 const statusMap = new Map([
   ['tbl-1', 'empty' as const],
-  ['tbl-2', 'occupied' as const],
+  ['tbl-2', 'serving' as const],
   ['tbl-4', 'empty' as const],
   ['tbl-5', 'empty' as const],
-  ['tbl-6', 'occupied' as const],
+  ['tbl-6', 'serving' as const],
   ['tbl-7', 'empty' as const],
 ])
 
@@ -49,9 +49,9 @@ describe('AreaTabs', () => {
 
   it('renders correct freeCount/totalCount for each area', () => {
     renderTabs()
-    // area-1: 2 active tables, 1 empty (tbl-1), 1 occupied (tbl-2) → 1/2
+    // area-1: 2 active tables, 1 empty (tbl-1), 1 serving (tbl-2) → 1/2
     expect(screen.getByRole('tab', { name: 'Quầy chính · 1/2' })).toBeInTheDocument()
-    // area-2: 4 active tables, 3 empty (tbl-4, tbl-5, tbl-7), 1 occupied (tbl-6) → 3/4
+    // area-2: 4 active tables, 3 empty (tbl-4, tbl-5, tbl-7), 1 serving (tbl-6) → 3/4
     expect(screen.getByRole('tab', { name: 'Sân ngoài · 3/4' })).toBeInTheDocument()
   })
 

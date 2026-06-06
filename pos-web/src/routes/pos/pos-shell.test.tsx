@@ -389,6 +389,51 @@ describe('PosShell session lifecycle integration (Review fixes)', () => {
     expect(settleLocalSession).not.toHaveBeenCalled()
   })
 
+  // Bugfix (2026-06-06): after finalizing an order at a table, the shell must return to
+  // the floor plan instead of staying on the menu grid (selectedTableId was never reset).
+  it('returns to floor plan after order.finalized at a table (table-mode)', async () => {
+    vi.mocked(useCachedTableMode).mockReturnValue(true)
+    await seedMenu()
+    // Arrange: a table is selected → menu grid shows, floor plan hidden
+    usePosTableContextStore.getState().setSelectedTable({ id: 'tbl-done', name: 'Bàn 7' })
+    useCartStore.getState().setTableContext({ id: 'tbl-done', name: 'Bàn 7' })
+
+    renderPosShell()
+    await screen.findByLabelText('Lưới sản phẩm')
+    expect(screen.queryByTestId('floor-plan-view')).not.toBeInTheDocument()
+
+    // Act: finalize as payment-method-modal does (tableId captured before resetCart)
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('order.finalized', {
+        detail: {
+          at: new Date().toISOString(),
+          clientOrderId: 'order-789',
+          orderCode: 'ORD-003',
+          tableId: 'tbl-done',
+        },
+      }))
+    })
+
+    // Assert: table selection cleared (areaId preserved) → floor plan reappears
+    expect(usePosTableContextStore.getState().selectedTableId).toBeNull()
+    await waitFor(() => expect(screen.getByTestId('floor-plan-view')).toBeInTheDocument())
+  })
+
+  it('keeps quick-counter mode after counter-mode finalize (tableId=null)', async () => {
+    vi.mocked(useCachedTableMode).mockReturnValue(true)
+    usePosTableContextStore.getState().setQuickCounterMode(true)
+    renderPosShell()
+
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('order.finalized', {
+        detail: { at: new Date().toISOString(), clientOrderId: 'order-c', orderCode: 'ORD-C', tableId: null },
+      }))
+    })
+
+    // Counter-mode order must not touch table selection — quick-counter stays on
+    expect(usePosTableContextStore.getState().quickCounterMode).toBe(true)
+  })
+
   // AC28 fix: "Giữ bàn" dispatches 'toast' event with AC28 message instead of unlistened 'table.hold'
   it('dispatches toast event with AC28 message when "Giữ bàn" is clicked (AC28 fix)', async () => {
     vi.mocked(useCachedTableMode).mockReturnValue(true)
@@ -404,9 +449,16 @@ describe('PosShell session lifecycle integration (Review fixes)', () => {
     const toastListener = vi.fn()
     window.addEventListener('toast', toastListener)
 
+    // Add an item first — "Giữ bàn" with a non-empty cart keeps the session + saves a draft.
+    // (Empty cart now triggers the release path, covered by its own test.)
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole('button', { name: 'Cà phê' }))
+    await user.click(await screen.findByRole('button', { name: 'Cà phê đen, 30.000 ₫' }))
+    expect(useCartStore.getState().items).toHaveLength(1)
+
     // Click "Giữ bàn" button in cart panel
     const holdBtn = await screen.findByRole('button', { name: 'Giữ bàn' })
-    await userEvent.setup().click(holdBtn)
+    await user.click(holdBtn)
 
     // Assert: 'toast' event with the AC3 (Story 6.13) updated message
     // Story 6.13 changed the toast from "món chưa được lưu" (Phase 1) to "món đã được lưu trên máy này"
@@ -433,6 +485,40 @@ describe('PosShell session lifecycle integration (Review fixes)', () => {
 
     // No toast from hold (order.finalized != toast)
     expect(toastListener).not.toHaveBeenCalled()
+    window.removeEventListener('toast', toastListener)
+  })
+
+  // Bug fix: "Giữ bàn" with an EMPTY cart must release the table (settle session) and
+  // return to the floor-plan as an empty/available table — not keep it "Đang phục vụ".
+  it('"Giữ bàn" with empty cart settles the session and releases the table', async () => {
+    vi.mocked(useCachedTableMode).mockReturnValue(true)
+    await db.tableDrafts.clear()
+    await seedMenu()
+    // Select a table (cart stays empty) → "Giữ bàn" button renders
+    usePosTableContextStore.getState().setSelectedTable({ id: 'tbl-empty', name: 'Bàn 5' })
+    useCartStore.getState().setTableContext({ id: 'tbl-empty', name: 'Bàn 5' })
+
+    renderPosShell()
+    await screen.findByLabelText('Lưới sản phẩm')
+    expect(useCartStore.getState().items).toHaveLength(0)
+
+    const toastListener = vi.fn()
+    window.addEventListener('toast', toastListener)
+
+    const holdBtn = await screen.findByRole('button', { name: 'Giữ bàn' })
+    await userEvent.setup().click(holdBtn)
+
+    // Session settled (table released) + table deselected → floor-plan returns
+    await waitFor(() => {
+      expect(settleLocalSession).toHaveBeenCalledWith('tbl-empty')
+      expect(usePosTableContextStore.getState().selectedTableId).toBeNull()
+    })
+    // No draft persisted for an empty cart
+    expect(await db.tableDrafts.get('tbl-empty')).toBeUndefined()
+    // Release toast (not the "đã giữ ... món đã được lưu" message)
+    expect(toastListener).toHaveBeenCalledTimes(1)
+    const event = toastListener.mock.calls[0]?.[0] as CustomEvent
+    expect(event.detail).toContain('Đã trả Bàn 5')
     window.removeEventListener('toast', toastListener)
   })
 })

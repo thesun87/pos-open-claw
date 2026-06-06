@@ -149,6 +149,13 @@ export function PosShell() {
         void settleLocalSession(tableId)
         // Story 6.13: clear draft after successful finalize (AC6)
         void clearTableDraft(tableId)
+        // Bugfix (2026-06-06): finalizing an order at a table must return the shell to the
+        // floor plan. resetCart() clears the cart but selectedTableId stays set, so
+        // showFloorPlan (= tableMode && selectedTableId === null && !quickCounterMode) stayed
+        // false and the menu grid remained. Clear the table selection here (setSelectedTable
+        // keeps selectedAreaId, so we return to the same area). Counter/quick-counter orders
+        // have tableId=null and never enter this branch, so quickCounterMode is preserved.
+        usePosTableContextStore.getState().setSelectedTable(null)
       }
     }
     window.addEventListener('order.finalized', onOrderFinalized)
@@ -233,6 +240,23 @@ export function PosShell() {
   // Session stays open → table shows "Đang phục vụ" on floor-plan.
   // Story 6.13: saves items+discount to draft BEFORE navigating back (AC3).
   function handleHoldTable() {
+    // Empty cart → "Giữ bàn" is meaningless (nothing to keep). Treat as cancel/release:
+    // settle the session + clear any draft so the table returns to empty/available
+    // (instead of being left "Đang phục vụ" with no items).
+    if (items.length === 0) {
+      if (selectedTableId) {
+        void settleLocalSession(selectedTableId)
+        void clearTableDraft(selectedTableId)
+      }
+      setTableContext(null)
+      setSelectedTable(null)
+      if (selectedTableName) {
+        window.dispatchEvent(new CustomEvent('toast', {
+          detail: `Đã trả ${selectedTableName} — chưa có món nào.`,
+        }))
+      }
+      return
+    }
     // Story 6.13: save draft before navigating (so draft is persisted when floor-plan shows)
     if (selectedTableId) {
       void saveTableDraft(selectedTableId, { items, discount })

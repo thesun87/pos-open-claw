@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Coffee, CloudOff, Lock, ReceiptText, TriangleAlert, Users } from 'lucide-react'
+import { Coffee, Lock, TriangleAlert, Users } from 'lucide-react'
 import { StatusBadge, type StatusBadgeVariant } from '../../../shared/components/ui/status-badge'
 import { cn } from '../../../shared/lib/cn'
 import type { TableDisplayStatus } from '../api'
@@ -31,22 +31,10 @@ const STATUS_META: Record<TableDisplayStatus, StatusMeta> = {
     icon: <Users className="size-4" />,
     disabled: true,
   },
-  occupied: {
-    label: 'Đã có đơn',
-    variant: 'accent',
-    icon: <ReceiptText className="size-4" />,
-    disabled: true,
-  },
   conflict: {
     label: 'Xung đột phiên',
     variant: 'danger',
     icon: <TriangleAlert className="size-4" />,
-    disabled: true,
-  },
-  pending_sync: {
-    label: 'Chờ đồng bộ',
-    variant: 'danger',
-    icon: <CloudOff className="size-4" />,
     disabled: true,
   },
   inactive: {
@@ -65,7 +53,7 @@ type TableCardProps = {
    * Story 6.13: When true, this table has a local draft (items saved on this device).
    * Overrides the status-based `disabled` flag so cashier can re-open and reload items (AC9).
    * Tables with drafts show a "Tiếp tục" badge (optional visual cue).
-   * Tables occupied WITHOUT a local draft remain disabled (cross-device = Epic 7).
+   * A serving table (open session) WITHOUT a local draft remains disabled (cross-device = Epic 7).
    */
   hasLocalDraft?: boolean
 }

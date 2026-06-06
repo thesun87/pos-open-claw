@@ -195,6 +195,37 @@ describe('deriveTableStatus', () => {
       expect(result.get('tbl-1')?.openSessionCount).toBe(1)
     })
 
+    it('local SETTLED session wins over stale server open-count — bàn đã thanh toán về "empty" NGAY (bug-fix 2026-06-06)', () => {
+      // Bug: server /tables/status còn báo openSessionCount=1 (settle chưa sync / cache 30s),
+      // max(local=0, server=1)=1 → bàn kẹt "Đang phục vụ". Local đã settle → phải về empty ngay.
+      const sessions = [makeSession('tbl-1', 'settled')]
+      const serverStatus: TableStatusRow[] = [
+        { tableId: 'tbl-1', status: 'occupied', activeOrderCount: 0, openSessionCount: 1, conflict: false },
+      ]
+      const result = deriveTableStatus({ tables, orders: [], sessions, serverStatus, now: NOW_VN })
+      // openSessionCount=0 là điều quyết định display (toDisplayStatus → 'empty', không 'serving')
+      expect(result.get('tbl-1')?.openSessionCount).toBe(0)
+      expect(result.get('tbl-1')?.status).toBe('empty')
+      expect(toDisplayStatus(makeTable('tbl-1'), result.get('tbl-1'))).toBe('empty')
+    })
+
+    it('local OPEN session still occupied even when server also reports open (no regression)', () => {
+      const sessions = [makeSession('tbl-1', 'open')]
+      const serverStatus: TableStatusRow[] = [
+        { tableId: 'tbl-1', status: 'occupied', activeOrderCount: 0, openSessionCount: 1, conflict: false },
+      ]
+      const result = deriveTableStatus({ tables, orders: [], sessions, serverStatus, now: NOW_VN })
+      expect(result.get('tbl-1')?.status).toBe('occupied')
+      expect(result.get('tbl-1')?.openSessionCount).toBe(1)
+    })
+
+    it('re-opening a table after settle is occupied again (open record takes priority over settled)', () => {
+      const sessions = [makeSession('tbl-1', 'settled'), makeSession('tbl-1', 'open')]
+      const result = deriveTableStatus({ tables, orders: [], sessions, now: NOW_VN })
+      expect(result.get('tbl-1')?.status).toBe('occupied')
+      expect(result.get('tbl-1')?.openSessionCount).toBe(1)
+    })
+
     it('when serverStatus is undefined (offline), only uses local data', () => {
       const sessions = [makeSession('tbl-1', 'open')]
       const result = deriveTableStatus({ tables, orders: [], sessions, now: NOW_VN })
@@ -244,36 +275,38 @@ describe('toDisplayStatus — Story 6.12 (AC4, AC5, AC9)', () => {
     expect(toDisplayStatus(activeTable, makeDerived({ conflict: true, openSessionCount: 2 }))).toBe('conflict')
   })
 
-  it('returns "pending_sync" when derived.pendingSync=true and no conflict', () => {
-    expect(toDisplayStatus(activeTable, makeDerived({ pendingSync: true }))).toBe('pending_sync')
+  it('returns "empty" when only pendingSync=true (no open session) — đơn đã thanh toán chờ sync KHÔNG giữ bàn bận', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ pendingSync: true }))).toBe('empty')
   })
 
   it('returns "serving" when openSessionCount>0 (1 open session, no conflict or pending)', () => {
     expect(toDisplayStatus(activeTable, makeDerived({ openSessionCount: 1 }))).toBe('serving')
   })
 
-  it('returns "occupied" when activeOrderCount>0 and openSessionCount=0 (order-only, no session)', () => {
-    expect(toDisplayStatus(activeTable, makeDerived({ activeOrderCount: 1 }))).toBe('occupied')
+  it('returns "empty" when activeOrderCount>0 but openSessionCount=0 (đã thanh toán, bàn trả về trống — "Đã có đơn" đã bỏ)', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ activeOrderCount: 1 }))).toBe('empty')
   })
 
   it('returns "empty" when all counts are 0', () => {
     expect(toDisplayStatus(activeTable, makeDerived())).toBe('empty')
   })
 
-  // Priority tests
-  it('conflict beats serving (inactive > conflict > pending_sync > serving > occupied > empty)', () => {
+  // Priority tests — new order: inactive > conflict > serving > empty
+  // 'pending_sync' KHÔNG còn là display status: đơn đã thanh toán chờ sync không giữ bàn bận;
+  // tình trạng sync được báo toàn cục (FR24), không per-table.
+  it('conflict beats serving (inactive > conflict > serving > empty)', () => {
     expect(toDisplayStatus(activeTable, makeDerived({ conflict: true, openSessionCount: 2 }))).toBe('conflict')
   })
 
-  it('conflict beats pending_sync', () => {
+  it('conflict beats pendingSync indicator', () => {
     expect(toDisplayStatus(activeTable, makeDerived({ conflict: true, pendingSync: true, openSessionCount: 2 }))).toBe('conflict')
   })
 
-  it('pending_sync beats serving', () => {
-    expect(toDisplayStatus(activeTable, makeDerived({ pendingSync: true, openSessionCount: 1 }))).toBe('pending_sync')
+  it('serving wins over pendingSync indicator (bàn đang phục vụ vẫn chặn dù có đơn chờ sync)', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ pendingSync: true, openSessionCount: 1 }))).toBe('serving')
   })
 
-  it('serving beats occupied', () => {
-    expect(toDisplayStatus(activeTable, makeDerived({ openSessionCount: 1, activeOrderCount: 1 }))).toBe('serving')
+  it('returns "empty" when pendingSync + activeOrderCount but NO open session — bàn đã thanh toán trả về trống ngay', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ pendingSync: true, activeOrderCount: 1 }))).toBe('empty')
   })
 })
