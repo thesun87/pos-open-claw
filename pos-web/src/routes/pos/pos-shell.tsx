@@ -109,12 +109,21 @@ export function PosShell() {
         void openLocalSession({ tableId: newTableId, deviceId: 'POS01' })
       }
 
-      // Story 6.13: Load draft when a table is selected (null → non-null, AC4).
-      // setTableContext is already called above; load draft after so context is set first.
+      // Story 6.13: Sync cart to the target table's draft on select (null → non-null).
+      // setTableContext is already called above; load after so context is set first.
+      // AC4: table HAS a draft → reload its items. AC5: table has NO draft → cart starts
+      // EMPTY. We must actively clear here (via loadCart with an empty payload) because the
+      // cart may still hold items from a previously held table — "Giữ bàn"/"Đổi bàn→Giữ cart"
+      // leave items in the live cart. loadCart only touches items+discount, preserving the
+      // tableId/tableNameSnapshot just set by setTableContext (FR51 pairing intact).
       if (newTableId && newTableId !== prevTableId && !state.quickCounterMode) {
         void loadTableDraft(newTableId).then((draft) => {
-          if (draft) {
-            useCartStore.getState().loadCart(draft)
+          // Staleness guard: a faster table switch may have moved on before this
+          // async draft read resolves. Only apply if the cart still points at the
+          // table we loaded for — otherwise a stale resolution would clobber the
+          // newly selected table's cart (setTableContext is synchronous).
+          if (useCartStore.getState().tableId === newTableId) {
+            useCartStore.getState().loadCart(draft ?? { items: [], discount: null })
           }
         })
       }

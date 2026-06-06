@@ -524,11 +524,20 @@ describe('PosShell draft cart orchestration (Story 6.13 — AC13)', () => {
     })
   })
 
-  it('re-selecting a table WITHOUT a draft starts with empty cart (AC5)', async () => {
+  it('selecting a table WITHOUT a draft clears leftover items — empty cart (AC5)', async () => {
     vi.mocked(useCachedTableMode).mockReturnValue(true)
-    // No draft seeded for 'tbl-empty'
-    // Ensure cart is empty
-    useCartStore.getState().resetCart()
+    // No draft seeded for 'tbl-empty'.
+    // Reproduce the bug: the live cart still holds items from a previously held table
+    // (e.g. after "Giữ bàn" which saves a draft but does NOT reset the live cart).
+    useCartStore.getState().addItem({
+      productId: 'p-leftover',
+      productNameSnapshot: 'Món bàn cũ',
+      unitPriceSnapshot: 30000,
+      options: [],
+      quantity: 2,
+      lineTotal: 60000,
+    })
+    expect(useCartStore.getState().items.length).toBeGreaterThan(0)
 
     renderPosShell()
 
@@ -536,11 +545,10 @@ describe('PosShell draft cart orchestration (Story 6.13 — AC13)', () => {
       usePosTableContextStore.getState().setSelectedTable({ id: 'tbl-empty', name: 'Bàn Empty' })
     })
 
-    // Wait for async loadTableDraft to complete (it should not call loadCart)
-    // Small delay to allow the async chain to resolve
+    // No draft → cart must be actively cleared, not left with the previous table's items.
     await waitFor(() => {
-      // Cart stays empty — no draft means no items loaded
       expect(useCartStore.getState().items).toHaveLength(0)
+      expect(useCartStore.getState().discount).toBeNull()
     })
   })
 
