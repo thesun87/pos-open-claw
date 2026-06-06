@@ -306,7 +306,8 @@ export function PosShell() {
           </>
         )}
       </main>
-      <CartPanel onHoldTable={handleHoldTable} />
+      {/* Cart panel chỉ hiển thị ở màn chọn món — ẩn hoàn toàn ở sơ đồ bàn (floor-plan) */}
+      {!showFloorPlan ? <CartPanel onHoldTable={handleHoldTable} /> : null}
       <ReceiptModal order={lastFinalizedOrder} open={isReceiptOpen} onOpenChange={handleReceiptOpenChange} />
       <OptionModal product={selectedProductForOptions} open={selectedProductForOptions !== null} onOpenChange={(open) => { if (!open) setSelectedProductForOptions(null) }} onAddToCart={addItem} />
       {/* Story 6.8: Mode transition confirm dialog — shown when cart has items + change/cancel table */}

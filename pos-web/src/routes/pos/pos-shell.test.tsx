@@ -318,6 +318,28 @@ describe('PosShell table mode routing (Story 6.12 — cache-based gating)', () =
     expect(screen.queryByLabelText('Lưới sản phẩm')).not.toBeInTheDocument()
   })
 
+  // Bugfix (2026-06-06): the cart panel must NOT appear on the floor-plan (table selection)
+  // screen — it should only show while picking products. On floor-plan the grid uses full
+  // width with no reserved right margin, so the rightmost table is never overlapped.
+  it('hides the cart panel on floor-plan and uses full-width main (no overlap)', async () => {
+    vi.mocked(useCachedTableMode).mockReturnValue(true)
+    renderPosShell()
+    await waitFor(() => expect(screen.getByTestId('floor-plan-view')).toBeInTheDocument())
+    // Cart panel is gone on the floor-plan screen
+    expect(screen.queryByLabelText('Giỏ hàng và thanh toán')).not.toBeInTheDocument()
+    // Floor-plan main does not reserve the 320px cart slot
+    expect(screen.getByLabelText('Sơ đồ bàn')).not.toHaveClass('md:mr-[320px]')
+  })
+
+  it('shows the cart panel when a table is selected (product grid screen)', async () => {
+    vi.mocked(useCachedTableMode).mockReturnValue(true)
+    usePosTableContextStore.getState().setSelectedTable({ id: 'tbl-1', name: 'Bàn 1' })
+    await seedMenu()
+    renderPosShell()
+    await screen.findByLabelText('Lưới sản phẩm')
+    expect(screen.getByLabelText('Giỏ hàng và thanh toán')).toBeInTheDocument()
+  })
+
   it('renders product grid when cache tableMode=true and table IS selected', async () => {
     vi.mocked(useCachedTableMode).mockReturnValue(true)
     usePosTableContextStore.getState().setSelectedTable({ id: 'tbl-1', name: 'Bàn 1' })
