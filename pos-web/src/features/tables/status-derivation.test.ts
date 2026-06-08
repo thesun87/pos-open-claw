@@ -259,6 +259,55 @@ describe('deriveTableStatus', () => {
       expect(result.get('tbl-1')?.hasDraft).toBe(false)
     })
   })
+
+  describe('order summary (orderTotal, itemCount, openedAt) for "Đang có đơn" card', () => {
+    it('computes orderTotal (after discount) and itemCount from drafts', () => {
+      const drafts = [
+        {
+          tableId: 'tbl-1',
+          items: [
+            { tempId: 'a', productId: 'p1', productNameSnapshot: 'Cà phê', unitPriceSnapshot: 30000, options: [], quantity: 2, lineTotal: 60000 },
+            { tempId: 'b', productId: 'p2', productNameSnapshot: 'Trà', unitPriceSnapshot: 25000, options: [], quantity: 1, lineTotal: 25000 },
+          ],
+          discount: { type: 'fixed' as const, value: 5000 },
+          updatedAt: NOW_VN.toISOString(),
+        },
+      ]
+      const result = deriveTableStatus({ tables, orders: [], sessions: [makeSession('tbl-1', 'open')], drafts, now: NOW_VN })
+      expect(result.get('tbl-1')?.orderTotal).toBe(80000) // 85000 - 5000
+      expect(result.get('tbl-1')?.itemCount).toBe(3) // 2 + 1
+      // hasDraft suy ra từ drafts khi draftTableIds không truyền
+      expect(result.get('tbl-1')?.hasDraft).toBe(true)
+      // bàn không có draft → 0
+      expect(result.get('tbl-2')?.orderTotal).toBe(0)
+      expect(result.get('tbl-2')?.itemCount).toBe(0)
+    })
+
+    it('applies percentage discount when computing orderTotal', () => {
+      const drafts = [
+        {
+          tableId: 'tbl-1',
+          items: [{ tempId: 'a', productId: 'p1', productNameSnapshot: 'X', unitPriceSnapshot: 100000, options: [], quantity: 1, lineTotal: 100000 }],
+          discount: { type: 'percentage' as const, value: 10 },
+          updatedAt: NOW_VN.toISOString(),
+        },
+      ]
+      const result = deriveTableStatus({ tables, orders: [], sessions: [makeSession('tbl-1', 'open')], drafts, now: NOW_VN })
+      expect(result.get('tbl-1')?.orderTotal).toBe(90000)
+    })
+
+    it('exposes earliest open-session openedAt', () => {
+      const later = { ...makeSession('tbl-1', 'open'), openedAt: '2026-06-05T03:30:00.000Z' }
+      const earlier = { ...makeSession('tbl-1', 'open'), openedAt: '2026-06-05T03:00:00.000Z' }
+      const result = deriveTableStatus({ tables, orders: [], sessions: [later, earlier], now: NOW_VN })
+      expect(result.get('tbl-1')?.openedAt).toBe('2026-06-05T03:00:00.000Z')
+    })
+
+    it('leaves openedAt undefined when no open session', () => {
+      const result = deriveTableStatus({ tables, orders: [], sessions: [], now: NOW_VN })
+      expect(result.get('tbl-1')?.openedAt).toBeUndefined()
+    })
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -274,6 +323,8 @@ function makeDerived(overrides: Partial<DerivedTableStatus> = {}): DerivedTableS
     conflict: false,
     pendingSync: false,
     hasDraft: false,
+    orderTotal: 0,
+    itemCount: 0,
     ...overrides,
   }
 }

@@ -225,7 +225,7 @@ describe('FloorPlanView (offline-first — Story 6.12)', () => {
       // Per-table draft = unpaid order held against the table (Story 6.13)
       await db.tableDrafts.put({
         tableId: 'tbl-1',
-        items: [{ productId: 'p1', productNameSnapshot: 'Cà phê', unitPriceSnapshot: 25000, options: [], quantity: 1, lineTotal: 25000 }],
+        items: [{ tempId: 'ci-1', productId: 'p1', productNameSnapshot: 'Cà phê', unitPriceSnapshot: 25000, options: [], quantity: 1, lineTotal: 25000 }],
         discount: null,
         updatedAt: new Date().toISOString(),
       })

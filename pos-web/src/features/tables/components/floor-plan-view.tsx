@@ -112,6 +112,14 @@ export function FloorPlanView({ reopenableTableIds = new Set() }: FloorPlanViewP
 
   return (
     <div data-testid="floor-plan-view" className="flex flex-col gap-0">
+      {/* Page header */}
+      <div className="px-4 pt-5 pb-1">
+        <h1 className="text-headline-lg text-on-surface">Chọn bàn</h1>
+        <p className="mt-1 text-sm text-on-surface-variant">
+          Nhấp vào bàn trống để bắt đầu phục vụ khách
+        </p>
+      </div>
+
       {/* Offline indicator banner (AC6) */}
       {!isOnline ? (
         <div
@@ -133,18 +141,24 @@ export function FloorPlanView({ reopenableTableIds = new Set() }: FloorPlanViewP
 
       {/* Table grid */}
       <div
-        className="grid grid-cols-2 gap-4 p-4 transition-opacity duration-150 lg:grid-cols-3 xl:grid-cols-4"
+        className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 p-4 transition-opacity duration-150"
         aria-label="Sơ đồ bàn"
       >
-        {filteredTables.map((table) => (
-          <TableCard
-            key={table.id}
-            table={table}
-            status={displayStatusMap.get(table.id) ?? 'empty'}
-            hasLocalDraft={reopenableTableIds.has(table.id)}
-            onSelect={(t) => handleTableSelect(t.id, t.name)}
-          />
-        ))}
+        {filteredTables.map((table) => {
+          const derived = statusMap.get(table.id)
+          return (
+            <TableCard
+              key={table.id}
+              table={table}
+              status={displayStatusMap.get(table.id) ?? 'empty'}
+              hasLocalDraft={reopenableTableIds.has(table.id)}
+              orderTotal={derived?.orderTotal ?? 0}
+              itemCount={derived?.itemCount ?? 0}
+              {...(derived?.openedAt ? { openedAt: derived.openedAt } : {})}
+              onSelect={(t) => handleTableSelect(t.id, t.name)}
+            />
+          )
+        })}
       </div>
 
       {/* Status legend (decorative) */}

@@ -59,7 +59,7 @@ export function AreaTabs({ areas, tables, statusByTableId, selectedAreaId, onSel
       ref={tabListRef}
       role="tablist"
       aria-label="Khu vực"
-      className="flex overflow-x-auto gap-2 border-b border-outline-variant/30 px-4 scrollbar-thin"
+      className="flex overflow-x-auto gap-2 px-4 py-3 scrollbar-thin"
       onKeyDown={handleKeyDown}
     >
       {areas.map((area) => {
@@ -74,10 +74,10 @@ export function AreaTabs({ areas, tables, statusByTableId, selectedAreaId, onSel
             aria-selected={isActive}
             onClick={() => onSelect(area.id)}
             className={cn(
-              'min-h-[44px] px-4 py-2 text-sm whitespace-nowrap border-b-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+              'inline-flex min-h-[44px] items-center rounded-full border px-4 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
               isActive
-                ? 'border-primary font-bold text-primary'
-                : 'border-transparent text-on-surface-variant hover:text-on-surface',
+                ? 'border-primary bg-primary text-on-primary shadow-theme-md'
+                : 'border-border bg-white text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface',
             )}
           >
             {area.name} · {freeCount}/{totalCount}

@@ -13,7 +13,7 @@
  */
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../db/dexie'
-import type { LocalOrderRecord } from '../../db/schemas/orders'
+import type { LocalOrderRecord, TableDraftRecord } from '../../db/schemas/orders'
 import type { TableRecord, TableSessionRecord } from '../../db/schemas/tables'
 import { formatYmdInVietnam } from '../../shared/lib/date'
 import type { TableDisplayStatus, TableStatusRow } from './api'
@@ -40,6 +40,33 @@ export interface DerivedTableStatus {
    * Drafts are single-device/local (not synced) → false for cross-device opens (Epic 7).
    */
   hasDraft: boolean
+  /**
+   * Tổng tiền của đơn (draft) đang giữ ở bàn, sau chiết khấu. 0 khi bàn chưa có draft.
+   * Dùng để hiển thị trên thẻ bàn "Đang có đơn" (design tables.html).
+   */
+  orderTotal: number
+  /** Tổng số lượng món trong draft đang giữ ở bàn. 0 khi chưa có draft. */
+  itemCount: number
+  /**
+   * Thời điểm mở phiên (ISO 8601 UTC) — phiên mở sớm nhất của bàn. undefined khi không có phiên mở.
+   * Dùng để hiển thị "Mở HH:MM" và tổng thời gian bàn đang có đơn trên thẻ bàn.
+   */
+  openedAt?: string
+}
+
+/**
+ * Tổng tiền draft sau chiết khấu — inline để giữ ranh giới features/tables ↔ features/orders (§8).
+ * Logic phải khớp với calculateCartTotals trong features/orders/cart-store.ts (nguồn chân lý).
+ */
+function computeDraftTotal(draft: TableDraftRecord): number {
+  const subtotal = draft.items.reduce((sum, item) => sum + item.lineTotal, 0)
+  const { discount } = draft
+  if (!discount) return subtotal
+  const discountAmount =
+    discount.type === 'fixed'
+      ? Math.min(discount.value, subtotal)
+      : Math.floor((subtotal * discount.value) / 100)
+  return subtotal - discountAmount
 }
 
 /**
@@ -61,6 +88,8 @@ export function getStartOfTodayVietnamMs(now: Date = new Date()): number {
  * @param serverStatus Optional array from /tables/status (BE 6.11) for cross-device online merge
  * @param draftTableIds Optional set of tableIds that have a local per-table draft (Story 6.13).
  *                      A draft means an unpaid order is held against the table → "Đang có đơn".
+ * @param drafts       Optional per-table draft records (Story 6.13) — dùng để tính tổng tiền + số món
+ *                      hiển thị trên thẻ bàn. Khi cung cấp mà draftTableIds không có, suy ra từ drafts.
  * @param now          Injectable clock (default: new Date()) for today-boundary testing
  * @returns Map<tableId, DerivedTableStatus>
  */
@@ -70,6 +99,7 @@ export function deriveTableStatus({
   sessions,
   serverStatus,
   draftTableIds,
+  drafts,
   now = new Date(),
 }: {
   tables: TableRecord[]
@@ -77,6 +107,7 @@ export function deriveTableStatus({
   sessions: TableSessionRecord[]
   serverStatus?: TableStatusRow[]
   draftTableIds?: Set<string>
+  drafts?: TableDraftRecord[]
   now?: Date
 }): Map<string, DerivedTableStatus> {
   const startOfTodayMs = getStartOfTodayVietnamMs(now)
@@ -87,13 +118,33 @@ export function deriveTableStatus({
   // here regardless of what the (possibly stale) server /tables/status still reports.
   const openSessionsByTable = new Map<string, number>()
   const settledSessionsByTable = new Map<string, number>()
+  // Earliest open-session openedAt per table — for "Mở HH:MM" + thời gian bàn đang có đơn.
+  const openedAtByTable = new Map<string, string>()
   for (const session of sessions) {
     if (session.status === 'open') {
       openSessionsByTable.set(session.tableId, (openSessionsByTable.get(session.tableId) ?? 0) + 1)
+      if (session.openedAt) {
+        const prev = openedAtByTable.get(session.tableId)
+        if (!prev || session.openedAt < prev) openedAtByTable.set(session.tableId, session.openedAt)
+      }
     } else if (session.status === 'settled') {
       settledSessionsByTable.set(session.tableId, (settledSessionsByTable.get(session.tableId) ?? 0) + 1)
     }
   }
+
+  // Draft summary (total after discount + item quantity) per table — for the "Đang có đơn" card.
+  const draftSummaryByTable = new Map<string, { total: number; itemCount: number }>()
+  if (drafts) {
+    for (const draft of drafts) {
+      draftSummaryByTable.set(draft.tableId, {
+        total: computeDraftTotal(draft),
+        itemCount: draft.items.reduce((sum, item) => sum + item.quantity, 0),
+      })
+    }
+  }
+  // Suy ra draftTableIds từ drafts khi caller không truyền sẵn (giữ tương thích ngược).
+  const effectiveDraftTableIds =
+    draftTableIds ?? (drafts ? new Set(drafts.map((d) => d.tableId)) : undefined)
 
   // Index today's non-void orders by tableId
   const activeOrdersByTable = new Map<string, number>()
@@ -181,6 +232,8 @@ export function deriveTableStatus({
       status = 'empty'
     }
 
+    const draftSummary = draftSummaryByTable.get(tableId)
+    const openedAt = openedAtByTable.get(tableId)
     result.set(tableId, {
       tableId,
       status,
@@ -188,7 +241,10 @@ export function deriveTableStatus({
       activeOrderCount: mergedActiveOrders,
       conflict: mergedConflict,
       pendingSync: hasPendingSync,
-      hasDraft: draftTableIds?.has(tableId) ?? false,
+      hasDraft: effectiveDraftTableIds?.has(tableId) ?? false,
+      orderTotal: draftSummary?.total ?? 0,
+      itemCount: draftSummary?.itemCount ?? 0,
+      ...(openedAt ? { openedAt } : {}),
     })
   }
 
@@ -216,7 +272,7 @@ export function useLocalTableStatus(serverStatus?: TableStatusRow[]): Map<string
     ])
     // A draft record always means held items (saveTableDraft clears empty carts — Story 6.13).
     const draftTableIds = new Set(drafts.map((d) => d.tableId))
-    return deriveTableStatus({ tables, orders, sessions, draftTableIds, ...(serverStatus !== undefined ? { serverStatus } : {}) })
+    return deriveTableStatus({ tables, orders, sessions, draftTableIds, drafts, ...(serverStatus !== undefined ? { serverStatus } : {}) })
   }, [serverStatus])
 }
 

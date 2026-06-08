@@ -124,6 +124,36 @@ describe('TableCard', () => {
     expect(screen.queryByText('Tiếp tục')).not.toBeInTheDocument()
   })
 
+  // --- Order details on "Đang có đơn" cards (design tables.html) ---
+
+  it('serving table shows total, item count and open time', () => {
+    render(
+      <TableCard
+        table={baseTable}
+        status="serving"
+        hasLocalDraft={true}
+        orderTotal={125000}
+        itemCount={3}
+        openedAt="2026-06-08T07:30:00.000Z" // 14:30 giờ VN
+        onSelect={vi.fn()}
+      />,
+    )
+    // Tổng tiền (định dạng VND)
+    expect(screen.getByText(/125[.,\s]000/)).toBeInTheDocument()
+    // Số món
+    expect(screen.getByText('3 món')).toBeInTheDocument()
+    // Giờ mở bàn (14:30 theo Asia/Ho_Chi_Minh)
+    expect(screen.getByText('Mở 14:30')).toBeInTheDocument()
+  })
+
+  it('serving table without openedAt omits the open-time line', () => {
+    render(
+      <TableCard table={baseTable} status="serving" hasLocalDraft={true} orderTotal={50000} itemCount={1} onSelect={vi.fn()} />,
+    )
+    expect(screen.getByText('1 món')).toBeInTheDocument()
+    expect(screen.queryByText(/^Mở /)).not.toBeInTheDocument()
+  })
+
   // --- Accessibility / WCAG ---
 
   it('has minimum height class for touch target ≥56px', () => {
