@@ -34,18 +34,24 @@ export type TableOccupancyStatus = 'empty' | 'occupied' | 'pending_sync'
 
 /**
  * Display status for floor-plan UI (Story 6.12) — richer than TableOccupancyStatus from BE.
- * Priority order (highest first): inactive > conflict > serving > empty
+ * Priority order (highest first): inactive > conflict > serving > opening > empty
  *
- * Lưu ý: 'occupied' ("Đã có đơn") VÀ 'pending_sync' ("Chờ đồng bộ") đã bị BỎ khỏi display —
- * bàn đã thanh toán xong (không còn phiên mở) trả về 'empty' NGAY để cashier lên đơn mới,
- * BẤT KỂ đơn đã sync hay chưa. Một đơn pendingSync luôn là đơn ĐÃ thanh toán (orders chỉ tạo
- * lúc finalize) → không giữ bàn bận. Tình trạng đồng bộ được báo toàn cục (FR24 — bộ đếm đơn
- * chờ đồng bộ), không per-table. Bàn chỉ bị chặn khi đang phục vụ (serving), xung đột phiên
- * (conflict) hoặc tạm tắt (inactive).
+ * Phiên mở (openSessionCount > 0) được tách làm 2 trạng thái theo việc có đơn hàng (draft) gắn
+ * với bàn hay chưa:
+ *  - 'serving' ("Đang có đơn"): phiên mở + có draft (đơn chưa thanh toán) giữ ở bàn.
+ *  - 'opening' ("Đang mở"): phiên mở nhưng chưa có draft — cashier vừa chọn bàn trống mà chưa
+ *    order xong (chưa bấm "Giữ bàn"), hoặc phiên mở từ máy khác (cross-device).
+ *
+ * Lưu ý: 'pending_sync' ("Chờ đồng bộ") đã bị BỎ khỏi display — bàn đã thanh toán xong (không còn
+ * phiên mở) trả về 'empty' NGAY để cashier lên đơn mới, BẤT KỂ đơn đã sync hay chưa. Một đơn
+ * pendingSync luôn là đơn ĐÃ thanh toán (orders chỉ tạo lúc finalize) → không giữ bàn bận. Tình
+ * trạng đồng bộ được báo toàn cục (FR24), không per-table. Bàn bị chặn khi 'serving', 'opening',
+ * xung đột phiên ('conflict') hoặc tạm tắt ('inactive').
  */
 export type TableDisplayStatus =
-  | 'empty'        // trống — không phiên mở (kể cả khi đã có đơn/đơn chờ sync trong ngày)
-  | 'serving'      // phiên mở chưa thanh toán (openSessionCount > 0)
+  | 'empty'        // trống — không phiên mở (kể cả khi đã có đơn đã thanh toán/đơn chờ sync trong ngày)
+  | 'opening'      // "Đang mở" — phiên mở nhưng CHƯA có draft gắn với bàn (chưa order xong)
+  | 'serving'      // "Đang có đơn" — phiên mở + có draft (đơn chưa thanh toán) gắn với bàn
   | 'conflict'     // openSessionCount > 1 (FR56)
   | 'inactive'     // table.isActive === false
 

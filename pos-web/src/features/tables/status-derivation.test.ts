@@ -239,6 +239,26 @@ describe('deriveTableStatus', () => {
       expect(result.has('tbl-2')).toBe(true)
     })
   })
+
+  describe('hasDraft (Story: split serving/opening by held draft)', () => {
+    it('hasDraft=true only for tables in draftTableIds', () => {
+      const sessions = [makeSession('tbl-1', 'open'), makeSession('tbl-2', 'open')]
+      const result = deriveTableStatus({
+        tables,
+        orders: [],
+        sessions,
+        draftTableIds: new Set(['tbl-1']),
+        now: NOW_VN,
+      })
+      expect(result.get('tbl-1')?.hasDraft).toBe(true)
+      expect(result.get('tbl-2')?.hasDraft).toBe(false)
+    })
+
+    it('hasDraft defaults to false when draftTableIds not provided', () => {
+      const result = deriveTableStatus({ tables, orders: [], sessions: [makeSession('tbl-1', 'open')], now: NOW_VN })
+      expect(result.get('tbl-1')?.hasDraft).toBe(false)
+    })
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -253,6 +273,7 @@ function makeDerived(overrides: Partial<DerivedTableStatus> = {}): DerivedTableS
     activeOrderCount: 0,
     conflict: false,
     pendingSync: false,
+    hasDraft: false,
     ...overrides,
   }
 }
@@ -279,8 +300,12 @@ describe('toDisplayStatus — Story 6.12 (AC4, AC5, AC9)', () => {
     expect(toDisplayStatus(activeTable, makeDerived({ pendingSync: true }))).toBe('empty')
   })
 
-  it('returns "serving" when openSessionCount>0 (1 open session, no conflict or pending)', () => {
-    expect(toDisplayStatus(activeTable, makeDerived({ openSessionCount: 1 }))).toBe('serving')
+  it('returns "serving" (Đang có đơn) when openSessionCount>0 AND hasDraft=true (phiên mở + đơn chưa thanh toán)', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ openSessionCount: 1, hasDraft: true }))).toBe('serving')
+  })
+
+  it('returns "opening" (Đang mở) when openSessionCount>0 but hasDraft=false (phiên mở, chưa order/giữ bàn)', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ openSessionCount: 1, hasDraft: false }))).toBe('opening')
   })
 
   it('returns "empty" when activeOrderCount>0 but openSessionCount=0 (đã thanh toán, bàn trả về trống — "Đã có đơn" đã bỏ)', () => {
@@ -291,19 +316,23 @@ describe('toDisplayStatus — Story 6.12 (AC4, AC5, AC9)', () => {
     expect(toDisplayStatus(activeTable, makeDerived())).toBe('empty')
   })
 
-  // Priority tests — new order: inactive > conflict > serving > empty
+  // Priority tests — new order: inactive > conflict > serving > opening > empty
   // 'pending_sync' KHÔNG còn là display status: đơn đã thanh toán chờ sync không giữ bàn bận;
   // tình trạng sync được báo toàn cục (FR24), không per-table.
-  it('conflict beats serving (inactive > conflict > serving > empty)', () => {
-    expect(toDisplayStatus(activeTable, makeDerived({ conflict: true, openSessionCount: 2 }))).toBe('conflict')
+  it('conflict beats serving/opening (inactive > conflict > serving > opening > empty)', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ conflict: true, openSessionCount: 2, hasDraft: true }))).toBe('conflict')
   })
 
   it('conflict beats pendingSync indicator', () => {
     expect(toDisplayStatus(activeTable, makeDerived({ conflict: true, pendingSync: true, openSessionCount: 2 }))).toBe('conflict')
   })
 
-  it('serving wins over pendingSync indicator (bàn đang phục vụ vẫn chặn dù có đơn chờ sync)', () => {
-    expect(toDisplayStatus(activeTable, makeDerived({ pendingSync: true, openSessionCount: 1 }))).toBe('serving')
+  it('serving (có draft) wins over pendingSync indicator (bàn có đơn vẫn chặn dù có đơn chờ sync)', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ pendingSync: true, openSessionCount: 1, hasDraft: true }))).toBe('serving')
+  })
+
+  it('opening (chưa draft) vẫn hiển thị khi có pendingSync indicator (phiên mở chưa order)', () => {
+    expect(toDisplayStatus(activeTable, makeDerived({ pendingSync: true, openSessionCount: 1, hasDraft: false }))).toBe('opening')
   })
 
   it('returns "empty" when pendingSync + activeOrderCount but NO open session — bàn đã thanh toán trả về trống ngay', () => {

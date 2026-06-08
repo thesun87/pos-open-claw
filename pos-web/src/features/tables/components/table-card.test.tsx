@@ -3,7 +3,8 @@
  *
  * TableCard now accepts TableDisplayStatus (extended) instead of TableOccupancyStatus.
  * Key changes:
- *  - 'serving' status → "Đang phục vụ" (disabled)
+ *  - 'serving' status → "Đang có đơn" (phiên mở + có draft chưa thanh toán; disabled, reopen qua hasLocalDraft)
+ *  - 'opening' status → "Đang mở" (phiên mở nhưng chưa có draft; disabled)
  *  - 'conflict' status → "Xung đột phiên" (disabled + danger icon)
  *  - 'occupied' ("Đã có đơn") BỎ — bàn đã thanh toán xong trả về 'empty' (chọn được).
  *  - 'pending_sync' ("Chờ đồng bộ") BỎ khỏi display — đơn đã thanh toán chờ sync không giữ bàn bận;
@@ -33,9 +34,17 @@ describe('TableCard', () => {
     expect(btn).not.toHaveAttribute('aria-disabled')
   })
 
-  it('renders serving table disabled with label "Đang phục vụ" (AC5)', () => {
+  it('renders serving table disabled with label "Đang có đơn" (phiên mở + có đơn chưa thanh toán)', () => {
     render(<TableCard table={baseTable} status="serving" onSelect={vi.fn()} />)
-    const btn = screen.getByRole('button', { name: 'Bàn Bàn 1, 4 chỗ, Đang phục vụ' })
+    const btn = screen.getByRole('button', { name: 'Bàn Bàn 1, 4 chỗ, Đang có đơn' })
+    expect(btn).toBeInTheDocument()
+    expect(btn).toBeDisabled()
+    expect(btn).toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('renders opening table disabled with label "Đang mở" (phiên mở, chưa có đơn)', () => {
+    render(<TableCard table={baseTable} status="opening" onSelect={vi.fn()} />)
+    const btn = screen.getByRole('button', { name: 'Bàn Bàn 1, 4 chỗ, Đang mở' })
     expect(btn).toBeInTheDocument()
     expect(btn).toBeDisabled()
     expect(btn).toHaveAttribute('aria-disabled', 'true')
@@ -72,7 +81,7 @@ describe('TableCard', () => {
     const onSelect = vi.fn()
     const user = userEvent.setup()
     render(<TableCard table={baseTable} status="serving" onSelect={onSelect} />)
-    await user.click(screen.getByRole('button', { name: 'Bàn Bàn 1, 4 chỗ, Đang phục vụ' }))
+    await user.click(screen.getByRole('button', { name: 'Bàn Bàn 1, 4 chỗ, Đang có đơn' }))
     expect(onSelect).not.toHaveBeenCalled()
   })
 
@@ -104,7 +113,7 @@ describe('TableCard', () => {
     render(<TableCard table={baseTable} status="serving" hasLocalDraft={true} onSelect={vi.fn()} />)
     expect(screen.getByText('Tiếp tục')).toBeInTheDocument()
     // Status label is still rendered
-    expect(screen.getByText('Đang phục vụ')).toBeInTheDocument()
+    expect(screen.getByText('Đang có đơn')).toBeInTheDocument()
   })
 
   it('serving table WITHOUT hasLocalDraft stays disabled (AC9 — cross-device table)', () => {
@@ -134,8 +143,11 @@ describe('TableCard', () => {
     const { rerender } = render(<TableCard table={baseTable} status="empty" onSelect={vi.fn()} />)
     expect(screen.getByText('Trống')).toBeInTheDocument()
 
+    rerender(<TableCard table={baseTable} status="opening" onSelect={vi.fn()} />)
+    expect(screen.getByText('Đang mở')).toBeInTheDocument()
+
     rerender(<TableCard table={baseTable} status="serving" onSelect={vi.fn()} />)
-    expect(screen.getByText('Đang phục vụ')).toBeInTheDocument()
+    expect(screen.getByText('Đang có đơn')).toBeInTheDocument()
 
     rerender(<TableCard table={baseTable} status="conflict" onSelect={vi.fn()} />)
     expect(screen.getByText('Xung đột phiên')).toBeInTheDocument()

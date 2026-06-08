@@ -73,6 +73,7 @@ beforeEach(async () => {
   await db.storeConfig.clear()
   await db.tableSessions.clear()
   await db.orders.clear()
+  await db.tableDrafts.clear()
   usePosTableContextStore.getState().reset()
   // Default: online
   useConnectivityStore.setState({ isOnline: true })
@@ -84,6 +85,7 @@ afterEach(async () => {
   await db.storeConfig.clear()
   await db.tableSessions.clear()
   await db.orders.clear()
+  await db.tableDrafts.clear()
   usePosTableContextStore.getState().reset()
   useConnectivityStore.setState({ isOnline: true })
   db.close()
@@ -204,16 +206,34 @@ describe('FloorPlanView (offline-first — Story 6.12)', () => {
     expect(conflictBtn).toHaveAttribute('aria-disabled', 'true')
   })
 
-  it('shows "Đang phục vụ" for table with 1 open session (AC5)', async () => {
+  it('shows "Đang mở" for table with 1 open session but NO draft (phiên mở, chưa order/giữ bàn)', async () => {
     await seedCache()
     await act(async () => {
       await db.tableSessions.put({ id: 'sess-1', tableId: 'tbl-1', status: 'open', clientSessionId: 'cs-1', syncStatus: 'synced' })
     })
     renderFloorPlan()
 
-    const servingBtn = await screen.findByRole('button', { name: 'Bàn Bàn 1, 2 chỗ, Đang phục vụ' })
+    const openingBtn = await screen.findByRole('button', { name: 'Bàn Bàn 1, 2 chỗ, Đang mở' })
+    expect(openingBtn).toBeInTheDocument()
+    expect(openingBtn).toBeDisabled()
+  })
+
+  it('shows "Đang có đơn" for table with 1 open session AND a held draft (đơn chưa thanh toán gắn với bàn)', async () => {
+    await seedCache()
+    await act(async () => {
+      await db.tableSessions.put({ id: 'sess-1', tableId: 'tbl-1', status: 'open', clientSessionId: 'cs-1', syncStatus: 'synced' })
+      // Per-table draft = unpaid order held against the table (Story 6.13)
+      await db.tableDrafts.put({
+        tableId: 'tbl-1',
+        items: [{ productId: 'p1', productNameSnapshot: 'Cà phê', unitPriceSnapshot: 25000, options: [], quantity: 1, lineTotal: 25000 }],
+        discount: null,
+        updatedAt: new Date().toISOString(),
+      })
+    })
+    renderFloorPlan()
+
+    const servingBtn = await screen.findByRole('button', { name: 'Bàn Bàn 1, 2 chỗ, Đang có đơn' })
     expect(servingBtn).toBeInTheDocument()
-    expect(servingBtn).toBeDisabled()
   })
 
   it('shows "Trống" (chọn được) for table with a SYNCED order today and no open session — đã thanh toán xong, "Đã có đơn" đã bỏ', async () => {
@@ -294,12 +314,13 @@ describe('FloorPlanView (offline-first — Story 6.12)', () => {
     })
     renderFloorPlan()
 
-    // Bàn 1 phải là "Trống" (chọn được) — KHÔNG có nút Bàn 1 ở trạng thái "Đang phục vụ".
-    // (Lưu ý: "Đang phục vụ" vẫn xuất hiện trong chú thích/legend — nên kiểm tra theo nút, không theo text.)
+    // Bàn 1 phải là "Trống" (chọn được) — KHÔNG còn ở trạng thái phiên mở ("Đang có đơn"/"Đang mở").
+    // (Lưu ý: các nhãn này vẫn xuất hiện trong chú thích/legend — nên kiểm tra theo nút, không theo text.)
     const freeBtn = await screen.findByRole('button', { name: 'Bàn Bàn 1, 2 chỗ, Trống' })
     expect(freeBtn).toBeInTheDocument()
     expect(freeBtn).not.toBeDisabled()
-    expect(screen.queryByRole('button', { name: 'Bàn Bàn 1, 2 chỗ, Đang phục vụ' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Bàn Bàn 1, 2 chỗ, Đang có đơn' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Bàn Bàn 1, 2 chỗ, Đang mở' })).not.toBeInTheDocument()
   })
 
   it('shows "Trống" for tables with no activity', async () => {

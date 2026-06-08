@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { AlertTriangle, Coffee, Lock, Users } from 'lucide-react'
+import { AlertTriangle, Coffee, DoorOpen, Lock, Users } from 'lucide-react'
 import { LoadingSkeleton } from '../../../shared/components/ui/loading-skeleton'
 import { StatusBadge } from '../../../shared/components/ui/status-badge'
 import { useConnectivityStore } from '../../../shared/stores/connectivity.store'
@@ -13,7 +13,8 @@ import { TableCard } from './table-card'
 
 const STATUS_LEGEND = [
   { label: 'Trống', variant: 'success' as const, icon: <Coffee className="size-3" /> },
-  { label: 'Đang phục vụ', variant: 'warning' as const, icon: <Users className="size-3" /> },
+  { label: 'Đang mở', variant: 'accent' as const, icon: <DoorOpen className="size-3" /> },
+  { label: 'Đang có đơn', variant: 'warning' as const, icon: <Users className="size-3" /> },
   { label: 'Xung đột phiên', variant: 'danger' as const, icon: <AlertTriangle className="size-3" /> },
   { label: 'Tạm tắt', variant: 'neutral' as const, icon: <Lock className="size-3" /> },
 ]

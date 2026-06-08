@@ -237,7 +237,7 @@ export function PosShell() {
   }
 
   // Story 6.8 Tier A: "Giữ bàn" — keep session open, go back to floor-plan (AC28)
-  // Session stays open → table shows "Đang phục vụ" on floor-plan.
+  // Session stays open + draft saved → table shows "Đang có đơn" on floor-plan.
   // Story 6.13: saves items+discount to draft BEFORE navigating back (AC3).
   function handleHoldTable() {
     // Empty cart → "Giữ bàn" is meaningless (nothing to keep). Treat as cancel/release:

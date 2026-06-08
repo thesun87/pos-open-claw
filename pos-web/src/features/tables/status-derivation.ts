@@ -32,6 +32,14 @@ export interface DerivedTableStatus {
   conflict: boolean
   /** True when any order for this table has status=pendingSync */
   pendingSync: boolean
+  /**
+   * True when this device holds an unpaid order tied to the table — i.e. a per-table draft
+   * cart with items (Story 6.13 tableDrafts). In this POS, finalized orders are always PAID
+   * (created only at checkout), so the only "đơn hàng chưa thanh toán gắn với bàn" is the held
+   * draft. Used to split an open session into "Đang có đơn" (hasDraft) vs "Đang mở" (no draft).
+   * Drafts are single-device/local (not synced) → false for cross-device opens (Epic 7).
+   */
+  hasDraft: boolean
 }
 
 /**
@@ -51,6 +59,8 @@ export function getStartOfTodayVietnamMs(now: Date = new Date()): number {
  * @param orders       All local order records (for today boundary + pendingSync check)
  * @param sessions     All local table session records
  * @param serverStatus Optional array from /tables/status (BE 6.11) for cross-device online merge
+ * @param draftTableIds Optional set of tableIds that have a local per-table draft (Story 6.13).
+ *                      A draft means an unpaid order is held against the table → "Đang có đơn".
  * @param now          Injectable clock (default: new Date()) for today-boundary testing
  * @returns Map<tableId, DerivedTableStatus>
  */
@@ -59,12 +69,14 @@ export function deriveTableStatus({
   orders,
   sessions,
   serverStatus,
+  draftTableIds,
   now = new Date(),
 }: {
   tables: TableRecord[]
   orders: LocalOrderRecord[]
   sessions: TableSessionRecord[]
   serverStatus?: TableStatusRow[]
+  draftTableIds?: Set<string>
   now?: Date
 }): Map<string, DerivedTableStatus> {
   const startOfTodayMs = getStartOfTodayVietnamMs(now)
@@ -176,6 +188,7 @@ export function deriveTableStatus({
       activeOrderCount: mergedActiveOrders,
       conflict: mergedConflict,
       pendingSync: hasPendingSync,
+      hasDraft: draftTableIds?.has(tableId) ?? false,
     })
   }
 
@@ -195,12 +208,15 @@ export function deriveTableStatus({
  */
 export function useLocalTableStatus(serverStatus?: TableStatusRow[]): Map<string, DerivedTableStatus> | undefined {
   return useLiveQuery(async () => {
-    const [tables, orders, sessions] = await Promise.all([
+    const [tables, orders, sessions, drafts] = await Promise.all([
       db.posTables.toArray(),
       db.orders.toArray(),
       db.tableSessions.toArray(),
+      db.tableDrafts.toArray(),
     ])
-    return deriveTableStatus({ tables, orders, sessions, ...(serverStatus !== undefined ? { serverStatus } : {}) })
+    // A draft record always means held items (saveTableDraft clears empty carts — Story 6.13).
+    const draftTableIds = new Set(drafts.map((d) => d.tableId))
+    return deriveTableStatus({ tables, orders, sessions, draftTableIds, ...(serverStatus !== undefined ? { serverStatus } : {}) })
   }, [serverStatus])
 }
 
@@ -208,14 +224,19 @@ export function useLocalTableStatus(serverStatus?: TableStatusRow[]): Map<string
  * Convert a TableRecord + DerivedTableStatus into a richer TableDisplayStatus for UI floor-plan.
  *
  * Priority order (highest first):
- *   inactive > conflict > serving > empty
+ *   inactive > conflict > serving > opening > empty
  *
- * Hành vi (sau khi bỏ trạng thái "Đã có đơn" và "Chờ đồng bộ" khỏi display):
- *  - Bàn chỉ "bận" khi đang có phiên phục vụ mở (serving) — cashier đang thao tác trên bàn.
+ * Hành vi:
+ *  - Bàn chỉ "bận" khi đang có phiên mở (openSessionCount > 0) — cashier đang thao tác trên bàn.
+ *    Phiên mở được tách làm 2 trạng thái theo việc có đơn hàng (draft) gắn với bàn hay chưa:
+ *      • 'serving'  → "Đang có đơn": phiên mở + có draft (đơn chưa thanh toán) giữ ở bàn — cashier
+ *                     đã bấm "Giữ bàn"/đang phục vụ đơn của bàn.
+ *      • 'opening'  → "Đang mở": phiên mở nhưng CHƯA có draft nào — cashier vừa chọn bàn trống mà
+ *                     chưa order xong (chưa bấm "Giữ bàn"), hoặc phiên mở từ máy khác (cross-device).
  *  - Khi thanh toán xong, phiên được settle (openSessionCount = 0) → bàn về 'empty' NGAY để lên đơn mới,
  *    BẤT KỂ trong ngày đã có bao nhiêu đơn (activeOrderCount) HAY đơn vừa tạo còn chờ đồng bộ (pendingSync).
  *  - Một đơn pendingSync luôn là đơn ĐÃ thanh toán (orders chỉ tạo lúc finalize) → KHÔNG giữ bàn bận.
- *    Tình trạng đồng bộ được báo toàn cục (FR24), không per-table — nên không còn nhánh 'pending_sync' ở đây.
+ *    Tình trạng đồng bộ được báo toàn cục (FR24), không per-table — nên không có nhánh 'pending_sync' ở đây.
  *
  * @param table   The table record (needed for isActive check)
  * @param derived Optional DerivedTableStatus for this table. Undefined means no derivation data yet.
@@ -231,8 +252,9 @@ export function toDisplayStatus(
   if (!derived) return 'empty'
   // 2. conflict (openSessionCount > 1 — FR56)
   if (derived.conflict) return 'conflict'
-  // 3. serving (an open session exists — cashier currently at the table; blocks selection)
-  if (derived.openSessionCount > 0) return 'serving'
+  // 3. open session — split by whether an unpaid order (draft) is held against the table:
+  //    has draft → 'serving' ("Đang có đơn"); no draft → 'opening' ("Đang mở").
+  if (derived.openSessionCount > 0) return derived.hasDraft ? 'serving' : 'opening'
   // 4. empty — no open session. Neither an order today (activeOrderCount) nor an unsynced paid
   //    order (pendingSync) marks the table as occupied: a paid table is free immediately.
   return 'empty'
