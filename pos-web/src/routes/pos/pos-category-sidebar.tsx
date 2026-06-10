@@ -32,41 +32,32 @@ export function PosCategorySidebar({ categories, selectedCategoryId, onSelect }:
   const effectiveSelectedId = selectedCategoryId ?? 'all'
 
   return (
-    <nav aria-label="Danh mục sản phẩm" className="fixed bottom-0 left-0 top-16 z-40 hidden w-24 flex-col border-r border-outline-variant/30 bg-surface-container-low py-4 md:flex">
-      {/* Cafe Logo */}
-      <div className="flex flex-col items-center gap-2 px-2 pb-4 border-b border-outline-variant/30 mb-2">
-        <img 
-          alt="Cafe Logo" 
-          className="w-12 h-12 rounded-full object-cover shadow-sm select-none" 
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIYZcLCf5JfBOgVB2EK_HMlsOMADE_MT5a7nSZV2Yg_5efogvmy0q_3kaSP3ozzskN537zBfIEWyrOWSbo2l7YY7Fy5b1zesLQQZlRFqp2_WXOkMfNM71F0gPCGI4K8aAdmGGV7MYRydbP5MvXWOeMEEw_4V_PjRuTmJ7fuTjWYLU5DPXBPCANMbGCui4cbFOhp5NApx-3FPQaFWrpW7sc-axq8QMkzkJlCxsqmNLmJKligDE648jk5zutRmbBnOx_7zS_pEFvy34" 
-        />
-      </div>
-
-      <div className="flex-1 overflow-y-auto w-full px-2 flex flex-col gap-2 no-scrollbar">
+    <nav aria-label="Danh mục sản phẩm" className="fixed bottom-0 left-0 top-16 z-40 hidden w-24 flex-col border-r border-outline-variant/50 bg-surface py-4 md:flex">
+      <div className="flex-1 overflow-y-auto w-full px-2.5 flex flex-col gap-1.5 no-scrollbar">
         {items.map((item, index) => {
           const selected = item.id === effectiveSelectedId
           return (
-            <button 
-              key={item.id} 
-              type="button" 
-              aria-current={selected ? 'page' : undefined} 
-              onClick={() => onSelect(item.id)} 
-              onKeyDown={(event) => handleKeyDown(event, index)} 
+            <button
+              key={item.id}
+              type="button"
+              aria-current={selected ? 'page' : undefined}
+              onClick={() => onSelect(item.id)}
+              onKeyDown={(event) => handleKeyDown(event, index)}
               className={cn(
-                'flex flex-col items-center justify-center py-3 w-full rounded-xl transition hover:brightness-95 select-none', 
-                selected 
-                  ? 'bg-primary-container font-bold text-on-primary-container shadow-sm' 
-                  : 'text-on-surface-variant hover:bg-secondary-container dark:hover:bg-secondary'
+                'flex flex-col items-center justify-center py-3 w-full rounded-2xl transition-all select-none active:scale-[0.97]',
+                selected
+                  ? 'bg-primary-container font-bold text-on-primary-container shadow-card ring-1 ring-primary/15'
+                  : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface'
               )}
             >
-              <span 
-                aria-hidden="true" 
-                className="material-symbols-outlined mb-1" 
-                style={{ fontVariationSettings: selected ? "'FILL' 1, 'wght' 600" : undefined }}
+              <span
+                aria-hidden="true"
+                className="material-symbols-outlined mb-1 text-[24px]"
+                style={{ fontVariationSettings: selected ? "'FILL' 1, 'wght' 600" : "'wght' 400" }}
               >
                 {item.icon}
               </span>
-              <span className="text-[11px] font-medium leading-4 truncate w-full px-1">{item.name}</span>
+              <span className="text-[11px] font-medium leading-4 truncate w-full px-1 text-center">{item.name}</span>
             </button>
           )
         })}

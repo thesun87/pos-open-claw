@@ -31,13 +31,19 @@ export function PosTopAppBar({ search = '', onSearchChange }: Props) {
   }
 
   return (
-    <header data-testid="pos-top-app-bar" className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center justify-between border-b border-outline-variant/30 bg-surface/90 px-7 shadow-sm backdrop-blur-xl">
-      <div className="flex items-center gap-4 flex-1 mr-4">
-        <Link to="/pos" className="text-[20px] font-bold tracking-tight text-primary whitespace-nowrap hidden sm:block">
-          Boutique Cafe POS
+    <header data-testid="pos-top-app-bar" className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center justify-between border-b border-outline-variant/60 bg-surface/90 px-5 shadow-card backdrop-blur-xl md:px-7">
+      <div className="flex items-center gap-5 flex-1 mr-4">
+        <Link to="/pos" className="hidden items-center gap-2.5 whitespace-nowrap rounded-lg sm:flex">
+          <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-on-primary shadow-sm">
+            <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 500" }}>local_cafe</span>
+          </span>
+          <span className="flex flex-col leading-none">
+            <span className="text-[16px] font-bold tracking-tight text-on-surface">Boutique Cafe POS</span>
+            <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-on-surface-variant/80">Điểm bán</span>
+          </span>
         </Link>
         <div className="relative w-full max-w-md">
-          <span aria-hidden="true" className="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[20px]">
+          <span aria-hidden="true" className="material-symbols-outlined absolute left-3.5 top-1/2 transform -translate-y-1/2 text-on-surface-variant/70 text-[20px]">
             search
           </span>
           <label htmlFor="product-search" className="sr-only">Tìm sản phẩm</label>
@@ -45,7 +51,7 @@ export function PosTopAppBar({ search = '', onSearchChange }: Props) {
             id="product-search"
             value={search}
             onChange={(event) => onSearchChange?.(event.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-surface-container-low border border-outline-variant/40 rounded-full text-sm text-on-surface placeholder-on-surface-variant/60 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-colors"
+            className="h-10 w-full rounded-full border border-outline-variant/70 bg-surface-container-lowest pl-10 pr-4 text-sm text-on-surface shadow-theme-xs placeholder-on-surface-variant/60 transition-colors focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
             placeholder="Tìm kiếm món ăn..."
             type="text"
           />
@@ -55,18 +61,18 @@ export function PosTopAppBar({ search = '', onSearchChange }: Props) {
         <TableModeBadge />
         <ConnectivityIndicator />
         <PendingCounter />
-        <button type="button" aria-label="Mở bảng đồng bộ" onClick={openSyncPanel} className="grid h-10 w-10 place-items-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
-          <span aria-hidden="true" className="material-symbols-outlined">sync</span>
+        <button type="button" aria-label="Mở bảng đồng bộ" onClick={openSyncPanel} className="grid h-10 w-10 place-items-center rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface active:scale-95 transition-all">
+          <span aria-hidden="true" className="material-symbols-outlined text-[22px]">sync</span>
         </button>
         {isAdmin ? (
-          <Link aria-label="Mở trang quản trị" to="/admin" className="grid h-10 w-10 place-items-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
-            <span aria-hidden="true" className="material-symbols-outlined">settings</span>
+          <Link aria-label="Mở trang quản trị" to="/admin" className="grid h-10 w-10 place-items-center rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface active:scale-95 transition-all">
+            <span aria-hidden="true" className="material-symbols-outlined text-[22px]">settings</span>
           </Link>
         ) : null}
-        
-        <div className="relative flex items-center gap-3 border-l border-outline-variant/30 pl-4 h-8 select-none">
-          <button type="button" aria-label="Mở menu người dùng" aria-expanded={isUserMenuOpen} onClick={() => setIsUserMenuOpen((open) => !open)} className="flex items-center gap-3 rounded-full text-left focus:outline-none focus:ring-2 focus:ring-primary-container">
-            <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-full bg-primary-container font-bold text-on-primary-container text-sm">
+
+        <div className="relative flex items-center gap-3 border-l border-outline-variant/60 pl-4 h-9 select-none">
+          <button type="button" aria-label="Mở menu người dùng" aria-expanded={isUserMenuOpen} onClick={() => setIsUserMenuOpen((open) => !open)} className="flex items-center gap-2.5 rounded-full py-1 pr-1 text-left transition-colors hover:bg-surface-container focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 md:pl-1 md:pr-2.5">
+            <span aria-hidden="true" className="grid h-8 w-8 place-items-center rounded-full bg-primary-container font-bold text-on-primary-container text-sm ring-1 ring-primary/10">
               {initial}
             </span>
             <span className="hidden md:flex flex-col text-left">
@@ -75,8 +81,9 @@ export function PosTopAppBar({ search = '', onSearchChange }: Props) {
             </span>
           </button>
           {isUserMenuOpen ? (
-            <div role="menu" className="absolute right-0 top-10 z-50 min-w-40 rounded-xl border border-outline-variant/30 bg-surface p-2 shadow-lg">
-              <button type="button" role="menuitem" disabled={isLoggingOut} onClick={handleLogout} className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-on-surface hover:bg-surface-container disabled:opacity-60">
+            <div role="menu" className="absolute right-0 top-11 z-50 min-w-44 rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-1.5 shadow-overlay">
+              <button type="button" role="menuitem" disabled={isLoggingOut} onClick={handleLogout} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-on-surface hover:bg-surface-container-low disabled:opacity-60">
+                <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-on-surface-variant">logout</span>
                 {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
               </button>
             </div>

@@ -29,11 +29,46 @@
   --color-on-inverse-surface: #9d9ca4;
 
   --font-ui: "Geist", system-ui, sans-serif;
-  
+
   --min-height-touch: 44px;
   --min-height-cta: 48px;
   --min-width-touch: 44px;
   --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-primary) 42%, transparent);
+
+  /* Type scale (POS headlines + shared labels) */
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 40px;
+  --text-headline-lg--font-weight: 600;
+  --text-headline-lg--letter-spacing: -0.02em;
+  --text-headline-md: 20px;
+  --text-headline-md--line-height: 26px;
+  --text-headline-md--font-weight: 600;
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 16px;
+  --text-label-sm--font-weight: 500;
+  --text-title-sm: 30px;
+  --text-title-sm--line-height: 38px;
+  --text-title-sm--font-weight: 600;
+  --text-theme-xl: 20px;
+  --text-theme-xl--line-height: 30px;
+  --text-theme-sm: 14px;
+  --text-theme-sm--line-height: 20px;
+  --text-theme-xs: 12px;
+  --text-theme-xs--line-height: 18px;
+
+  /* Elevation — TailAdmin scale (admin) */
+  --shadow-theme-xs: 0px 1px 2px 0px rgba(16, 24, 40, 0.05);
+  --shadow-theme-sm: 0px 1px 3px 0px rgba(16, 24, 40, 0.1), 0px 1px 2px 0px rgba(16, 24, 40, 0.06);
+  --shadow-theme-md: 0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06);
+  --shadow-theme-lg: 0px 12px 16px -4px rgba(16, 24, 40, 0.08), 0px 4px 6px -2px rgba(16, 24, 40, 0.03);
+  --shadow-theme-xl: 0px 20px 24px -4px rgba(16, 24, 40, 0.08), 0px 8px 8px -4px rgba(16, 24, 40, 0.03);
+
+  /* Elevation — POS warm soft scale */
+  --shadow-card: 0 1px 2px rgba(35, 24, 12, 0.04), 0 4px 12px rgba(35, 24, 12, 0.05);
+  --shadow-raised: 0 2px 4px rgba(35, 24, 12, 0.05), 0 10px 24px rgba(35, 24, 12, 0.08);
+  --shadow-overlay: 0 8px 16px rgba(35, 24, 12, 0.1), 0 24px 48px rgba(35, 24, 12, 0.16);
 
   /* TailAdmin admin-only tokens. Keep POS tokens above unchanged. */
   --color-admin-brand-25: #f2f7ff;
@@ -109,44 +144,51 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 
 [data-admin-scope] { font-family: var(--font-admin-ui); }
 
+/*
+ * POS theme v2 — "Espresso & Cream"
+ * Warm porcelain neutrals, roasted-espresso primary, caramel-cream containers.
+ * primary-container is a tonal fill (light caramel) with dark on-primary-container
+ * text — selected chips read calm instead of loud terracotta.
+ */
 .pos-theme {
-  --color-bg: #faf9f9;
-  --color-surface: #faf9f9;
-  --color-surface-container-low: #f4f3f3;
-  --color-surface-container: #eeeeed;
-  --color-surface-container-high: #e9e8e8;
-  --color-surface-container-highest: #e3e2e2;
+  --color-bg: #f7f4f0;
+  --color-surface: #f7f4f0;
+  --color-surface-container-low: #f1ece6;
+  --color-surface-container: #ebe5dd;
+  --color-surface-container-high: #e4dcd2;
+  --color-surface-container-highest: #ddd3c7;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-muted: #eeeeed;
-  --color-on-surface: #1a1c1c;
-  --color-on-surface-variant: #594237;
-  --color-text-primary: #1a1c1c;
-  --color-text-secondary: #594237;
+  --color-surface-muted: #ebe5dd;
+  --color-on-surface: #221a13;
+  --color-on-surface-variant: #6d5d4f;
+  --color-text-primary: #221a13;
+  --color-text-secondary: #6d5d4f;
 
-  --color-primary: #a14000;
-  --color-primary-hover: #7b2f00;
-  --color-primary-container: #f26b1d;
-  --color-on-primary-container: #511c00;
+  --color-primary: #8a4513;
+  --color-primary-hover: #6f3409;
+  --color-primary-container: #f3dfc8;
+  --color-on-primary-container: #56300d;
   --color-on-primary: #ffffff;
-  --color-accent: #f26b1d;
-  --color-success: #2f7d4e;
+  --color-accent: #d96f1e;
+  --color-success: #237a4b;
   --color-tertiary: #5c5f60;
-  --color-warning: #b7791f;
-  --color-danger: #ba1a1a;
-  --color-error: #ba1a1a;
-  --color-error-container: #ffdad6;
-  --color-on-error-container: #93000a;
-  --color-border: #e0c0b2;
-  --color-outline-variant: #e0c0b2;
-  --color-outline: #8c7166;
-  --color-inverse-surface: #2f3131;
-  --color-on-inverse-surface: #f1f0f0;
+  --color-warning: #a86b14;
+  --color-danger: #b3261e;
+  --color-error: #b3261e;
+  --color-error-container: #fadcd8;
+  --color-on-error-container: #8c1a13;
+  --color-border: #e5dbcf;
+  --color-outline-variant: #e5dbcf;
+  --color-outline: #94836f;
+  --color-inverse-surface: #2e2620;
+  --color-on-inverse-surface: #f3ede6;
 
   --font-ui: "Inter", system-ui, sans-serif;
-  
+
   color: var(--color-text-primary);
   background-color: var(--color-bg);
   font-family: var(--font-ui);
+  font-feature-settings: 'cv02', 'cv03', 'cv04';
 }
 
 

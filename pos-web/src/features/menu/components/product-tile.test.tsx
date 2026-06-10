@@ -15,16 +15,16 @@ describe('ProductTile', () => {
     render(<ProductTile product={baseProduct} onSelect={vi.fn()} />)
 
     const tile = screen.getByRole('button', { name: 'Bạc Xỉu, 35.000 ₫' })
-    expect(tile).toHaveClass('aspect-[4/4.6]', 'bg-surface-container')
+    expect(tile).toHaveClass('aspect-[4/4.6]', 'bg-surface-container-lowest')
     expect(screen.getByText('BX')).toBeInTheDocument()
-    expect(screen.queryByText('OPTIONS')).not.toBeInTheDocument()
+    expect(screen.queryByText('Tùy chọn')).not.toBeInTheDocument()
   })
 
-  it('shows OPTIONS badge in the top-right for products with option groups', () => {
+  it('shows Tùy chọn badge in the top-right for products with option groups', () => {
     render(<ProductTile product={{ ...baseProduct, optionGroupIds: ['og-size'] }} onSelect={vi.fn()} />)
 
     expect(screen.getByRole('button', { name: 'Bạc Xỉu, 35.000 ₫, có tùy chọn' })).toBeInTheDocument()
-    expect(screen.getByText('OPTIONS')).toHaveClass('absolute', 'right-3', 'top-3', 'bg-surface/95', 'text-primary')
+    expect(screen.getByText('Tùy chọn')).toHaveClass('absolute', 'right-3', 'top-3', 'bg-surface/95', 'text-primary')
   })
 
   it('calls onSelect when activated', async () => {

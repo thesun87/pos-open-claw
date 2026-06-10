@@ -68,9 +68,9 @@ export function ReceiptModal({ order, open, onOpenChange }: ReceiptModalProps) {
             <DialogTitle asChild><h2 className="text-2xl font-bold">Hóa đơn</h2></DialogTitle>
             <DialogDescription>Hóa đơn bán hàng đã lưu cục bộ, có thể in ngay cả khi ngoại tuyến.</DialogDescription>
           </DialogHeader>
-          <header className="rounded-lg border border-border bg-surface-muted p-4 text-center">
-            <p className="text-sm text-text-secondary">Mã đơn</p>
-            <p className="text-3xl font-bold tracking-wide">{displayOrder.orderCode}</p>
+          <header className="rounded-2xl border border-outline-variant/60 bg-surface-container-low p-4 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary">Mã đơn</p>
+            <p className="text-3xl font-bold tracking-wide tabular-nums">{displayOrder.orderCode}</p>
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm text-text-secondary"><span>{formatReceiptDate(displayOrder.soldAt)}</span><SyncStatusBadge status={displayOrder.status} />{displayOrder.voidedAt ? <span className="rounded-full bg-danger/10 px-2 py-1 font-medium text-danger">Đã void</span> : null}</div>
           </header>
           {displayOrder.voidedAt ? <section aria-label="Trạng thái void" className="rounded-lg border-2 border-danger/40 bg-danger/10 p-4 text-center text-danger"><p className="text-3xl font-black tracking-widest">ĐÃ HỦY</p>{displayOrder.voidReason ? <p className="mt-2 text-sm font-medium">Lý do: {displayOrder.voidReason}</p> : null}</section> : null}
@@ -90,13 +90,13 @@ export function ReceiptModal({ order, open, onOpenChange }: ReceiptModalProps) {
               <dt className="text-text-secondary">Thanh toán</dt><dd className="text-right font-medium">{PAYMENT_LABELS[displayOrder.paymentMethod]}</dd>
               {displayOrder.voidReason ? <><dt className="text-text-secondary">Lý do hủy</dt><dd className="text-right font-medium">{displayOrder.voidReason}</dd></> : null}
             </dl>
-            <ul className="divide-y divide-border rounded-lg border border-border" aria-label="Danh sách món trên hóa đơn">
+            <ul className="divide-y divide-outline-variant/60 rounded-xl border border-outline-variant/60" aria-label="Danh sách món trên hóa đơn">
               {displayOrder.items.map((item, index) => <li key={`${item.productId}-${index}`} className="space-y-1 p-3"><div className="flex gap-3"><div className="min-w-0 flex-1"><p className="font-semibold">{item.productNameSnapshot}</p>{item.options.length ? <p className="text-sm text-text-secondary">{item.options.map((option) => option.labelSnapshot).join(', ')}</p> : null}{item.note ? <p className="text-sm text-text-secondary">Ghi chú: {item.note}</p> : null}</div><p className="tabular-nums">x{item.quantity}</p><p className="min-w-24 text-right font-medium tabular-nums">{formatVnd(item.lineTotal)}</p></div></li>)}
             </ul>
           </section>
-          <dl className="space-y-2 rounded-lg border border-border p-4">
-            {displayOrder.discountAmount > 0 ? <div className="flex justify-between text-text-secondary"><dt>Giảm giá</dt><dd>-{formatVnd(displayOrder.discountAmount)}</dd></div> : null}
-            <div className="flex items-end justify-between"><dt className="text-lg font-semibold">Tổng cộng</dt><dd className="text-3xl font-bold tabular-nums">{formatVnd(displayOrder.total)}</dd></div>
+          <dl className="space-y-2 rounded-2xl bg-surface-container-low p-4">
+            {displayOrder.discountAmount > 0 ? <div className="flex justify-between text-text-secondary"><dt>Giảm giá</dt><dd className="tabular-nums">-{formatVnd(displayOrder.discountAmount)}</dd></div> : null}
+            <div className="flex items-end justify-between"><dt className="text-lg font-semibold">Tổng cộng</dt><dd className="text-3xl font-bold tabular-nums text-primary">{formatVnd(displayOrder.total)}</dd></div>
           </dl>
         </article>
         <div className="receipt-actions flex gap-3 pt-2">{canVoidSyncedOrder ? <Button type="button" variant="destructive" className="flex-1" disabled={!isOnline} onClick={() => setVoidDialogOpen(true)}>Void đơn này</Button> : null}<Button type="button" className="flex-1" onClick={print}>In hóa đơn</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => onOpenChange(false)}>Đóng</Button></div>

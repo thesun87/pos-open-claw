@@ -21,8 +21,9 @@ export function MenuUpdatedToast({ durationMs = 4000 }: { durationMs?: number })
 
   if (!visible) return null
   return (
-    <div role="status" aria-live="polite" className="fixed bottom-4 right-4 z-50 rounded-lg border border-green-200 bg-white px-4 py-3 text-sm font-medium text-green-700 shadow-lg">
-      <span aria-hidden="true">✓ </span>{TOAST_TEXT}
+    <div role="status" aria-live="polite" className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-xl bg-inverse-surface px-4 py-3 text-sm font-medium text-on-inverse-surface shadow-overlay">
+      <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-success" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+      {TOAST_TEXT}
     </div>
   )
 }

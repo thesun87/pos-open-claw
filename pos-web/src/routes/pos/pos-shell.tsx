@@ -23,7 +23,18 @@ import { PosTopAppBar } from './pos-top-app-bar'
 
 const SEARCH_DEBOUNCE_MS = 200
 
-function LoadingProducts() { return <div className="rounded-lg border border-outline-variant/30 bg-surface-container p-4 text-on-surface-variant" role="status">Đang tải menu...</div> }
+function LoadingProducts() {
+  return (
+    <div role="status" aria-label="Đang tải menu">
+      <span className="sr-only">Đang tải menu...</span>
+      <div aria-hidden="true" className="grid grid-cols-2 gap-5 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="aspect-[4/4.6] animate-pulse rounded-2xl border border-outline-variant/40 bg-surface-container-low" />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export function PosShell() {
   const location = useLocation()
@@ -282,7 +293,10 @@ export function PosShell() {
       <PosTopAppBar search={search} onSearchChange={setSearch} />
       {/* Category sidebar only when showing product grid */}
       {!showFloorPlan && activeCategories.length > 0 ? <PosCategorySidebar categories={activeCategories} selectedCategoryId={effectiveCategoryId} onSelect={setSelectedCategoryId} /> : null}
-      <div className="mt-16 rounded-2xl border border-warning bg-surface-container p-4 text-on-surface md:hidden">POS hoạt động tốt nhất ở màn hình ngang hoặc laptop/tablet</div>
+      <div className="mx-4 mt-20 flex items-center gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-4 text-sm font-medium text-on-surface md:hidden">
+        <span aria-hidden="true" className="material-symbols-outlined text-warning">screen_rotation</span>
+        <span>POS hoạt động tốt nhất ở màn hình ngang hoặc laptop/tablet</span>
+      </div>
       <main className={showFloorPlan ? 'mt-16 h-[calc(100vh-64px)] overflow-y-auto' : 'mt-16 h-[calc(100vh-64px)] overflow-y-auto px-7 py-6 md:ml-24 md:mr-[320px]'} aria-label={showFloorPlan ? 'Sơ đồ bàn' : 'Khu vực sản phẩm'}>
         {showFloorPlan ? (
           <FloorPlanView reopenableTableIds={draftTableIds} />

@@ -59,7 +59,7 @@ export function AreaTabs({ areas, tables, statusByTableId, selectedAreaId, onSel
       ref={tabListRef}
       role="tablist"
       aria-label="Khu vực"
-      className="flex overflow-x-auto gap-2 px-4 py-3 scrollbar-thin"
+      className="flex overflow-x-auto gap-2 px-5 py-3 no-scrollbar md:px-7"
       onKeyDown={handleKeyDown}
     >
       {areas.map((area) => {
@@ -72,15 +72,19 @@ export function AreaTabs({ areas, tables, statusByTableId, selectedAreaId, onSel
             role="tab"
             type="button"
             aria-selected={isActive}
+            aria-label={`${area.name} · ${freeCount}/${totalCount}`}
             onClick={() => onSelect(area.id)}
             className={cn(
-              'inline-flex min-h-[44px] items-center rounded-full border px-4 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+              'inline-flex min-h-[44px] items-center gap-2 rounded-full border px-4 text-sm font-semibold whitespace-nowrap transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
               isActive
-                ? 'border-primary bg-primary text-on-primary shadow-theme-md'
-                : 'border-border bg-white text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface',
+                ? 'border-primary bg-primary text-on-primary shadow-md shadow-primary/25'
+                : 'border-outline-variant bg-surface-container-lowest text-on-surface-variant shadow-theme-xs hover:border-primary/30 hover:text-on-surface',
             )}
           >
-            {area.name} · {freeCount}/{totalCount}
+            {area.name}
+            <span className={cn('rounded-full px-2 py-0.5 text-xs font-bold tabular-nums', isActive ? 'bg-white/20 text-on-primary' : 'bg-surface-container text-on-surface-variant')}>
+              {freeCount}/{totalCount}
+            </span>
           </button>
         )
       })}

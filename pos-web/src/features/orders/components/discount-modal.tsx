@@ -87,15 +87,16 @@ export function DiscountModal({ open, onOpenChange, subtotal, discount, onApply 
         <div className="space-y-4">
           <fieldset>
             <legend className="sr-only">Loại giảm giá</legend>
-            <div className="grid gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <label
                 htmlFor={fixedId}
-                className="flex min-h-touch items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm"
+                className={`flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-all has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/40 ${type === 'fixed' ? 'border-primary bg-primary-container/40 font-semibold ring-1 ring-primary/30' : 'border-border bg-surface-container-lowest hover:border-primary/30'}`}
               >
                 <input
                   id={fixedId}
                   type="radio"
                   name="discount-type"
+                  className="sr-only"
                   checked={type === 'fixed'}
                   onChange={() => handleTypeChange('fixed')}
                 />
@@ -103,12 +104,13 @@ export function DiscountModal({ open, onOpenChange, subtotal, discount, onApply 
               </label>
               <label
                 htmlFor={percentId}
-                className="flex min-h-touch items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm"
+                className={`flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-all has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/40 ${type === 'percentage' ? 'border-primary bg-primary-container/40 font-semibold ring-1 ring-primary/30' : 'border-border bg-surface-container-lowest hover:border-primary/30'}`}
               >
                 <input
                   id={percentId}
                   type="radio"
                   name="discount-type"
+                  className="sr-only"
                   checked={type === 'percentage'}
                   onChange={() => handleTypeChange('percentage')}
                 />

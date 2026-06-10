@@ -70,7 +70,7 @@ const STATUS_META: Record<TableDisplayStatus, StatusMeta> = {
     icon: <Coffee className="size-4" />,
     disabled: false,
     stripe: 'bg-success',
-    card: 'bg-white',
+    card: 'bg-surface-container-lowest',
     hint: 'Sẵn sàng phục vụ',
   },
   opening: {
@@ -159,11 +159,11 @@ export function TableCard({
       aria-disabled={isDisabled ? 'true' : undefined}
       onClick={() => onSelect(table)}
       className={cn(
-        'group relative min-h-[88px] min-w-[88px] overflow-hidden rounded-2xl border border-border p-4 pl-5',
+        'group relative min-h-[88px] min-w-[88px] overflow-hidden rounded-2xl border border-outline-variant/70 p-4 pl-5 shadow-card',
         'flex flex-col gap-3 items-start text-left transition-all',
-        'active:scale-[0.99] hover:-translate-y-0.5 hover:shadow-theme-lg',
+        'active:scale-[0.99] hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-raised',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-        'disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none',
+        'disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-card disabled:hover:border-outline-variant/70',
         meta.card,
       )}
     >
@@ -184,7 +184,7 @@ export function TableCard({
       {isServing ? (
         /* "Đang có đơn": tổng tiền, số món, giờ mở bàn, thời gian đang phục vụ (theo design tables.html) */
         <div className="mt-auto w-full">
-          <div className="text-lg font-bold leading-tight tabular-nums text-on-surface">
+          <div className="text-lg font-bold leading-tight tabular-nums text-primary">
             {formatVnd(orderTotal)}
           </div>
           <div className="mt-1.5 flex w-full items-center justify-between gap-2 text-xs font-medium text-on-surface-variant">

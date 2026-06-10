@@ -113,9 +113,9 @@ export function FloorPlanView({ reopenableTableIds = new Set() }: FloorPlanViewP
   return (
     <div data-testid="floor-plan-view" className="flex flex-col gap-0">
       {/* Page header */}
-      <div className="px-4 pt-5 pb-1">
+      <div className="px-5 pt-6 pb-1 md:px-7">
         <h1 className="text-headline-lg text-on-surface">Chọn bàn</h1>
-        <p className="mt-1 text-sm text-on-surface-variant">
+        <p className="mt-1.5 text-sm text-on-surface-variant">
           Nhấp vào bàn trống để bắt đầu phục vụ khách
         </p>
       </div>
@@ -124,7 +124,7 @@ export function FloorPlanView({ reopenableTableIds = new Set() }: FloorPlanViewP
       {!isOnline ? (
         <div
           role="status"
-          className="mx-4 mt-4 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning"
+          className="mx-5 mt-4 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm font-medium text-warning md:mx-7"
         >
           Đang offline — trạng thái bàn lấy từ bộ nhớ cục bộ
         </div>
@@ -141,7 +141,7 @@ export function FloorPlanView({ reopenableTableIds = new Set() }: FloorPlanViewP
 
       {/* Table grid */}
       <div
-        className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 p-4 transition-opacity duration-150"
+        className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4 px-5 py-4 transition-opacity duration-150 md:px-7"
         aria-label="Sơ đồ bàn"
       >
         {filteredTables.map((table) => {
@@ -164,7 +164,7 @@ export function FloorPlanView({ reopenableTableIds = new Set() }: FloorPlanViewP
       {/* Status legend (decorative) */}
       <div
         aria-hidden="true"
-        className="flex flex-wrap justify-end gap-2 px-4 pb-4 pt-2"
+        className="flex flex-wrap justify-end gap-2 px-5 pb-6 pt-2 md:px-7"
       >
         {STATUS_LEGEND.map(({ label, variant, icon }) => (
           <StatusBadge key={label} variant={variant} label={label} icon={icon} />

@@ -7,7 +7,7 @@ describe('MenuUpdatedToast', () => {
     vi.useFakeTimers()
     render(<MenuUpdatedToast durationMs={4000} />)
     act(() => { window.dispatchEvent(new CustomEvent('menu.updated', { detail: { menuVersion: 4 } })) })
-    expect(screen.getByRole('status').textContent).toBe('✓ Menu đã cập nhật')
+    expect(screen.getByRole('status').textContent).toContain('Menu đã cập nhật')
     await act(async () => { await vi.advanceTimersByTimeAsync(4000) })
     expect(screen.queryByText('Menu đã cập nhật')).toBeNull()
     vi.useRealTimers()

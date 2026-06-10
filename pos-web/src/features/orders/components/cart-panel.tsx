@@ -24,10 +24,10 @@ function CartLineItem({ item, onAskRemove }: LineItemProps) {
   const product = useLiveQuery(() => db.products.get(item.productId), [item.productId])
   const imageUrl = product?.imageUrl
   return (
-    <article className="flex flex-col gap-2 p-3 bg-surface-container-lowest rounded-lg border border-outline-variant" aria-label={`Món ${item.productNameSnapshot}`}>
+    <article className="flex flex-col gap-2 p-3 bg-surface-container-lowest rounded-xl border border-outline-variant/70 shadow-theme-xs" aria-label={`Món ${item.productNameSnapshot}`}>
       <div className="flex gap-3">
         {/* Placeholder image / initials */}
-        <div className="w-12 h-12 rounded-md bg-surface-container-low flex items-center justify-center font-bold text-primary text-xs select-none shrink-0 overflow-hidden">
+        <div className="w-12 h-12 rounded-lg bg-surface-container-low flex items-center justify-center font-bold text-primary/60 text-xs select-none shrink-0 overflow-hidden">
           {imageUrl ? (
             <img src={imageUrl} alt="" className="h-full w-full object-cover" />
           ) : (
@@ -35,8 +35,8 @@ function CartLineItem({ item, onAskRemove }: LineItemProps) {
           )}
         </div>
         <div className="flex-1 flex flex-col min-w-0">
-          <h4 className="font-bold text-on-surface text-sm truncate">{item.productNameSnapshot}</h4>
-          <span className="text-xs text-on-surface-variant font-semibold mt-0.5">{formatVnd(item.unitPriceSnapshot)}</span>
+          <h4 className="font-semibold text-on-surface text-sm truncate">{item.productNameSnapshot}</h4>
+          <span className="price text-xs text-on-surface-variant font-semibold mt-0.5">{formatVnd(item.unitPriceSnapshot)}</span>
           
           {/* Options list */}
           {item.options.length > 0 && (
@@ -81,23 +81,23 @@ function CartLineItem({ item, onAskRemove }: LineItemProps) {
         </button>
 
         <div className="flex items-center gap-2">
-          <button 
-            type="button" 
-            aria-label={`Giảm ${item.productNameSnapshot}`} 
-            onClick={() => updateQuantity(item.tempId, item.quantity - 1)} 
-            disabled={item.quantity <= 1} 
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-surface-container-low text-on-surface hover:bg-surface-variant transition-colors disabled:opacity-50"
+          <button
+            type="button"
+            aria-label={`Giảm ${item.productNameSnapshot}`}
+            onClick={() => updateQuantity(item.tempId, item.quantity - 1)}
+            disabled={item.quantity <= 1}
+            className="w-7 h-7 flex items-center justify-center rounded-full border border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container-low active:scale-95 transition-all disabled:opacity-40"
           >
-            <span aria-hidden="true" className="material-symbols-outlined text-[12px]">remove</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-[14px]">remove</span>
           </button>
-          <span aria-label="Số lượng hiện tại" className="text-xs font-semibold w-4 text-center">{item.quantity}</span>
-          <button 
-            type="button" 
-            aria-label={`Tăng ${item.productNameSnapshot}`} 
-            onClick={() => updateQuantity(item.tempId, item.quantity + 1)} 
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-primary-container/20 text-primary hover:bg-primary-container/30 transition-colors"
+          <span aria-label="Số lượng hiện tại" className="text-sm font-bold tabular-nums w-5 text-center">{item.quantity}</span>
+          <button
+            type="button"
+            aria-label={`Tăng ${item.productNameSnapshot}`}
+            onClick={() => updateQuantity(item.tempId, item.quantity + 1)}
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-primary text-on-primary hover:bg-primary-hover active:scale-95 transition-all shadow-sm"
           >
-            <span aria-hidden="true" className="material-symbols-outlined text-[12px]">add</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-[14px]">add</span>
           </button>
         </div>
       </div>
@@ -159,22 +159,22 @@ export function CartPanel({ onHoldTable }: CartPanelProps = {}) {
   return (
     <aside 
       ref={cartPanelRef} 
-      className="fixed bottom-0 right-0 top-16 z-30 hidden w-[320px] flex-col border-l border-outline-variant bg-surface md:flex" 
-      aria-label="Giỏ hàng và thanh toán" 
+      className="fixed bottom-0 right-0 top-16 z-30 hidden w-[320px] flex-col border-l border-outline-variant/60 bg-surface-container-lowest md:flex"
+      aria-label="Giỏ hàng và thanh toán"
       tabIndex={0}
     >
-      <header className="border-b border-outline-variant p-4">
+      <header className="border-b border-outline-variant/60 p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-[18px] font-bold leading-7 text-on-surface">Đơn hiện tại</h2>
-            <p className="mt-0.5 text-xs text-on-surface-variant">Đơn mới • POS01</p>
+            <h2 className="text-[18px] font-bold leading-7 tracking-tight text-on-surface">Đơn hiện tại</h2>
+            <p className="mt-0.5 text-xs text-on-surface-variant">{tableNameSnapshot ? `Bàn ${tableNameSnapshot} • POS01` : 'Đơn mới • POS01'}</p>
           </div>
           {hasItems ? (
-            <button 
-              ref={cancelButtonRef} 
-              type="button" 
-              onClick={() => { setCartFeedback(null); setIsVoidDialogOpen(true) }} 
-              className="bg-primary-container text-on-primary-container text-xs px-2.5 py-1 rounded-full hover:brightness-95 transition-all font-semibold"
+            <button
+              ref={cancelButtonRef}
+              type="button"
+              onClick={() => { setCartFeedback(null); setIsVoidDialogOpen(true) }}
+              className="rounded-full border border-danger/25 px-2.5 py-1 text-xs font-semibold text-danger transition-colors hover:bg-danger/5 active:scale-95"
             >
               Hủy đơn
             </button>
@@ -184,8 +184,10 @@ export function CartPanel({ onHoldTable }: CartPanelProps = {}) {
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4 no-scrollbar">
         {items.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center text-center font-body-md text-on-surface-variant">
-            <span aria-hidden="true" className="material-symbols-outlined mb-3 text-6xl text-on-surface-variant/40">shopping_cart</span>
+          <div className="flex h-full flex-col items-center justify-center text-center text-sm text-on-surface-variant">
+            <span aria-hidden="true" className="mb-4 grid h-16 w-16 place-items-center rounded-full bg-surface-container-low">
+              <span className="material-symbols-outlined text-[32px] text-on-surface-variant/50">shopping_cart</span>
+            </span>
             Chọn món để bắt đầu đơn.
           </div>
         ) : (
@@ -193,29 +195,29 @@ export function CartPanel({ onHoldTable }: CartPanelProps = {}) {
         )}
       </div>
 
-      <footer aria-label="Tóm tắt thanh toán" className="pt-4 border-t border-outline-variant mt-auto flex flex-col gap-3 p-4 bg-surface">
+      <footer aria-label="Tóm tắt thanh toán" className="pt-4 border-t border-outline-variant/60 mt-auto flex flex-col gap-3 p-4 bg-surface-container-lowest">
         {cartFeedback ? <p role="status" aria-live="polite" className="rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-on-surface">{cartFeedback}</p> : null}
         {errorMessage ? <p role="alert" className="rounded-xl border border-error/30 bg-error-container/20 px-3 py-2 text-xs text-on-error-container">{errorMessage}</p> : null}
-        
-        <div className="flex flex-col gap-2 mb-1 bg-surface-container-low p-3 rounded-xl">
+
+        <div className="flex flex-col gap-2 mb-1 bg-surface-container-low p-3.5 rounded-2xl">
           <div className="flex justify-between text-xs text-on-surface-variant">
             <span>Tạm tính</span>
             <span className="price font-medium">{formatVnd(totals.subtotal)}</span>
           </div>
           {totals.discount ? (
-            <div className="flex justify-between text-xs text-on-surface-variant">
+            <div className="flex justify-between text-xs text-success">
               <span>Giảm giá</span>
-              <span className="price font-medium">-{formatVnd(totals.discountAmount)}</span>
+              <span className="price font-semibold">-{formatVnd(totals.discountAmount)}</span>
             </div>
           ) : null}
-          <div className="w-full h-px bg-outline-variant my-1"></div>
-          <div className="flex justify-between text-base font-bold text-on-surface items-center">
+          <div className="w-full h-px bg-outline-variant/70 my-1"></div>
+          <div className="flex justify-between font-bold text-on-surface items-baseline">
             <span className="text-xl font-bold">Tổng tiền</span>
-            <span className="total font-bold text-primary-container text-xl">{formatVnd(totals.total)}</span>
+            <span className="total font-bold text-primary text-xl">{formatVnd(totals.total)}</span>
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-2.5">
           <Button
             ref={discountButtonRef}
             type="button"
@@ -228,7 +230,7 @@ export function CartPanel({ onHoldTable }: CartPanelProps = {}) {
           </Button>
           <Button
             type="button"
-            className="flex-1 h-12 rounded-xl bg-primary text-on-primary font-bold shadow-md shadow-primary/25 text-sm"
+            className="flex-1 h-12 rounded-xl bg-primary text-on-primary font-bold shadow-md shadow-primary/25 text-sm hover:bg-primary-hover active:scale-[0.98] transition-all"
             disabled={!hasItems || isCheckingOut}
             onClick={() => openPaymentMethodModal()}
           >
